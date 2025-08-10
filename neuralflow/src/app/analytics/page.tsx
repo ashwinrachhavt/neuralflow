@@ -1,26 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Sidebar from "@/components/layout/Sidebar";
+import { Navbar } from "@/components/layout/Navbar";
+import { DynamicBackground } from "@/components/effects/DynamicBackground";
 import { getRepository } from "@/lib/repo/repository-factory";
 import type LocalMainRepository from "@/lib/repo/local-repository";
 import type { Task } from "@/lib/types";
 import { BarChart2, TrendingUp, Clock, Target, CheckCircle } from "lucide-react";
 
 export default function AnalyticsPage() {
-  const router = useRouter();
   const repoRef = useRef<LocalMainRepository | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const handleNavigation = (to: "home" | "stats" | "settings") => {
-    if (to === "home") router.push("/");
-    else if (to === "settings") router.push("/settings");
-    // stats stays on current page
-  };
+
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -59,33 +54,31 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-svh bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-        <div className="mx-auto flex max-w-[1400px] gap-6 px-4 sm:px-6">
-          <Sidebar active="stats" onNavigate={handleNavigation} />
-          <main className="flex-1 py-8">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-slate-400">Loading analytics...</div>
-            </div>
-          </main>
+      <div className="min-h-svh">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-3.5rem)]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-svh bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+    <div className="min-h-svh">
+      <Navbar />
+      
       <SignedOut>
-        <div className="min-h-svh flex flex-col items-center justify-center px-4">
+        <DynamicBackground useUnicornStudio={true} />
+        <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 z-10">
           <div className="text-center max-w-md">
-            <div className="mb-8 h-16 w-16 mx-auto rounded-full bg-gradient-to-br from-indigo-400 to-fuchsia-400" />
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent mb-4">
+            <h1 className="text-4xl font-bold tracking-tight mb-4 text-white drop-shadow-lg">
               Neural Flow
             </h1>
-            <p className="text-slate-400 mb-8 text-lg">
+            <p className="text-gray-300 mb-8 text-lg drop-shadow-md">
               Sign in to view your analytics
             </p>
             <SignInButton mode="modal">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+              <button className="bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
                 Sign In
               </button>
             </SignInButton>
@@ -94,23 +87,21 @@ export default function AnalyticsPage() {
       </SignedOut>
 
       <SignedIn>
-        <div className="mx-auto flex max-w-[1400px] gap-6 px-4 sm:px-6">
-          <Sidebar active="stats" onNavigate={handleNavigation} />
-        <main className="flex-1 py-8">
+        <main className="container mx-auto py-8 px-4">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold tracking-tight">
               Analytics
             </h1>
-            <p className="mt-2 text-slate-400">Track your productivity and progress</p>
+            <p className="mt-2 text-muted-foreground">Track your productivity and progress</p>
           </div>
 
           {/* Key Metrics */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <Card className="border-slate-700/50 bg-slate-800/40 backdrop-blur-sm shadow-xl">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-slate-300">Total Tasks</CardTitle>
-                  <Target className="h-4 w-4 text-blue-400" />
+                  <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+                  <Target className="h-4 w-4 text-primary" />
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
@@ -293,7 +284,6 @@ export default function AnalyticsPage() {
             </Card>
           )}
         </main>
-        </div>
       </SignedIn>
     </div>
   );
