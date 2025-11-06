@@ -12,6 +12,7 @@ import {
 } from "@clerk/nextjs";
 
 import { cn } from "@/lib/utils";
+import { ModeToggle } from "@/components/mode-toggle";
 
 const navLinks = [
   { href: "/todos", label: "To-Do" },
@@ -49,23 +50,26 @@ export function Navbar() {
               );
             })}
           </nav>
-          <SignedOut>
-            <div className="flex items-center gap-2 text-sm">
-              <SignInButton mode="modal">
-                <span className="rounded-full border border-border/70 px-4 py-2 font-medium hover:border-foreground/50">
-                  Sign in
-                </span>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <span className="rounded-full bg-foreground px-4 py-2 font-medium text-background shadow">
-                  Sign up
-                </span>
-              </SignUpButton>
-            </div>
-          </SignedOut>
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "size-9" } }} />
-          </SignedIn>
+          <div className="flex items-center gap-2">
+            <ModeToggle />
+            <SignedOut>
+              <div className="flex items-center gap-2 text-sm">
+                <SignInButton mode="modal">
+                  <span className="rounded-full border border-border/70 px-4 py-2 font-medium hover:border-foreground/50">
+                    Sign in
+                  </span>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <span className="rounded-full bg-foreground px-4 py-2 font-medium text-background shadow">
+                    Sign up
+                  </span>
+                </SignUpButton>
+              </div>
+            </SignedOut>
+            <SignedIn>
+              <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "size-9" } }} />
+            </SignedIn>
+          </div>
         </div>
       </div>
     </header>

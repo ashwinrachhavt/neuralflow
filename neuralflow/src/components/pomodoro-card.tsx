@@ -1,5 +1,6 @@
 "use client";
 
+import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +30,26 @@ type TimerState = {
   mode: Mode;
   secondsRemaining: number;
   isRunning: boolean;
+  activeTaskId: string | null;
 };
+
+const taskOptions = [
+  {
+    id: "strategy",
+    title: "Draft weekly strategy update",
+    description: "Summarise wins, blockers, and next steps for the team.",
+  },
+  {
+    id: "research",
+    title: "Review user interviews",
+    description: "Extract insights from the latest NeuralFlow sessions.",
+  },
+  {
+    id: "docs",
+    title: "Polish release notes",
+    description: "Tighten copy and visuals for the launch recap.",
+  },
+] as const;
 
 function formatDuration(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -51,6 +71,7 @@ export function PomodoroCard() {
     mode: "focus",
     secondsRemaining: FOCUS_DURATION,
     isRunning: false,
+    activeTaskId: taskOptions[0]?.id ?? null,
   });
   const [clockDisplay, setClockDisplay] = useState("--:--:--");
 
@@ -81,6 +102,7 @@ export function PomodoroCard() {
 
         const nextMode: Mode = current.mode === "focus" ? "break" : "focus";
         return {
+          ...current,
           mode: nextMode,
           secondsRemaining: modeConfig[nextMode].duration,
           isRunning: true,
@@ -101,7 +123,12 @@ export function PomodoroCard() {
   };
 
   const handleReset = () => {
-    setState({ mode: "focus", secondsRemaining: FOCUS_DURATION, isRunning: false });
+    setState((current) => ({
+      ...current,
+      mode: "focus",
+      secondsRemaining: FOCUS_DURATION,
+      isRunning: false,
+    }));
   };
 
   const handleSkip = () => {
@@ -109,6 +136,7 @@ export function PomodoroCard() {
       mode: nextMode,
       secondsRemaining: modeConfig[nextMode].duration,
       isRunning: false,
+      activeTaskId: state.activeTaskId,
     });
   };
 
@@ -117,7 +145,22 @@ export function PomodoroCard() {
       mode,
       secondsRemaining: modeConfig[mode].duration,
       isRunning: true,
+      activeTaskId: state.activeTaskId,
     });
+  };
+
+  const selectedTask =
+    taskOptions.find((task) => task.id === state.activeTaskId) ?? null;
+
+  const handleTaskChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextTaskId = event.target.value;
+    setState((current) => ({
+      ...current,
+      activeTaskId: nextTaskId,
+      mode: "focus",
+      secondsRemaining: FOCUS_DURATION,
+      isRunning: false,
+    }));
   };
 
   return (
@@ -128,6 +171,29 @@ export function PomodoroCard() {
           className="text-sm font-medium text-muted-foreground"
         >
           {clockDisplay}
+        </CardItem>
+        <CardItem translateZ={80} className="mt-4">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Current focus
+          </label>
+          <div className="mt-2 space-y-3">
+            <select
+              value={state.activeTaskId ?? ""}
+              onChange={handleTaskChange}
+              className="w-full rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm outline-none transition focus:border-primary"
+            >
+              {taskOptions.map((task) => (
+                <option key={task.id} value={task.id}>
+                  {task.title}
+                </option>
+              ))}
+            </select>
+            {selectedTask?.description ? (
+              <p className="text-xs text-muted-foreground">
+                {selectedTask.description}
+              </p>
+            ) : null}
+          </div>
         </CardItem>
         <CardItem translateZ={80} className="mt-2 flex items-center gap-3">
           <h2 className="text-2xl font-semibold">Pomodoro Timer</h2>
