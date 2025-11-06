@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,10 +52,21 @@ export function PomodoroCard() {
     secondsRemaining: FOCUS_DURATION,
     isRunning: false,
   });
-  const [now, setNow] = useState(() => new Date());
+  const [clockDisplay, setClockDisplay] = useState("--:--:--");
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => setNow(new Date()), 1000);
+    const updateClock = () => {
+      setClockDisplay(
+        new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      );
+    };
+
+    updateClock();
+    const intervalId = window.setInterval(updateClock, 1000);
     return () => window.clearInterval(intervalId);
   }, []);
 
@@ -84,16 +95,6 @@ export function PomodoroCard() {
   const activeConfig = modeConfig[activeMode];
   const nextMode: Mode = activeMode === "focus" ? "break" : "focus";
   const progress = 1 - state.secondsRemaining / activeConfig.duration;
-
-  const digitalClock = useMemo(
-    () =>
-      now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
-    [now],
-  );
 
   const handleToggle = () => {
     setState((current) => ({ ...current, isRunning: !current.isRunning }));
@@ -126,7 +127,7 @@ export function PomodoroCard() {
           translateZ={60}
           className="text-sm font-medium text-muted-foreground"
         >
-          {digitalClock}
+          {clockDisplay}
         </CardItem>
         <CardItem translateZ={80} className="mt-2 flex items-center gap-3">
           <h2 className="text-2xl font-semibold">Pomodoro Timer</h2>
