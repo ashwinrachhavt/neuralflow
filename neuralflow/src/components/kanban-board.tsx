@@ -19,6 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Loader2, Plus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -174,6 +175,52 @@ export function KanbanBoard() {
     },
   });
 
+  async function ensureNote(taskId: string): Promise<string> {
+    const res = await fetch(`/api/cards/${taskId}/enrich`, { method: "POST" });
+    if (!res.ok) throw new Error("Unable to initialize note");
+    const data = (await res.json()) as { noteId: string };
+    return data.noteId;
+  }
+
+  const enrichTask = useMutation({
+    mutationFn: async (taskId: string) => {
+      const res = await fetch(`/api/ai/cards/${taskId}/enrich`, { method: "POST" });
+      if (!res.ok) throw new Error("Unable to enrich task");
+      return (await res.json()) as { descriptionMarkdown: string };
+    },
+    onSuccess: async () => {
+      toast.success("Description enriched");
+      await queryClient.invalidateQueries({ queryKey: ["board"], exact: true });
+    },
+    onError: () => toast.error("Failed to enrich"),
+  });
+
+  const summarizeNote = useMutation({
+    mutationFn: async (taskId: string) => {
+      const noteId = await ensureNote(taskId);
+      const res = await fetch(`/api/ai/notes/${noteId}/summary`, { method: "POST" });
+      if (!res.ok) throw new Error("Unable to summarize note");
+      return (await res.json()) as { summary: string; bullets: string[] };
+    },
+    onSuccess: (data) => {
+      toast.info(`Summary: ${data.summary}`, { description: `${data.bullets.length} bullets generated` });
+    },
+    onError: () => toast.error("Failed to summarize note"),
+  });
+
+  const quizFromNote = useMutation({
+    mutationFn: async (taskId: string) => {
+      const noteId = await ensureNote(taskId);
+      const res = await fetch(`/api/ai/notes/${noteId}/quiz`, { method: "POST" });
+      if (!res.ok) throw new Error("Unable to create quiz");
+      return (await res.json()) as { deckId: string; createdCards: number; quizId: string; questions: number };
+    },
+    onSuccess: (data) => {
+      toast.success(`Created ${data.createdCards} cards • ${data.questions} questions`, { description: `Deck ${data.deckId} • Quiz ${data.quizId}` });
+    },
+    onError: () => toast.error("Failed to create quiz"),
+  });
+
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over) return;
 
@@ -229,6 +276,9 @@ export function KanbanBoard() {
               key={columnId}
               column={board.columns[columnId]}
               tasks={board.tasks}
+              onEnrich={(taskId) => enrichTask.mutate(taskId)}
+              onSummary={(taskId) => summarizeNote.mutate(taskId)}
+              onQuiz={(taskId) => quizFromNote.mutate(taskId)}
               onAddTask={() => addTask(columnId)}
             />
           ))}
@@ -242,9 +292,12 @@ type KanbanColumnProps = {
   column: Column;
   tasks: Record<string, Task>;
   onAddTask: () => void;
+  onEnrich: (taskId: string) => void;
+  onSummary: (taskId: string) => void;
+  onQuiz: (taskId: string) => void;
 };
 
-function KanbanColumn({ column, tasks, onAddTask }: KanbanColumnProps) {
+function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz }: KanbanColumnProps) {
   return (
     <Card className="flex w-full max-w-xs flex-1 flex-col bg-card/60 backdrop-blur-md">
       <CardHeader>
@@ -270,7 +323,7 @@ function KanbanColumn({ column, tasks, onAddTask }: KanbanColumnProps) {
             <EmptyColumnHint />
           ) : (
             column.taskIds.map(taskId => (
-              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} />
+              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} />
             ))
           )}
         </ColumnSortableArea>
@@ -310,9 +363,12 @@ function ColumnSortableArea({ columnId, taskIds, children }: ColumnSortableAreaP
 type SortableTaskProps = {
   task: Task;
   columnId: string;
+  onEnrich: (taskId: string) => void;
+  onSummary: (taskId: string) => void;
+  onQuiz: (taskId: string) => void;
 };
 
-function SortableTask({ task, columnId }: SortableTaskProps) {
+function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz }: SortableTaskProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: task.id,
@@ -337,11 +393,26 @@ function SortableTask({ task, columnId }: SortableTaskProps) {
     >
       <div className="flex items-center justify-between">
         <h3 className="font-medium text-sm">{task.title}</h3>
-        {task.tag ? (
-          <Badge variant="secondary" className="text-[0.65rem] font-medium">
-            {task.tag}
-          </Badge>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); onEnrich(task.id); }}
+            title="AI: Enrich"
+          >✨</button>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); onSummary(task.id); }}
+            title="AI: Summary"
+          >📝</button>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); onQuiz(task.id); }}
+            title="AI: Quiz"
+          >🧠</button>
+        </div>
       </div>
       {task.description ? (
         <p className="mt-2 text-xs text-muted-foreground leading-relaxed">

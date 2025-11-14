@@ -15,8 +15,11 @@ import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/mode-toggle";
 
 const navLinks = [
-  { href: "/todos", label: "To-Do" },
-  { href: "/kanban", label: "Kanban" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/boards", label: "Boards" },
+  { href: "/notes", label: "Notes" },
+  { href: "/flashcards", label: "Flashcards" },
+  { href: "/quizzes", label: "Quizzes" },
   { href: "/pomodoro", label: "Pomodoro" },
 ];
 

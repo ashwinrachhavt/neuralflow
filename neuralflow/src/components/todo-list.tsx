@@ -5,6 +5,7 @@ import { Check, Loader2, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -96,6 +97,51 @@ export function TodoList() {
     },
   });
 
+  const enrichTask = useMutation({
+    mutationFn: async (taskId: string) => {
+      const res = await fetch(`/api/ai/cards/${taskId}/enrich`, { method: "POST" });
+      if (!res.ok) throw new Error("Unable to enrich task");
+      return (await res.json()) as { descriptionMarkdown: string };
+    },
+    onSuccess: async () => {
+      toast.success("Description enriched");
+      await queryClient.invalidateQueries({ queryKey: ["board"], exact: true });
+    },
+  });
+
+  async function ensureNote(taskId: string): Promise<string> {
+    const res = await fetch(`/api/cards/${taskId}/enrich`, { method: "POST" });
+    if (!res.ok) throw new Error("Unable to initialize note");
+    const data = (await res.json()) as { noteId: string };
+    return data.noteId;
+  }
+
+  const summarizeNote = useMutation({
+    mutationFn: async (taskId: string) => {
+      const noteId = await ensureNote(taskId);
+      const res = await fetch(`/api/ai/notes/${noteId}/summary`, { method: "POST" });
+      if (!res.ok) throw new Error("Unable to summarize note");
+      return (await res.json()) as { summary: string; bullets: string[] };
+    },
+    onSuccess: (data) => {
+      toast.info(`Summary: ${data.summary}`, { description: `${data.bullets.length} bullets generated` });
+    },
+    onError: () => toast.error("Failed to summarize note"),
+  });
+
+  const quizFromNote = useMutation({
+    mutationFn: async (taskId: string) => {
+      const noteId = await ensureNote(taskId);
+      const res = await fetch(`/api/ai/notes/${noteId}/quiz`, { method: "POST" });
+      if (!res.ok) throw new Error("Unable to create quiz");
+      return (await res.json()) as { deckId: string; createdCards: number; quizId: string; questions: number };
+    },
+    onSuccess: (data) => {
+      toast.success(`Created ${data.createdCards} cards • ${data.questions} questions`, { description: `Deck ${data.deckId} • Quiz ${data.quizId}` });
+    },
+    onError: () => toast.error("Failed to create quiz"),
+  });
+
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <Card className="border-border/70 bg-card/70 backdrop-blur">
@@ -151,6 +197,51 @@ export function TodoList() {
                           <Check className="size-4" />
                         )}
                         Mark done
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => enrichTask.mutate(todo.id)}
+                        disabled={enrichTask.isPending}
+                        className="gap-2"
+                        title="AI: Expand description"
+                      >
+                        {enrichTask.isPending ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <span className="size-4">✨</span>
+                        )}
+                        Enrich
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => summarizeNote.mutate(todo.id)}
+                        disabled={summarizeNote.isPending}
+                        className="gap-2"
+                        title="AI: Summarize note"
+                      >
+                        {summarizeNote.isPending ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <span className="size-4">📝</span>
+                        )}
+                        Summary
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => quizFromNote.mutate(todo.id)}
+                        disabled={quizFromNote.isPending}
+                        className="gap-2"
+                        title="AI: Create flashcards + quiz"
+                      >
+                        {quizFromNote.isPending ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <span className="size-4">🧠</span>
+                        )}
+                        Quiz
                       </Button>
                       <Button
                         size="icon"

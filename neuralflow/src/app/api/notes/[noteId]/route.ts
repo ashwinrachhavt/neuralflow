@@ -7,6 +7,18 @@ import { updateNoteEmbeddings } from "@/lib/embeddings";
 
 type RouteContext = { params: { noteId: string } };
 
+export async function GET(_req: Request, { params }: RouteContext) {
+  const user = await getOrCreateDbUser();
+  if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+  const note = await prisma.note.findFirst({
+    where: { id: params.noteId, task: { board: { userId: user.id } } },
+    select: { id: true, title: true, contentJson: true, contentMarkdown: true, updatedAt: true },
+  });
+  if (!note) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  return NextResponse.json({ ...note, updatedAt: note.updatedAt.toISOString() });
+}
+
 export async function PATCH(req: Request, { params }: RouteContext) {
   const user = await getOrCreateDbUser();
   if (!user) {
@@ -50,4 +62,3 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
   return NextResponse.json({ updatedAt: updated.updatedAt.toISOString() });
 }
-
