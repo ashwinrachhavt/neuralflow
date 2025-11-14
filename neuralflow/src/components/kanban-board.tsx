@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   DndContext,
@@ -17,7 +17,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -100,13 +101,87 @@ const INITIAL_BOARD: BoardState = {
   columnOrder: ["column-todo", "column-progress", "column-done"],
 };
 
+type ApiBoard = {
+  board: {
+    id: string;
+    title: string;
+    columns: { id: string; name: string; position: number }[];
+    tasks: {
+      id: string;
+      title: string;
+      descriptionMarkdown: string | null;
+      tags: string[];
+      columnId: string;
+    }[];
+  };
+};
+
 export function KanbanBoard() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery<ApiBoard>({
+    queryKey: ["board"],
+    queryFn: async () => {
+      const res = await fetch("/api/board");
+      if (!res.ok) throw new Error("Failed to load board");
+      return (await res.json()) as ApiBoard;
+    },
+    staleTime: 5_000,
+  });
+
   const [board, setBoard] = useState<BoardState>(INITIAL_BOARD);
+
+  // Hydrate board from API
+  useEffect(() => {
+    if (!data) return;
+    const cols = data.board.columns;
+    const tasks = data.board.tasks;
+
+    const columns: Record<string, Column> = {};
+    const columnOrder: string[] = [];
+    for (const c of cols) {
+      columns[c.id] = {
+        id: c.id,
+        title: c.name,
+        description: undefined,
+        taskIds: [],
+      };
+      columnOrder.push(c.id);
+    }
+
+    const taskMap: Record<string, Task> = {};
+    for (const t of tasks) {
+      taskMap[t.id] = {
+        id: t.id,
+        title: t.title,
+        description: t.descriptionMarkdown ?? undefined,
+        tag: t.tags?.[0],
+      };
+      const col = columns[t.columnId];
+      if (col) col.taskIds.push(t.id);
+    }
+
+    setBoard({ tasks: taskMap, columns, columnOrder });
+  }, [data]);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
     }),
   );
+
+  const moveMutation = useMutation({
+    mutationFn: async ({ taskId, columnId }: { taskId: string; columnId: string }) => {
+      const res = await fetch(`/api/tasks/${taskId}/column`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ columnId }),
+      });
+      if (!res.ok) throw new Error("Failed to move task");
+      return (await res.json()) as { ok: boolean };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["board"], exact: true });
+    },
+  });
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over) return;
@@ -124,6 +199,9 @@ export function KanbanBoard() {
         columnId: destinationColumnId,
         index: board.columns[destinationColumnId].taskIds.length,
       });
+      if (destinationColumnId !== sourceColumnId) {
+        moveMutation.mutate({ taskId: activeTaskId, columnId: destinationColumnId });
+      }
       return;
     }
 
@@ -135,35 +213,26 @@ export function KanbanBoard() {
       columnId: destinationColumnId,
       index: destinationIndex,
     });
+
+    if (destinationColumnId !== sourceColumnId) {
+      moveMutation.mutate({ taskId: activeTaskId, columnId: destinationColumnId });
+    }
   };
 
-  const addTask = (columnId: string) => {
-    const id = `task-${Date.now()}`;
-    setBoard(current => {
-      const newTask: Task = {
-        id,
-        title: "Untitled task",
-        description: "Break this down and add details.",
-      };
-
-      return {
-        ...current,
-        tasks: { ...current.tasks, [id]: newTask },
-        columns: {
-          ...current.columns,
-          [columnId]: {
-            ...current.columns[columnId],
-            taskIds: [id, ...current.columns[columnId].taskIds],
-          },
-        },
-      };
-    });
+  const addTask = (_columnId: string) => {
+    // Intentionally disabled until a create-task API is added.
+    // Kept for UI parity.
   };
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-6">
         <div className="flex flex-wrap gap-4">
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Loading board…
+            </div>
+          ) : null}
           {board.columnOrder.map(columnId => (
             <KanbanColumn
               key={columnId}
@@ -199,7 +268,7 @@ function KanbanColumn({ column, tasks, onAddTask }: KanbanColumnProps) {
               </CardDescription>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon" className="size-8" onClick={onAddTask}>
+          <Button variant="ghost" size="icon" className="size-8" onClick={onAddTask} disabled>
             <Plus className="size-4" />
           </Button>
         </div>

@@ -1,4 +1,5 @@
 import { TodoList } from "@/components/todo-list";
+import { AiPlannerLauncher } from "@/components/ai-planner-dialog";
 
 export default function TodosPage() {
   return (
@@ -11,6 +12,7 @@ export default function TodosPage() {
         </p>
       </div>
       <TodoList />
+      <AiPlannerLauncher />
     </div>
   );
 }

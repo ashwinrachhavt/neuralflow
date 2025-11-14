@@ -54,12 +54,12 @@ export function Navbar() {
             <ModeToggle />
             <SignedOut>
               <div className="flex items-center gap-2 text-sm">
-                <SignInButton mode="modal">
+                <SignInButton mode="modal" afterSignInUrl="/todos" afterSignUpUrl="/todos">
                   <span className="rounded-full border border-border/70 px-4 py-2 font-medium hover:border-foreground/50">
                     Sign in
                   </span>
                 </SignInButton>
-                <SignUpButton mode="modal">
+                <SignUpButton mode="modal" afterSignUpUrl="/todos" afterSignInUrl="/todos">
                   <span className="rounded-full bg-foreground px-4 py-2 font-medium text-background shadow">
                     Sign up
                   </span>
