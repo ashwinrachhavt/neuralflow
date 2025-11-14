@@ -1,4 +1,5 @@
 import { KanbanBoard } from "@/components/kanban-board";
+import { AiPlannerLauncher } from "@/components/ai-planner-dialog";
 
 export default function KanbanPage() {
   return (
@@ -11,6 +12,7 @@ export default function KanbanPage() {
         </p>
       </div>
       <KanbanBoard />
+      <AiPlannerLauncher />
     </div>
   );
 }
