@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
@@ -13,16 +13,19 @@ type ApiBoard = {
   board: {
     id: string;
     title: string;
-    columns: { id: string; name: string; position: number }[];
-    tasks: {
-      id: string;
-      title: string;
-      descriptionMarkdown: string | null;
-      tags: string[];
-      columnId: string;
-      priority: string;
-      createdAt: string;
-    }[];
+    columnOrder: string[];
+    columns: Record<string, { id: string; name: string; position: number; taskIds: string[] }>;
+    tasks: Record<
+      string,
+      {
+        id: string;
+        title: string;
+        descriptionMarkdown: string | null;
+        columnId: string;
+        priority: string | null;
+        createdAt: string;
+      }
+    >;
   };
 };
 
@@ -38,23 +41,30 @@ export function TodoList() {
     staleTime: 5_000,
   });
 
-  const columns = data?.board.columns ?? [];
-  const tasks = data?.board.tasks ?? [];
+  const board = data?.board;
+  const tasksArray = useMemo(() => (board ? Object.values(board.tasks) : []), [board]);
 
-  const todoColumn = columns.find(c => c.name.toLowerCase() === "todo") ?? null;
-  const doneColumn = columns.find(c => c.name.toLowerCase() === "done") ?? null;
+  const todoColumn = useMemo(() => {
+    if (!board) return undefined;
+    return Object.values(board.columns).find(c => c.name.toLowerCase() === "todo");
+  }, [board]);
+
+  const doneColumn = useMemo(() => {
+    if (!board) return undefined;
+    return Object.values(board.columns).find(c => c.name.toLowerCase() === "done");
+  }, [board]);
 
   const todoTasks = useMemo(
-    () => (todoColumn ? tasks.filter(t => t.columnId === todoColumn.id) : []),
-    [tasks, todoColumn],
+    () => tasksArray.filter(t => (todoColumn ? t.columnId === todoColumn.id : true)),
+    [tasksArray, todoColumn?.id],
   );
   const doneTasks = useMemo(
-    () => (doneColumn ? tasks.filter(t => t.columnId === doneColumn.id) : []),
-    [tasks, doneColumn],
+    () => tasksArray.filter(t => (doneColumn ? t.columnId === doneColumn.id : false)),
+    [tasksArray, doneColumn?.id],
   );
 
   const stats = useMemo(() => {
-    const total = tasks.length;
+    const total = tasksArray.length;
     const done = doneTasks.length;
     return {
       total,
@@ -62,17 +72,23 @@ export function TodoList() {
       remaining: Math.max(0, total - done),
       progress: total === 0 ? 0 : Math.round((done / total) * 100),
     };
-  }, [doneTasks.length, tasks.length]);
+  }, [doneTasks.length, tasksArray.length]);
 
   const markDone = useMutation({
     mutationFn: async (taskId: string) => {
-      if (!doneColumn) return;
-      const res = await fetch(`/api/tasks/${taskId}/column`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ columnId: doneColumn.id }),
-      });
-      if (!res.ok) throw new Error("Unable to move task");
+      const res = await fetch(`/api/tasks/${taskId}/done`, { method: "PATCH" });
+      if (!res.ok) throw new Error("Unable to mark task done");
+      return (await res.json()) as { ok: boolean };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["board"], exact: true });
+    },
+  });
+
+  const deleteTask = useMutation({
+    mutationFn: async (taskId: string) => {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Unable to delete task");
       return (await res.json()) as { ok: boolean };
     },
     onSuccess: async () => {
@@ -90,9 +106,7 @@ export function TodoList() {
               {stats.done} / {stats.total} done
             </Badge>
           </CardTitle>
-          <CardDescription>
-            These tasks are synced from your Kanban board’s Todo column.
-          </CardDescription>
+          <CardDescription>Tasks currently marked as Todo.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (
@@ -123,20 +137,35 @@ export function TodoList() {
                         </p>
                       ) : null}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => markDone.mutate(todo.id)}
-                      disabled={!doneColumn || markDone.isPending}
-                      className="gap-2"
-                    >
-                      {markDone.isPending ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Check className="size-4" />
-                      )}
-                      Mark done
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => markDone.mutate(todo.id)}
+                        disabled={markDone.isPending}
+                        className="gap-2"
+                      >
+                        {markDone.isPending ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Check className="size-4" />
+                        )}
+                        Mark done
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() => deleteTask.mutate(todo.id)}
+                        disabled={deleteTask.isPending}
+                        title="Delete task"
+                      >
+                        {deleteTask.isPending ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="size-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </li>

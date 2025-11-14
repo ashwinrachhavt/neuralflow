@@ -49,6 +49,14 @@ model Column {
   tasks Task[]
 }
 
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  DONE
+  ARCHIVED
+}
+
 enum TaskPriority {
   LOW
   MEDIUM
@@ -64,6 +72,7 @@ model Task {
   title               String
   descriptionMarkdown String   @default("")
   priority            TaskPriority @default(MEDIUM)
+  status              TaskStatus   @default(TODO)
   estimatedPomodoros  Int?
   completedPomodoros  Int      @default(0)
   tags                String[] @default([])
@@ -71,6 +80,9 @@ model Task {
   enrichedAt          DateTime?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
+  project     Project? @relation(fields: [projectId], references: [id])
+  projectId   String?
 
   note             Note?
   pomodoroSessions PomodoroSession[]
@@ -197,4 +209,17 @@ model Embedding {
   chunkText String
   embedding Json
   createdAt DateTime @default(now())
+}
+
+// Lightweight project entity for organizing tasks and linked notes
+model Project {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks Task[]
 }
