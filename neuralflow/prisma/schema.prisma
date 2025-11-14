@@ -36,6 +36,8 @@ model Board {
 
   columns Column[]
   tasks   Task[]
+
+  @@index([userId])
 }
 
 model Column {
@@ -47,6 +49,8 @@ model Column {
   createdAt DateTime @default(now())
 
   tasks Task[]
+
+  @@index([boardId])
 }
 
 enum TaskStatus {
@@ -87,6 +91,10 @@ model Task {
   note             Note?
   pomodoroSessions PomodoroSession[]
   embeddings       Embedding[]        @relation("TaskToEmbeddings")
+
+  @@index([boardId])
+  @@index([columnId])
+  @@index([status])
 }
 
 model Note {
@@ -116,6 +124,8 @@ model PomodoroSession {
   durationMinutes    Int
   reflectionMarkdown String?
   status             String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model FlashcardDeck {
@@ -126,6 +136,7 @@ model FlashcardDeck {
   sourceNote  Note?    @relation(fields: [sourceNoteId], references: [id])
   sourceNoteId String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   cards   Flashcard[]
   quizzes Quiz[]      @relation("DeckToQuizzes")
@@ -140,6 +151,7 @@ model Flashcard {
   question  String
   answer    String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   reviews FlashcardReview[]
 }
@@ -155,6 +167,7 @@ model FlashcardReview {
   nextReviewAt DateTime
   intervalDays Int
   easeFactor   Float
+  updatedAt    DateTime @updatedAt
 }
 
 model Quiz {
@@ -167,6 +180,7 @@ model Quiz {
   deck        FlashcardDeck? @relation("DeckToQuizzes", fields: [deckId], references: [id])
   deckId      String?
   createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   questions QuizQuestion[]
   attempts  QuizAttempt[]
@@ -185,6 +199,8 @@ model QuizQuestion {
   promptMarkdown String
   options        Json?
   correctAnswer  Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model QuizAttempt {
@@ -196,6 +212,7 @@ model QuizAttempt {
   score     Float
   takenAt   DateTime @default(now())
   details   Json?
+  updatedAt DateTime @updatedAt
 }
 
 model Embedding {
@@ -209,6 +226,33 @@ model Embedding {
   chunkText String
   embedding Json
   createdAt DateTime @default(now())
+}
+
+// Logging for AI interactions / agent runs
+model AgentRun {
+  id        String   @id @default(cuid())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?
+  route     String?
+  model     String?
+  status    String?
+  error     String?
+  createdAt DateTime @default(now())
+
+  events AIEvent[]
+
+  @@index([userId])
+}
+
+model AIEvent {
+  id        String   @id @default(cuid())
+  run       AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  runId     String
+  kind      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([runId])
 }
 
 // Lightweight project entity for organizing tasks and linked notes

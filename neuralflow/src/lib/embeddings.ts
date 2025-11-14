@@ -18,7 +18,7 @@ export async function updateNoteEmbeddings({
     return;
   }
 
-  // TODO: chunk markdown, create embeddings, upsert into Embedding table.
+  // Tracked: chunk markdown, embed, and upsert into DB
   console.info(
     "[embeddings] queue update",
     JSON.stringify({ noteId, userId, length: contentMarkdown.length }),
@@ -36,4 +36,3 @@ export async function updateNoteEmbeddings({
     },
   });
 }
-

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
 import { getOrCreateDbUser } from "@/lib/get-or-create-user";
+import { updateTitle, deleteForUser, getByIdForUser } from "@/server/db/cards";
 
 type RouteContext = { params: { taskId: string } };
 
@@ -17,21 +17,14 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     return NextResponse.json({ message: "title is required" }, { status: 400 });
   }
 
-  const task = await prisma.task.findFirst({
-    where: { id: params.taskId, board: { userId: user.id } },
-    select: { id: true },
-  });
+  const task = await getByIdForUser(params.taskId, user.id).catch(() => null);
   if (!task) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
-  const updated = await prisma.task.update({
-    where: { id: params.taskId },
-    data: { title },
-    select: { id: true, title: true },
-  });
+  const updated = await updateTitle(params.taskId, title, user.id);
 
-  return NextResponse.json(updated);
+  return NextResponse.json({ id: updated.id, title: updated.title });
 }
 
 export async function DELETE(_req: Request, { params }: RouteContext) {
@@ -40,13 +33,9 @@ export async function DELETE(_req: Request, { params }: RouteContext) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const task = await prisma.task.findFirst({
-    where: { id: params.taskId, board: { userId: user.id } },
-    select: { id: true },
-  });
+  const task = await getByIdForUser(params.taskId, user.id).catch(() => null);
   if (!task) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-  // Ownership verified above; delete exactly one by unique id
-  await prisma.task.delete({ where: { id: params.taskId } });
+  await deleteForUser(params.taskId, user.id);
   return NextResponse.json({ ok: true });
 }

@@ -84,7 +84,7 @@ async function main() {
     },
   });
 
-  console.log("Seed data ready ✔");
+  // Seed data ready ✔
 
   // Additional Kanban/Todo demo content
   // Personal Kanban with standard columns and sample todos
