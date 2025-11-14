@@ -18,7 +18,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Loader2, Plus } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMoveCard, useCreateCard, useBoard } from "@/hooks/api";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -112,24 +113,16 @@ type ApiBoard = {
   };
 };
 
-export function KanbanBoard() {
+export function KanbanBoard({ boardId }: { boardId: string }) {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery<ApiBoard>({
-    queryKey: ["board"],
-    queryFn: async () => {
-      const res = await fetch("/api/board");
-      if (!res.ok) throw new Error("Failed to load board");
-      return (await res.json()) as ApiBoard;
-    },
-    staleTime: 5_000,
-  });
+  const { data, isLoading } = useBoard(boardId);
 
   const [board, setBoard] = useState<BoardState>(INITIAL_BOARD);
 
   // Hydrate board from API
   useEffect(() => {
     if (!data) return;
-    const { columns: apiColumns, columnOrder, tasks: apiTasks } = data.board;
+    const { columns: apiColumns, columnOrder, tasks: apiTasks } = (data as any).board;
 
     const columns: Record<string, Column> = {};
     for (const columnId of columnOrder) {
@@ -160,20 +153,8 @@ export function KanbanBoard() {
     }),
   );
 
-  const moveMutation = useMutation({
-    mutationFn: async ({ taskId, columnId }: { taskId: string; columnId: string }) => {
-      const res = await fetch(`/api/tasks/${taskId}/column`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ columnId }),
-      });
-      if (!res.ok) throw new Error("Failed to move task");
-      return (await res.json()) as { ok: boolean };
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["board"], exact: true });
-    },
-  });
+  const moveMutation = useMoveCard(boardId);
+  const createCard = useCreateCard();
 
   async function ensureNote(taskId: string): Promise<string> {
     const res = await fetch(`/api/cards/${taskId}/enrich`, { method: "POST" });
@@ -279,7 +260,8 @@ export function KanbanBoard() {
               onEnrich={(taskId) => enrichTask.mutate(taskId)}
               onSummary={(taskId) => summarizeNote.mutate(taskId)}
               onQuiz={(taskId) => quizFromNote.mutate(taskId)}
-              onAddTask={() => addTask(columnId)}
+              onAddTask={() => {}}
+              onCreateCard={(colId, title) => createCard.mutate({ boardId, columnId: colId, title })}
             />
           ))}
         </div>
@@ -295,9 +277,12 @@ type KanbanColumnProps = {
   onEnrich: (taskId: string) => void;
   onSummary: (taskId: string) => void;
   onQuiz: (taskId: string) => void;
+  onCreateCard: (columnId: string, title: string) => void;
 };
 
-function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz }: KanbanColumnProps) {
+function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz, onCreateCard }: KanbanColumnProps) {
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState("");
   return (
     <Card className="flex w-full max-w-xs flex-1 flex-col bg-card/60 backdrop-blur-md">
       <CardHeader>
@@ -312,12 +297,34 @@ function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz }:
               </CardDescription>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon" className="size-8" onClick={onAddTask} disabled>
+          <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowForm(true)}>
             <Plus className="size-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
+        {showForm ? (
+          <form
+            className="mb-3 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const v = title.trim();
+              if (!v) return;
+              onCreateCard(column.id, v);
+              setTitle("");
+              setShowForm(false);
+            }}
+          >
+            <input
+              className="flex-1 rounded border px-2 py-1 text-sm bg-background/80"
+              placeholder="New card title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <Button size="sm" type="submit">Add</Button>
+            <Button size="sm" variant="ghost" type="button" onClick={() => { setShowForm(false); setTitle(""); }}>Cancel</Button>
+          </form>
+        ) : null}
         <ColumnSortableArea columnId={column.id} taskIds={column.taskIds}>
           {column.taskIds.length === 0 ? (
             <EmptyColumnHint />

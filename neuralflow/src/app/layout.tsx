@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,8 +35,8 @@ export default function RootLayout({
     <ClerkProvider
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
-      afterSignInUrl="/todos"
-      afterSignUpUrl="/todos"
+      afterSignInUrl="/dashboard"
+      afterSignUpUrl="/dashboard"
     >
       <html lang="en" suppressHydrationWarning>
         <body
@@ -48,7 +49,10 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <QueryProvider>
-              {children}
+              <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
+                <Navbar />
+                {children}
+              </div>
               <Toaster richColors position="top-right" />
             </QueryProvider>
           </ThemeProvider>

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Check, Loader2, Trash2 } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -10,39 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-type ApiBoard = {
-  board: {
-    id: string;
-    title: string;
-    columnOrder: string[];
-    columns: Record<string, { id: string; name: string; position: number; taskIds: string[] }>;
-    tasks: Record<
-      string,
-      {
-        id: string;
-        title: string;
-        descriptionMarkdown: string | null;
-        columnId: string;
-        priority: string | null;
-        createdAt: string;
-      }
-    >;
-  };
-};
+import { useBoard, useDefaultBoardId, useDeleteCard, useMarkDone } from "@/hooks/api";
+import type { BoardNormalized } from "@/hooks/api";
 
 export function TodoList() {
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery<ApiBoard>({
-    queryKey: ["board"],
-    queryFn: async () => {
-      const res = await fetch("/api/board");
-      if (!res.ok) throw new Error("Failed to load board");
-      return (await res.json()) as ApiBoard;
-    },
-    staleTime: 5_000,
-  });
-
-  const board = data?.board;
+  const qc = useQueryClient();
+  const def = useDefaultBoardId();
+  const boardId = def.data?.id ?? "";
+  const { data, isLoading } = useBoard(boardId);
+  const board = (data as BoardNormalized | undefined)?.board;
   const tasksArray = useMemo(() => (board ? Object.values(board.tasks) : []), [board]);
 
   const todoColumn = useMemo(() => {
@@ -75,27 +51,9 @@ export function TodoList() {
     };
   }, [doneTasks.length, tasksArray.length]);
 
-  const markDone = useMutation({
-    mutationFn: async (taskId: string) => {
-      const res = await fetch(`/api/tasks/${taskId}/done`, { method: "PATCH" });
-      if (!res.ok) throw new Error("Unable to mark task done");
-      return (await res.json()) as { ok: boolean };
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["board"], exact: true });
-    },
-  });
+  const markDone = useMarkDone(boardId);
 
-  const deleteTask = useMutation({
-    mutationFn: async (taskId: string) => {
-      const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Unable to delete task");
-      return (await res.json()) as { ok: boolean };
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["board"], exact: true });
-    },
-  });
+  const deleteTask = useDeleteCard();
 
   const enrichTask = useMutation({
     mutationFn: async (taskId: string) => {
@@ -105,7 +63,7 @@ export function TodoList() {
     },
     onSuccess: async () => {
       toast.success("Description enriched");
-      await queryClient.invalidateQueries({ queryKey: ["board"], exact: true });
+      await qc.invalidateQueries({ queryKey: ["board", boardId] });
     },
   });
 
@@ -246,7 +204,7 @@ export function TodoList() {
                       <Button
                         size="icon"
                         variant="destructive"
-                        onClick={() => deleteTask.mutate(todo.id)}
+                        onClick={() => deleteTask.mutate({ taskId: todo.id })}
                         disabled={deleteTask.isPending}
                         title="Delete task"
                       >
