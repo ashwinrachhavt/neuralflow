@@ -34,3 +34,19 @@ export async function PATCH(req: Request, { params }: RouteContext) {
   return NextResponse.json(updated);
 }
 
+export async function DELETE(_req: Request, { params }: RouteContext) {
+  const user = await getOrCreateDbUser();
+  if (!user) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const task = await prisma.task.findFirst({
+    where: { id: params.taskId, board: { userId: user.id } },
+    select: { id: true },
+  });
+  if (!task) return NextResponse.json({ message: "Not found" }, { status: 404 });
+
+  // Ownership verified above; delete exactly one by unique id
+  await prisma.task.delete({ where: { id: params.taskId } });
+  return NextResponse.json({ ok: true });
+}

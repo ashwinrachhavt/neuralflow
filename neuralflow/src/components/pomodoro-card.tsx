@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,23 +33,15 @@ type TimerState = {
   activeTaskId: string | null;
 };
 
-const taskOptions = [
-  {
-    id: "strategy",
-    title: "Draft weekly strategy update",
-    description: "Summarise wins, blockers, and next steps for the team.",
-  },
-  {
-    id: "research",
-    title: "Review user interviews",
-    description: "Extract insights from the latest NeuralFlow sessions.",
-  },
-  {
-    id: "docs",
-    title: "Polish release notes",
-    description: "Tighten copy and visuals for the launch recap.",
-  },
-] as const;
+type ApiBoard = {
+  board: {
+    id: string;
+    title: string;
+    columnOrder: string[];
+    columns: Record<string, { id: string; name: string; position: number; taskIds: string[] }>;
+    tasks: Record<string, { id: string; title: string; descriptionMarkdown: string | null; columnId: string }>;
+  };
+};
 
 function formatDuration(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -67,11 +59,43 @@ function formatLabel(totalSeconds: number) {
 }
 
 export function PomodoroCard() {
+  const { data } = useQuery<ApiBoard>({
+    queryKey: ["board"],
+    queryFn: async () => {
+      const res = await fetch("/api/board");
+      if (!res.ok) throw new Error("Failed to load board");
+      return (await res.json()) as ApiBoard;
+    },
+    staleTime: 5_000,
+  });
+
+  const taskOptions = useMemo(() => {
+    const board = data?.board;
+    if (!board) return [] as { id: string; title: string; description?: string }[];
+    const todoCol = Object.values(board.columns).find(c => c.name.toLowerCase() === "todo");
+    const inProgressCol = Object.values(board.columns).find(c => c.name.toLowerCase().includes("progress"));
+    const order: string[] = [
+      ...(todoCol ? todoCol.taskIds : []),
+      ...(inProgressCol ? inProgressCol.taskIds : []),
+      ...board.columnOrder.flatMap(cid => board.columns[cid]?.taskIds ?? []),
+    ];
+    const seen = new Set<string>();
+    const result: { id: string; title: string; description?: string }[] = [];
+    for (const id of order) {
+      if (seen.has(id)) continue;
+      const t = board.tasks[id];
+      if (!t) continue;
+      seen.add(id);
+      result.push({ id: t.id, title: t.title, description: t.descriptionMarkdown ?? undefined });
+    }
+    return result;
+  }, [data]);
+
   const [state, setState] = useState<TimerState>({
     mode: "focus",
     secondsRemaining: FOCUS_DURATION,
     isRunning: false,
-    activeTaskId: taskOptions[0]?.id ?? null,
+    activeTaskId: null,
   });
   const [clockDisplay, setClockDisplay] = useState("--:--:--");
 
@@ -148,6 +172,11 @@ export function PomodoroCard() {
       activeTaskId: state.activeTaskId,
     });
   };
+
+  useEffect(() => {
+    if (state.activeTaskId || taskOptions.length === 0) return;
+    setState(current => ({ ...current, activeTaskId: taskOptions[0]?.id ?? null }));
+  }, [taskOptions.length]);
 
   const selectedTask =
     taskOptions.find((task) => task.id === state.activeTaskId) ?? null;
@@ -248,3 +277,4 @@ export function PomodoroCard() {
     </CardContainer>
   );
 }
+import { useQuery } from "@tanstack/react-query";

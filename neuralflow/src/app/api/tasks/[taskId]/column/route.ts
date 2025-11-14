@@ -31,8 +31,24 @@ export async function PATCH(req: Request, { params }: RouteContext) {
   });
   if (!column) return NextResponse.json({ message: "Invalid column" }, { status: 400 });
 
-  await prisma.task.update({ where: { id: params.taskId }, data: { columnId } });
+  // Map standard column names to status
+  const status = await (async () => {
+    const col = await prisma.column.findUnique({ where: { id: columnId } });
+    const name = col?.name?.toLowerCase?.() ?? "";
+    if (name.includes("progress") || name === "review") return "IN_PROGRESS" as const;
+    if (name === "todo") return "TODO" as const;
+    if (name === "backlog" || name === "selected") return "BACKLOG" as const;
+    if (name === "done" || name === "complete" || name === "completed") return "DONE" as const;
+    return undefined;
+  })();
+
+  await prisma.task.update({
+    where: { id: params.taskId },
+    data: {
+      column: { connect: { id: columnId } },
+      ...(status ? { status } : {}),
+    },
+  });
 
   return NextResponse.json({ ok: true });
 }
-

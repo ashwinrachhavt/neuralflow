@@ -105,14 +105,9 @@ type ApiBoard = {
   board: {
     id: string;
     title: string;
-    columns: { id: string; name: string; position: number }[];
-    tasks: {
-      id: string;
-      title: string;
-      descriptionMarkdown: string | null;
-      tags: string[];
-      columnId: string;
-    }[];
+    columnOrder: string[];
+    columns: Record<string, { id: string; name: string; position: number; taskIds: string[] }>;
+    tasks: Record<string, { id: string; title: string; descriptionMarkdown: string | null; columnId: string; priority?: string | null }>;
   };
 };
 
@@ -133,31 +128,27 @@ export function KanbanBoard() {
   // Hydrate board from API
   useEffect(() => {
     if (!data) return;
-    const cols = data.board.columns;
-    const tasks = data.board.tasks;
+    const { columns: apiColumns, columnOrder, tasks: apiTasks } = data.board;
 
     const columns: Record<string, Column> = {};
-    const columnOrder: string[] = [];
-    for (const c of cols) {
-      columns[c.id] = {
+    for (const columnId of columnOrder) {
+      const c = apiColumns[columnId];
+      if (!c) continue;
+      columns[columnId] = {
         id: c.id,
         title: c.name,
         description: undefined,
-        taskIds: [],
+        taskIds: c.taskIds.slice(),
       };
-      columnOrder.push(c.id);
     }
 
     const taskMap: Record<string, Task> = {};
-    for (const t of tasks) {
+    for (const t of Object.values(apiTasks)) {
       taskMap[t.id] = {
         id: t.id,
         title: t.title,
         description: t.descriptionMarkdown ?? undefined,
-        tag: t.tags?.[0],
       };
-      const col = columns[t.columnId];
-      if (col) col.taskIds.push(t.id);
     }
 
     setBoard({ tasks: taskMap, columns, columnOrder });
