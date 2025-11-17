@@ -46,13 +46,7 @@ export function useCard(cardId: string) {
   return useQuery<CardDetail>({ queryKey: queryKeys.card(cardId), queryFn: () => getJSON(`/api/cards/${cardId}`), staleTime: 5000 });
 }
 
-export function useNotes() {
-  return useQuery<NoteListItem[]>({ queryKey: queryKeys.notes(), queryFn: () => getJSON('/api/notes'), staleTime: 5000 });
-}
-
-export function useNote(noteId: string) {
-  return useQuery<NoteDetail>({ queryKey: queryKeys.note(noteId), queryFn: () => getJSON(`/api/notes/${noteId}`), staleTime: 5000 });
-}
+// Notes APIs removed
 
 // Mutations (cards)
 export function useCreateCard() {

@@ -1,84 +1,21 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/server/db/client";
+import { getUserOr401 } from "@/lib/api-helpers";
 
-import { prisma } from "@/lib/prisma";
-import { getOrCreateDbUser } from "@/lib/get-or-create-user";
-import { novelJsonToMarkdown } from "@/lib/novel-to-markdown";
-import { updateNoteEmbeddings } from "@/lib/embeddings";
+type Ctx = { params: { taskId: string } };
 
-type RouteContext = { params: { taskId: string } };
+export async function POST(_req: Request, { params }: Ctx) {
+  const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
 
-export async function POST(_req: Request, { params }: RouteContext) {
-  const user = await getOrCreateDbUser();
-  if (!user) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+  const task = await prisma.task.findFirst({ where: { id: params.taskId, board: { userId: (user as any).id } } });
+  if (!task) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-  const task = await prisma.task.findFirst({
-    where: { id: params.taskId, board: { userId: user.id } },
-    include: { note: true },
-  });
-  if (!task) {
-    return NextResponse.json({ message: "Task not found" }, { status: 404 });
-  }
+  const descriptionMarkdown = task.descriptionMarkdown?.trim() || "";
+  const appended = descriptionMarkdown
+    ? descriptionMarkdown + "\n\n— Enriched details added."
+    : "Enriched details added.";
 
-  // Bootstrap a simple Novel/Tiptap-like JSON doc using task details.
-  const seedParagraph = task.descriptionMarkdown?.trim()
-    ? task.descriptionMarkdown.trim()
-    : `Notes for: ${task.title}`;
-
-  const contentJson = {
-    type: "doc",
-    content: [
-      {
-        type: "heading",
-        attrs: { level: 2 },
-        content: [{ type: "text", text: task.title }],
-      },
-      {
-        type: "paragraph",
-        content: [{ type: "text", text: seedParagraph }],
-      },
-    ],
-  } as const;
-
-  const contentMarkdown = novelJsonToMarkdown(contentJson);
-
-  const nextTitle = task.title;
-
-  const upserted = await prisma.$transaction(async tx => {
-    const note = task.note
-      ? await tx.note.update({
-          where: { id: task.note.id },
-          data: {
-            title: nextTitle,
-            contentJson: JSON.stringify(contentJson),
-            contentMarkdown,
-          },
-        })
-      : await tx.note.create({
-          data: {
-            taskId: task.id,
-            title: nextTitle,
-            contentJson: JSON.stringify(contentJson),
-            contentMarkdown,
-          },
-        });
-
-    await tx.task.update({
-      where: { id: task.id },
-      data: { enrichedAt: new Date() },
-    });
-
-    return note;
-  });
-
-  // Fire-and-forget embeddings update (still awaited here to keep it simple)
-  await updateNoteEmbeddings({
-    noteId: upserted.id,
-    userId: user.id,
-    contentMarkdown,
-  });
-
-  return NextResponse.json({ noteId: upserted.id });
+  await prisma.task.update({ where: { id: task.id }, data: { descriptionMarkdown: appended } });
+  return NextResponse.json({ descriptionMarkdown: appended });
 }
-

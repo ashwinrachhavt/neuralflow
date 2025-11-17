@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { getOrCreateDbUser } from "@/lib/get-or-create-user";
+import { getUserOr401 } from "@/lib/api-helpers";
 
 type RouteContext = { params: { taskId: string } };
 
 export async function GET(_req: Request, { params }: RouteContext) {
-  const user = await getOrCreateDbUser();
-  if (!user) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+  const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
 
   const task = await prisma.task.findFirst({
-    where: { id: params.taskId, board: { userId: user.id } },
+    where: { id: params.taskId, board: { userId: (user as any).id } },
     include: {
       column: true,
       note: true,
@@ -44,4 +42,3 @@ export async function GET(_req: Request, { params }: RouteContext) {
       : null,
   });
 }
-

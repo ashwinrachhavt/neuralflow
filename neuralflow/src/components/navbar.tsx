@@ -12,15 +12,15 @@ import {
 } from "@clerk/nextjs";
 
 import { cn } from "@/lib/utils";
+import { Container } from "@/components/layout/container";
 import { ModeToggle } from "@/components/mode-toggle";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/boards", label: "Boards" },
-  { href: "/notes", label: "Notes" },
-  { href: "/flashcards", label: "Flashcards" },
-  { href: "/quizzes", label: "Quizzes" },
-  { href: "/pomodoro", label: "Pomodoro" },
+  { href: "/plan", label: "Plan" },
+  { href: "/boards", label: "Board" },
+  { href: "/pomodoro", label: "Timer" },
+  { href: "/profile", label: "Profile" },
 ];
 
 export function Navbar() {
@@ -28,8 +28,8 @@ export function Navbar() {
 
   return (
     <header className="border-b border-border/60 bg-background/70 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/todos" className="text-lg font-semibold tracking-tight">
+      <Container className="flex items-center justify-between py-4">
+        <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
           NeuralFlow
         </Link>
         <div className="flex items-center gap-4">
@@ -57,12 +57,12 @@ export function Navbar() {
             <ModeToggle />
             <SignedOut>
               <div className="flex items-center gap-2 text-sm">
-                <SignInButton mode="modal" afterSignInUrl="/todos" afterSignUpUrl="/todos">
+                <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">
                   <span className="rounded-full border border-border/70 px-4 py-2 font-medium hover:border-foreground/50">
                     Sign in
                   </span>
                 </SignInButton>
-                <SignUpButton mode="modal" afterSignUpUrl="/todos" afterSignInUrl="/todos">
+                <SignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
                   <span className="rounded-full bg-foreground px-4 py-2 font-medium text-background shadow">
                     Sign up
                   </span>
@@ -74,7 +74,7 @@ export function Navbar() {
             </SignedIn>
           </div>
         </div>
-      </div>
+      </Container>
     </header>
   );
 }

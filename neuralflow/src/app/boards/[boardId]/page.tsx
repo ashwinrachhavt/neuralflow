@@ -1,4 +1,6 @@
 import { KanbanBoard } from '@/components/kanban-board';
+import { PageShell } from '@/components/layout/page-shell';
+import { SectionHeader } from '@/components/section-header';
 
 export const metadata = {
   title: 'Board',
@@ -7,12 +9,12 @@ export const metadata = {
 
 export default function BoardPage({ params }: { params: { boardId: string } }) {
   return (
-    <main className="p-6 mx-auto max-w-6xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Board</h1>
-        <p className="text-sm text-muted-foreground">Drag tasks between columns or use AI tools on cards.</p>
-      </div>
+    <PageShell>
+      <SectionHeader
+        title="Board"
+        description="Drag tasks between columns or use AI tools on cards."
+      />
       <KanbanBoard boardId={params.boardId} />
-    </main>
+    </PageShell>
   );
 }

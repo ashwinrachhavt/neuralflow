@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server';
-import { getOrCreateDbUser } from '@/lib/get-or-create-user';
+import { getUserOr401, readJson } from '@/lib/api-helpers';
 import { prisma } from '@/server/db/client';
 
 export async function GET() {
-  const user = await getOrCreateDbUser();
-  if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  const boards = await prisma.board.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }, select: { id: true, title: true } });
+  const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
+  const boards = await prisma.board.findMany({ where: { userId: (user as any).id }, orderBy: { createdAt: 'asc' }, select: { id: true, title: true } });
   return NextResponse.json(boards);
 }
 
 export async function POST(req: Request) {
-  const user = await getOrCreateDbUser();
-  if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  const body = await req.json().catch(() => null);
+  const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
+  const body = await readJson<{ title?: string }>(req);
   const title = (body?.title as string | undefined)?.trim();
   if (!title) return NextResponse.json({ message: 'title is required' }, { status: 400 });
   const board = await prisma.board.create({
     data: {
-      userId: user.id,
+      userId: (user as any).id,
       title,
       columns: {
         create: [
@@ -31,4 +31,3 @@ export async function POST(req: Request) {
   });
   return NextResponse.json({ id: board.id });
 }
-

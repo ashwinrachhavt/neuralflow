@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { getOrCreateDbUser } from "@/lib/get-or-create-user";
+import { getUserOr401 } from "@/lib/api-helpers";
 import { getOrCreateDefaultBoard } from "@/server/db/boards";
 import { listByBoard } from "@/server/db/cards";
 
 export async function GET() {
-  const user = await getOrCreateDbUser();
-  if (!user) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+  const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
 
-  const boardRes = await getOrCreateDefaultBoard(user.id);
+  const boardRes = await getOrCreateDefaultBoard((user as any).id);
   if (!boardRes.ok) {
     return NextResponse.json({ message: "Failed to resolve board" }, { status: 500 });
   }

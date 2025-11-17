@@ -5,25 +5,25 @@ import type { NextRequest } from "next/server";
 
 export default clerkMiddleware(
   async (auth, req: NextRequest) => {
-    const { userId, isPublicRoute, redirectToSignIn } = await auth();
+    const { userId, isPublicRoute } = await auth();
+    const { pathname } = new URL(req.url);
 
-    const { pathname } = new URL(req.url).pathname ? new URL(req.url) : { pathname: "" };
+    // Keep landing and auth pages fully public; no redirects here
+    const isExplicitPublic = [
+      "/",
+      "/sign-in",
+      "/sign-up",
+    ].some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
-    // If this route isn’t public and the user is *not* signed in
-    if (!userId && !isPublicRoute) {
-      // If this is an API or TRPC route: send JSON 401
+    if (!userId && !isPublicRoute && !isExplicitPublic) {
+      // API/TRPC get JSON 401
       if (pathname.startsWith("/api") || pathname.startsWith("/trpc")) {
-        return NextResponse.json(
-          { message: "Unauthorized" },
-          { status: 401 }
-        );
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
       }
-
-      // Otherwise (a front-end page): redirect to sign in
-      return redirectToSignIn({ returnBackUrl: req.url });
+      // For app pages, allow the page-level SignedOut UI to render; do not hard-redirect here
+      return NextResponse.next();
     }
 
-    // If user *is* signed in OR route is public → let through
     return NextResponse.next();
   },
   {
@@ -43,9 +43,13 @@ export default clerkMiddleware(
 
 export const config = {
   matcher: [
-    // Protect all pages except Next.js internals & static files
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Protect API and TRPC routes
+    "/",
+    // Only run middleware on protected app sections and APIs
+    "/dashboard/:path*",
+    "/plan/:path*",
+    "/boards/:path*",
+    "/profile/:path*",
+    "/pomodoro/:path*",
     "/(api|trpc)(.*)",
   ],
 };

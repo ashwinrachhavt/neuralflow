@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Check, Loader2, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,20 @@ export function TodoList() {
   }, [doneTasks.length, tasksArray.length]);
 
   const markDone = useMarkDone(boardId);
+  const moveToColumn = useMutation({
+    mutationFn: async ({ taskId, columnId }: { taskId: string; columnId: string }) => {
+      const res = await fetch(`/api/tasks/${taskId}/column`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ columnId }),
+      });
+      if (!res.ok) throw new Error("Unable to move task");
+      return (await res.json()) as { ok: boolean };
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["board", boardId] });
+    },
+  });
 
   const deleteTask = useDeleteCard();
 
@@ -142,20 +157,26 @@ export function TodoList() {
                       ) : null}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => markDone.mutate(todo.id)}
-                        disabled={markDone.isPending}
-                        className="gap-2"
-                      >
-                        {markDone.isPending ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Check className="size-4" />
-                        )}
-                        Mark done
-                      </Button>
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground select-none">
+                        <input
+                          type="checkbox"
+                          className="accent-emerald-600 h-4 w-4"
+                          checked={doneColumn ? todo.columnId === doneColumn.id : false}
+                          onChange={async (e) => {
+                            const checked = e.target.checked;
+                            try {
+                              if (checked) {
+                                await markDone.mutateAsync(todo.id);
+                              } else if (todoColumn) {
+                                await moveToColumn.mutateAsync({ taskId: todo.id, columnId: todoColumn.id });
+                              }
+                            } catch (_) {
+                              // ignore; UI will refresh from server state
+                            }
+                          }}
+                        />
+                        Done
+                      </label>
                       <Button
                         size="sm"
                         variant="outline"
@@ -192,7 +213,7 @@ export function TodoList() {
                         onClick={() => quizFromNote.mutate(todo.id)}
                         disabled={quizFromNote.isPending}
                         className="gap-2"
-                        title="AI: Create flashcards + quiz"
+                        title="AI: Create study material"
                       >
                         {quizFromNote.isPending ? (
                           <Loader2 className="size-4 animate-spin" />

@@ -1,16 +1,20 @@
 import { PomodoroCard } from "@/components/pomodoro-card";
+import { PageShell } from "@/components/layout/page-shell";
+import { SectionHeader } from "@/components/section-header";
 
 export default function PomodoroPage() {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col items-center gap-10 text-center">
-      <div className="space-y-4">
-        <h1 className="text-4xl font-semibold tracking-tight">Pomodoro Timer</h1>
-        <p className="text-muted-foreground">
-          Stay deliberate about focus and recovery. Use the timer to run 25-minute sprints paired
-          with short breaks, keeping momentum anchored to a single task at a time.
-        </p>
+    <PageShell size="md">
+      <div className="mx-auto max-w-3xl text-center">
+        <SectionHeader
+          title="Pomodoro Timer"
+          description="Stay deliberate about focus and recovery. Use 25‑minute sprints paired with short breaks."
+          className="items-center text-center"
+        />
+        <div className="mt-6 flex justify-center">
+          <PomodoroCard />
+        </div>
       </div>
-      <PomodoroCard />
-    </div>
+    </PageShell>
   );
 }

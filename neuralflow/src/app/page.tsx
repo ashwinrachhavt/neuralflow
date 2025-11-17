@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
+import { LandingHero } from "@/components/landing-hero";
 
 export default async function Home() {
   const { userId } = await auth();
-  redirect(userId ? "/dashboard" : "/sign-in");
+  if (userId) redirect("/dashboard");
+  return <LandingHero />;
 }

@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-// Custom streaming hook replaces ai/react useObject to avoid dependency issues
 import { Sparkles, Check, Loader2, X } from "lucide-react";
 
 import type { PlannedTask } from "@/lib/schemas/plan";
@@ -47,12 +46,12 @@ export function AiPlannerLauncher() {
 export function AiPlannerDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [prompt, setPrompt] = React.useState("");
 
-  const { tasks, isLoading, error, submit } = usePlanStream();
+  const { tasks, isLoading, error, submit, accept } = useDaoOrchestrator();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim()) return;
-    submit({ prompt: prompt.trim() });
+    submit({ brainDumpText: prompt.trim() });
   };
 
   const totalFocusBlocks = React.useMemo(() => {
@@ -126,20 +125,7 @@ export function AiPlannerDialog({ open, onOpenChange }: { open: boolean; onOpenC
             <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
               Discard
             </Button>
-            <Button
-              className="flex-1"
-              disabled={!tasks || tasks.length === 0}
-              onClick={async () => {
-                if (!tasks?.length) return;
-                await fetch("/api/plan/accept", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  credentials: "same-origin",
-                  body: JSON.stringify({ tasks }),
-                });
-                onOpenChange(false);
-              }}
-            >
+            <Button className="flex-1" disabled={!tasks || tasks.length === 0} onClick={async () => { await accept(tasks!); onOpenChange(false); }}>
               <Check className="mr-2 size-4" /> Accept plan
               </Button>
           </div>
@@ -149,54 +135,38 @@ export function AiPlannerDialog({ open, onOpenChange }: { open: boolean; onOpenC
   );
 }
 
-function usePlanStream() {
+function useDaoOrchestrator() {
   const [tasks, setTasks] = React.useState<PlannedTask[] | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<Error | null>(null);
 
-  const submit = React.useCallback(async (body: { prompt: string }) => {
+  const submit = React.useCallback(async (body: { brainDumpText: string }) => {
     try {
       setTasks([]);
       setIsLoading(true);
       setError(null);
-      const res = await fetch("/api/ai/plan-tasks", {
+      const res = await fetch("/api/dao/orchestrate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
         body: JSON.stringify(body),
       });
-      if (!res.ok || !res.body) {
-        throw new Error(`Failed to plan (${res.status})`);
+      if (res.status === 401) {
+        throw new Error("Please sign in to plan with Dao");
       }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      // Read NDJSON lines
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let index;
-        while ((index = buffer.indexOf("\n")) >= 0) {
-          const line = buffer.slice(0, index).trim();
-          buffer = buffer.slice(index + 1);
-          if (!line) continue;
-          try {
-            const item = JSON.parse(line) as PlannedTask;
-            setTasks(prev => (prev ? [...prev, item] : [item]));
-          } catch (e) {
-            // ignore partial lines
-          }
-        }
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(msg || `Failed to plan (${res.status})`);
       }
-      // flush remaining buffer
-      const last = buffer.trim();
-      if (last) {
-        try {
-          const item = JSON.parse(last) as PlannedTask;
-          setTasks(prev => (prev ? [...prev, item] : [item]));
-        } catch {}
-      }
+      const data = await res.json();
+      const mapped: PlannedTask[] = (data.tasks ?? []).map((t: any) => ({
+        title: t.title,
+        description: t.descriptionMarkdown ?? "",
+        estimateMinutes: t.estimatedPomodoros ? Math.max(25, t.estimatedPomodoros * 25) : 25,
+        kind: (Array.isArray(t.tags) && t.tags.some((x: string) => x.toLowerCase().includes("deep"))) ? "deep" : "shallow",
+        priority: (t.priority?.toLowerCase?.() ?? "medium") as PlannedTask["priority"],
+      }));
+      setTasks(mapped);
     } catch (e: any) {
       setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
@@ -204,5 +174,28 @@ function usePlanStream() {
     }
   }, []);
 
-  return { tasks, isLoading, error, submit } as const;
+  const accept = React.useCallback(async (items: PlannedTask[]) => {
+    const toPersist = items.map((t) => ({
+      title: t.title,
+      descriptionMarkdown: t.description ?? "",
+      estimatedPomodoros: Math.max(1, Math.round((t.estimateMinutes ?? 25) / 25)),
+      priority: (t.priority?.toUpperCase?.() ?? "MEDIUM") as "LOW" | "MEDIUM" | "HIGH",
+      tags: [t.kind],
+    }));
+    const res = await fetch("/api/dao/accept", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ tasks: toPersist }),
+    });
+    if (res.status === 401) {
+      throw new Error("Please sign in to accept the plan");
+    }
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      throw new Error(msg || `Failed to save (${res.status})`);
+    }
+  }, []);
+
+  return { tasks, isLoading, error, submit, accept } as const;
 }
