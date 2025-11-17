@@ -20,6 +20,7 @@ const navLinks = [
   { href: "/plan", label: "Plan" },
   { href: "/boards", label: "Board" },
   { href: "/pomodoro", label: "Timer" },
+  { href: "/quickchat", label: "Chat" },
   { href: "/profile", label: "Profile" },
 ];
 
@@ -30,7 +31,7 @@ export function Navbar() {
     <header className="border-b border-border/60 bg-background/70 backdrop-blur">
       <Container className="flex items-center justify-between py-4">
         <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
-          NeuralFlow
+          Dao
         </Link>
         <div className="flex items-center gap-4">
           <nav className="flex items-center gap-1 rounded-full border border-border/60 bg-background/80 p-1 text-sm shadow-sm">
@@ -56,18 +57,11 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             <ModeToggle />
             <SignedOut>
-              <div className="flex items-center gap-2 text-sm">
-                <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">
-                  <span className="rounded-full border border-border/70 px-4 py-2 font-medium hover:border-foreground/50">
-                    Sign in
-                  </span>
-                </SignInButton>
-                <SignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
-                  <span className="rounded-full bg-foreground px-4 py-2 font-medium text-background shadow">
-                    Sign up
-                  </span>
-                </SignUpButton>
-              </div>
+              <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">
+                <span className="cursor-pointer text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                  Sign in
+                </span>
+              </SignInButton>
             </SignedOut>
             <SignedIn>
               <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "size-9" } }} />

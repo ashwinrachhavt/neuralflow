@@ -414,3 +414,49 @@ model Project {
 
   tasks Task[]
 }
+
+// Calendar and time blocking
+enum EventType {
+  FOCUS
+  MEETING
+  PERSONAL
+  BREAK
+}
+
+model CalendarEvent {
+  id          String     @id @default(cuid())
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  title       String
+  type        EventType  @default(FOCUS)
+  startAt     DateTime
+  endAt       DateTime
+  descriptionMarkdown String?
+  tags        String[]   @default([])
+  location    String?
+  relatedTask Task?      @relation(fields: [relatedTaskId], references: [id])
+  relatedTaskId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  focusSessions FocusSession[]
+
+  @@index([userId, startAt])
+  @@index([userId, endAt])
+}
+
+model FocusSession {
+  id           String        @id @default(cuid())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  event        CalendarEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId      String?
+  startedAt    DateTime
+  endedAt      DateTime?
+  completed    Boolean       @default(false)
+  interruptions Int          @default(0)
+  createdAt    DateTime      @default(now())
+
+  @@index([userId])
+  @@index([eventId])
+}

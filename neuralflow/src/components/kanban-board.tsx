@@ -58,7 +58,7 @@ const INITIAL_BOARD: BoardState = {
     "task-1": {
       id: "task-1",
       title: "Outline experiment brief",
-      description: "Clarify success criteria for the new NeuralFlow feature.",
+      description: "Clarify success criteria for the new Dao feature.",
       tag: "Planning",
     },
     "task-2": {

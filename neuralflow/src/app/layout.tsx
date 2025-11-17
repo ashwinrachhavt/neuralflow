@@ -19,11 +19,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "NeuralFlow Workspace",
-    template: "%s | NeuralFlow",
+    default: "Dao Workspace",
+    template: "%s | Dao",
   },
   description:
-    "Plan tasks, organise work, and protect focus with the NeuralFlow productivity workspace.",
+    "Plan tasks, organise work, and protect focus with the Dao productivity workspace.",
 };
 
 export default function RootLayout({

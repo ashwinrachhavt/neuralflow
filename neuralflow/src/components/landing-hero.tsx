@@ -34,7 +34,7 @@ export function LandingHero() {
 
 function HoverStartModal({ className }: { className?: string }) {
   return (
-    <SignInButton mode="modal" afterSignInUrl="/dashboard" afterSignUpUrl="/dashboard">
+    <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">
       <button className={cn("group", className)}>
         <motion.div
           initial={{ width: 52 }}

@@ -20,7 +20,7 @@ async function main() {
     update: {},
     create: {
       id: "board_demo",
-      title: "NeuralFlow Launch",
+      title: "Dao Launch",
       description: "Milestones to ship the MVP",
       userId: user.id,
       columns: {

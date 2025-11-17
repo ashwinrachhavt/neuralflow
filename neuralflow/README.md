@@ -1,4 +1,4 @@
-# NeuralFlow
+# Dao
 
 Productivity workspace built with Next.js App Router, Clerk auth, and Prisma.
 
