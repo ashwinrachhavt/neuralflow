@@ -3,14 +3,15 @@ import { getUserOr401 } from '@/lib/api-helpers';
 import { prisma } from '@/server/db/client';
 import { listByBoard } from '@/server/db/cards';
 
-type Ctx = { params: { boardId: string } };
+type Ctx = { params: Promise<{ boardId: string }> };
 
 export async function GET(_req: Request, { params }: Ctx) {
+  const { boardId } = await params;
   const user = await getUserOr401();
   if (!(user as any).id) return user as unknown as NextResponse;
 
   const board = await prisma.board.findFirst({
-    where: { id: params.boardId, userId: (user as any).id },
+    where: { id: boardId, userId: (user as any).id },
     include: { columns: { orderBy: { position: 'asc' } } },
   });
   if (!board) return NextResponse.json({ message: 'Not found' }, { status: 404 });

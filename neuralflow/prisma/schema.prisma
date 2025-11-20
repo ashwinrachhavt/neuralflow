@@ -19,10 +19,13 @@ model User {
   flashcardDecks      FlashcardDeck[]
   flashcardReviews    FlashcardReview[]
   pomodoroSessions    PomodoroSession[]
+  focusSessions       FocusSession[]
+  calendarEvents      CalendarEvent[]
   quizzes             Quiz[]
   quizAttempts        QuizAttempt[]            @relation("UserToQuizAttempts")
   embeddings          Embedding[]              @relation("UserToEmbeddings")
   stones              UserStone[]
+  stoneProgresses     UserStoneProgress[]
   achievements        UserAchievement[]
   dailySnapshots      UserDailySnapshot[]
   gamificationProfile UserGamificationProfile?
@@ -111,6 +114,7 @@ model Task {
   note             Note?
   pomodoroSessions PomodoroSession[]
   embeddings       Embedding[]       @relation("TaskToEmbeddings")
+  calendarEvents    CalendarEvent[]   @relation("TaskToCalendarEvents")
 
   @@index([boardId])
   @@index([columnId])
@@ -266,6 +270,7 @@ model StoneDefinition {
   updatedAt   DateTime    @updatedAt
 
   earnedStones UserStone[]
+  stoneProgresses UserStoneProgress[]
 }
 
 model UserStone {
@@ -434,7 +439,7 @@ model CalendarEvent {
   descriptionMarkdown String?
   tags        String[]   @default([])
   location    String?
-  relatedTask Task?      @relation(fields: [relatedTaskId], references: [id])
+  relatedTask Task?      @relation("TaskToCalendarEvents", fields: [relatedTaskId], references: [id])
   relatedTaskId String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
