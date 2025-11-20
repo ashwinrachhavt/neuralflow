@@ -22,8 +22,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMoveCard, useCreateCard, useBoard } from "@/hooks/api";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -32,12 +32,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { queryKeys } from "@/lib/queryClient";
 
 type Task = {
   id: string;
   title: string;
   description?: string;
   tag?: string;
+  // AI suggestion fields (optional)
+  aiSuggestedColumnId?: string | null;
+  aiSuggestedPriority?: 'LOW' | 'MEDIUM' | 'HIGH' | null;
+  aiSuggestedEstimateMin?: number | null;
+  aiNextAction?: string | null;
+  aiState?: 'RAW' | 'CLASSIFIED' | 'ENRICHED' | 'SUGGESTED' | 'COMPLETED' | null;
+  aiConfidence?: number | null;
 };
 
 type Column = {
@@ -53,55 +61,7 @@ type BoardState = {
   columnOrder: string[];
 };
 
-const INITIAL_BOARD: BoardState = {
-  tasks: {
-    "task-1": {
-      id: "task-1",
-      title: "Outline experiment brief",
-      description: "Clarify success criteria for the new Dao feature.",
-      tag: "Planning",
-    },
-    "task-2": {
-      id: "task-2",
-      title: "Design prompt flows",
-      description: "Draft multi-turn prompt templates for the demo.",
-      tag: "Design",
-    },
-    "task-3": {
-      id: "task-3",
-      title: "Hook up vector store",
-      description: "Connect Pinecone and seed with curated knowledge base.",
-      tag: "Build",
-    },
-    "task-4": {
-      id: "task-4",
-      title: "Prep user test",
-      description: "Collect scenarios + schedule first feedback session.",
-      tag: "Research",
-    },
-  },
-  columns: {
-    "column-todo": {
-      id: "column-todo",
-      title: "Backlog",
-      description: "Ideas and tasks waiting for prioritisation.",
-      taskIds: ["task-1", "task-2"],
-    },
-    "column-progress": {
-      id: "column-progress",
-      title: "In Progress",
-      description: "Active focus items for the current sprint.",
-      taskIds: ["task-3"],
-    },
-    "column-done": {
-      id: "column-done",
-      title: "Complete",
-      description: "Wrapped up and ready to share.",
-      taskIds: ["task-4"],
-    },
-  },
-  columnOrder: ["column-todo", "column-progress", "column-done"],
-};
+const INITIAL_BOARD: BoardState = { tasks: {}, columns: {}, columnOrder: [] };
 
 type ApiBoard = {
   board: {
@@ -109,7 +69,7 @@ type ApiBoard = {
     title: string;
     columnOrder: string[];
     columns: Record<string, { id: string; name: string; position: number; taskIds: string[] }>;
-    tasks: Record<string, { id: string; title: string; descriptionMarkdown: string | null; columnId: string; priority?: string | null }>;
+    tasks: Record<string, { id: string; title: string; descriptionMarkdown: string | null; columnId: string; priority?: string | null; aiSuggestedColumnId?: string | null; aiSuggestedPriority?: 'LOW'|'MEDIUM'|'HIGH'|null; aiSuggestedEstimateMin?: number | null; aiNextAction?: string | null; aiState?: 'RAW'|'CLASSIFIED'|'ENRICHED'|'SUGGESTED'|'COMPLETED'|null; aiConfidence?: number | null }>;
   };
 };
 
@@ -142,6 +102,12 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
         id: t.id,
         title: t.title,
         description: t.descriptionMarkdown ?? undefined,
+        aiSuggestedColumnId: (t as any).aiSuggestedColumnId ?? null,
+        aiSuggestedPriority: (t as any).aiSuggestedPriority ?? null,
+        aiSuggestedEstimateMin: (t as any).aiSuggestedEstimateMin ?? null,
+        aiNextAction: (t as any).aiNextAction ?? null,
+        aiState: (t as any).aiState ?? null,
+        aiConfidence: (t as any).aiConfidence ?? null,
       };
     }
 
@@ -157,7 +123,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   const createCard = useCreateCard();
 
   async function ensureNote(taskId: string): Promise<string> {
-    const res = await fetch(`/api/cards/${taskId}/enrich`, { method: "POST" });
+    const res = await fetch(`/api/cards/${taskId}/note`, { method: "POST" });
     if (!res.ok) throw new Error("Unable to initialize note");
     const data = (await res.json()) as { noteId: string };
     return data.noteId;
@@ -171,9 +137,48 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
     },
     onSuccess: async () => {
       toast.success("Description enriched");
-      await queryClient.invalidateQueries({ queryKey: ["board"], exact: true });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
     },
     onError: () => toast.error("Failed to enrich"),
+  });
+
+  const classifyTask = useMutation({
+    mutationFn: async (taskId: string) => {
+      const res = await fetch(`/api/ai/cards/${taskId}/classify`, { method: "POST" });
+      if (!res.ok) throw new Error("Unable to classify task");
+      return (await res.json()) as { suggestedColumnId: string; suggestedPriority: 'LOW'|'MEDIUM'|'HIGH'; suggestedEstimateMin: number; confidence: number };
+    },
+    onSuccess: async (data) => {
+      toast.success(`AI classified • ${Math.round((data.confidence ?? 0) * 100)}% confidence`, { description: `${data.suggestedPriority} • ≈ ${data.suggestedEstimateMin} min` });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
+    },
+    onError: () => toast.error("Failed to classify"),
+  });
+
+  const suggestTask = useMutation({
+    mutationFn: async (taskId: string) => {
+      const res = await fetch(`/api/ai/cards/${taskId}/suggest`, { method: "POST" });
+      if (!res.ok) throw new Error("Unable to suggest next action");
+      return (await res.json()) as { nextAction: string; shouldMove: boolean; suggestedColumnId: string | null; confidence: number };
+    },
+    onSuccess: async (data) => {
+      toast.info(`Next: ${data.nextAction}`, { description: `${Math.round((data.confidence ?? 0) * 100)}% confidence${data.shouldMove ? ' • suggests move' : ''}` });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
+    },
+    onError: () => toast.error("Failed to suggest"),
+  });
+
+  const autoMove = useMutation({
+    mutationFn: async (taskId: string) => {
+      const res = await fetch(`/api/ai/cards/${taskId}/auto-move`, { method: "POST" });
+      if (!res.ok) throw new Error("Unable to auto-move");
+      return (await res.json()) as { move: boolean; targetColumnId: string | null };
+    },
+    onSuccess: async (data) => {
+      if (data.move && data.targetColumnId) toast.success("Card moved by AI"); else toast.message("No move suggested");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
+    },
+    onError: () => toast.error("Failed to auto-move"),
   });
 
   const summarizeNote = useMutation({
@@ -248,8 +253,30 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
       <div className="flex flex-col gap-6">
         <div className="flex flex-wrap gap-4">
           {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> Loading board…
+            <>
+              {[0,1,2].map(i => (
+                <Card key={i} className="flex w-full max-w-xs flex-1 flex-col bg-card/60 backdrop-blur-md">
+                  <CardHeader>
+                    <Skeleton className="h-5 w-32" />
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {[0,1,2].map(j => (
+                      <div key={j} className="rounded-xl border border-border bg-background/90 p-4">
+                        <Skeleton className="h-4 w-40" />
+                        <div className="mt-2 space-y-2">
+                          <Skeleton className="h-3 w-56" />
+                          <Skeleton className="h-3 w-48" />
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : null}
+          {!isLoading && board.columnOrder.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border/60 p-6 text-sm text-muted-foreground">
+              No columns yet. Create a board or add a column.
             </div>
           ) : null}
           {board.columnOrder.map(columnId => (
@@ -261,6 +288,9 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
               onSummary={(taskId) => summarizeNote.mutate(taskId)}
               onQuiz={(taskId) => quizFromNote.mutate(taskId)}
               onAddTask={() => {}}
+              onClassify={(taskId) => classifyTask.mutate(taskId)}
+              onSuggest={(taskId) => suggestTask.mutate(taskId)}
+              onAutoMove={(taskId) => autoMove.mutate(taskId)}
               onCreateCard={(colId, title) => createCard.mutate({ boardId, columnId: colId, title })}
             />
           ))}
@@ -277,10 +307,13 @@ type KanbanColumnProps = {
   onEnrich: (taskId: string) => void;
   onSummary: (taskId: string) => void;
   onQuiz: (taskId: string) => void;
+  onClassify: (taskId: string) => void;
+  onSuggest: (taskId: string) => void;
+  onAutoMove: (taskId: string) => void;
   onCreateCard: (columnId: string, title: string) => void;
 };
 
-function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz, onCreateCard }: KanbanColumnProps) {
+function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove }: KanbanColumnProps) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   return (
@@ -330,7 +363,7 @@ function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz, o
             <EmptyColumnHint />
           ) : (
             column.taskIds.map(taskId => (
-              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} />
+              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} onClassify={onClassify} onSuggest={onSuggest} onAutoMove={onAutoMove} />
             ))
           )}
         </ColumnSortableArea>
@@ -373,9 +406,12 @@ type SortableTaskProps = {
   onEnrich: (taskId: string) => void;
   onSummary: (taskId: string) => void;
   onQuiz: (taskId: string) => void;
+  onClassify: (taskId: string) => void;
+  onSuggest: (taskId: string) => void;
+  onAutoMove: (taskId: string) => void;
 };
 
-function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz }: SortableTaskProps) {
+function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify, onSuggest, onAutoMove }: SortableTaskProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: task.id,
@@ -410,6 +446,18 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz }: SortableT
           <button
             type="button"
             className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); onClassify(task.id); }}
+            title="AI: Classify"
+          >🏷️</button>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); onSuggest(task.id); }}
+            title="AI: Suggest next action"
+          >🔮</button>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
             onClick={(e) => { e.stopPropagation(); onSummary(task.id); }}
             title="AI: Summary"
           >📝</button>
@@ -419,12 +467,37 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz }: SortableT
             onClick={(e) => { e.stopPropagation(); onQuiz(task.id); }}
             title="AI: Quiz"
           >🧠</button>
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={(e) => { e.stopPropagation(); onAutoMove(task.id); }}
+            title="AI: Auto-move"
+          >↪️</button>
         </div>
       </div>
+      {task.aiNextAction ? (
+        <p className="mt-2 text-xs text-primary/90">Next: {task.aiNextAction}</p>
+      ) : null}
       {task.description ? (
         <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
           {task.description}
         </p>
+      ) : null}
+      {(task.aiSuggestedPriority || task.aiSuggestedEstimateMin || task.aiSuggestedColumnId) ? (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+          {task.aiSuggestedPriority ? (
+            <span className="rounded bg-amber-100/60 px-2 py-0.5 text-amber-700">AI: {task.aiSuggestedPriority}</span>
+          ) : null}
+          {task.aiSuggestedEstimateMin ? (
+            <span className="rounded bg-slate-100/60 px-2 py-0.5">≈ {task.aiSuggestedEstimateMin}m</span>
+          ) : null}
+          {task.aiSuggestedColumnId && task.aiSuggestedColumnId !== columnId ? (
+            <span className="rounded bg-emerald-100/60 px-2 py-0.5 text-emerald-700">→ suggested move</span>
+          ) : null}
+          {typeof task.aiConfidence === 'number' ? (
+            <span className="rounded bg-indigo-100/60 px-2 py-0.5 text-indigo-700">{Math.round(task.aiConfidence * 100)}%</span>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
@@ -433,7 +506,7 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz }: SortableT
 function EmptyColumnHint() {
   return (
     <div className="rounded-lg border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground">
-      Drop tasks here
+      No tasks yet. Drop tasks here.
     </div>
   );
 }

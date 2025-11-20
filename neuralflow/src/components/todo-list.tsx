@@ -6,53 +6,25 @@ import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-import { useBoard, useDefaultBoardId, useDeleteCard, useMarkDone } from "@/hooks/api";
-import type { BoardNormalized } from "@/hooks/api";
+import { useDeleteCard, useMarkDone, useMyTodos } from "@/hooks/api";
 
 export function TodoList() {
   const qc = useQueryClient();
-  const def = useDefaultBoardId();
-  const boardId = def.data?.id ?? "";
-  const { data, isLoading } = useBoard(boardId);
-  const board = (data as BoardNormalized | undefined)?.board;
-  const tasksArray = useMemo(() => (board ? Object.values(board.tasks) : []), [board]);
-
-  const todoColumn = useMemo(() => {
-    if (!board) return undefined;
-    return Object.values(board.columns).find(c => c.name.toLowerCase() === "todo");
-  }, [board]);
-
-  const doneColumn = useMemo(() => {
-    if (!board) return undefined;
-    return Object.values(board.columns).find(c => c.name.toLowerCase() === "done");
-  }, [board]);
-
-  const todoTasks = useMemo(
-    () => tasksArray.filter(t => (todoColumn ? t.columnId === todoColumn.id : true)),
-    [tasksArray, todoColumn?.id],
-  );
-  const doneTasks = useMemo(
-    () => tasksArray.filter(t => (doneColumn ? t.columnId === doneColumn.id : false)),
-    [tasksArray, doneColumn?.id],
-  );
+  const { data, isLoading } = useMyTodos('TODO');
+  const tasksArray = useMemo(() => data?.tasks ?? [], [data?.tasks]);
 
   const stats = useMemo(() => {
     const total = tasksArray.length;
-    const done = doneTasks.length;
-    return {
-      total,
-      done,
-      remaining: Math.max(0, total - done),
-      progress: total === 0 ? 0 : Math.round((done / total) * 100),
-    };
-  }, [doneTasks.length, tasksArray.length]);
+    return { total, done: 0, remaining: total, progress: 0 }; // aggregate across boards not computed here
+  }, [tasksArray.length]);
 
-  const markDone = useMarkDone(boardId);
+  const markDone = useMarkDone();
   const moveToColumn = useMutation({
     mutationFn: async ({ taskId, columnId }: { taskId: string; columnId: string }) => {
       const res = await fetch(`/api/tasks/${taskId}/column`, {
@@ -64,7 +36,7 @@ export function TodoList() {
       return (await res.json()) as { ok: boolean };
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["board", boardId] });
+      await qc.invalidateQueries({ queryKey: ["my-todos", 'TODO'] });
     },
   });
 
@@ -78,12 +50,12 @@ export function TodoList() {
     },
     onSuccess: async () => {
       toast.success("Description enriched");
-      await qc.invalidateQueries({ queryKey: ["board", boardId] });
+      await qc.invalidateQueries({ queryKey: ["my-todos", 'TODO'] });
     },
   });
 
   async function ensureNote(taskId: string): Promise<string> {
-    const res = await fetch(`/api/cards/${taskId}/enrich`, { method: "POST" });
+    const res = await fetch(`/api/cards/${taskId}/note`, { method: "POST" });
     if (!res.ok) throw new Error("Unable to initialize note");
     const data = (await res.json()) as { noteId: string };
     return data.noteId;
@@ -121,21 +93,29 @@ export function TodoList() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-xl">
             Today&apos;s Focus
-            <Badge variant="secondary" className="text-xs font-medium">
-              {stats.done} / {stats.total} done
-            </Badge>
+            <Badge variant="secondary" className="text-xs font-medium">{stats.total} tasks</Badge>
           </CardTitle>
           <CardDescription>Tasks currently marked as Todo.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> Loading tasks…
+            <div className="space-y-3">
+              {[0,1,2].map(i => (
+                <div key={i} className="rounded-xl border border-border/70 bg-card/70 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-3 w-80" />
+                    </div>
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : null}
 
           <ul className="space-y-3">
-            {todoTasks.map(todo => (
+            {tasksArray.map(todo => (
               <li key={todo.id}>
                 <div
                   className={cn(
@@ -161,14 +141,15 @@ export function TodoList() {
                         <input
                           type="checkbox"
                           className="accent-emerald-600 h-4 w-4"
-                          checked={doneColumn ? todo.columnId === doneColumn.id : false}
+                          checked={false}
                           onChange={async (e) => {
                             const checked = e.target.checked;
                             try {
                               if (checked) {
                                 await markDone.mutateAsync(todo.id);
-                              } else if (todoColumn) {
-                                await moveToColumn.mutateAsync({ taskId: todo.id, columnId: todoColumn.id });
+                                await qc.invalidateQueries({ queryKey: ["my-todos", 'TODO'] });
+                              } else {
+                                // Optional: move back to known Todo column if available
                               }
                             } catch (_) {
                               // ignore; UI will refresh from server state
@@ -241,7 +222,7 @@ export function TodoList() {
               </li>
             ))}
 
-            {todoTasks.length === 0 && !isLoading ? (
+            {tasksArray.length === 0 && !isLoading ? (
               <li>
                 <div className="rounded-xl border border-dashed border-border/70 p-6 text-center text-sm text-muted-foreground">
                   No tasks in Todo. Use AI planning to seed tasks or drag cards in Kanban.
