@@ -108,4 +108,15 @@ Visit [http://localhost:3000](http://localhost:3000). The app expects a Clerk se
 
 ---
 
+## 8. Analytics
+
+- **Vercel Analytics** – the app now loads `@vercel/analytics/react` in `src/app/layout.tsx`, so any deployment that enables Vercel Web Analytics will start receiving page views without additional code. Just flip the analytics toggle for this project inside the Vercel dashboard.
+- **Free product analytics (Plausible)** – a lightweight Plausible snippet loads whenever `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set. To use it:
+  1. Sign up at [https://plausible.io](https://plausible.io) (free for small apps) and add your domain.
+  2. Add a `.env.local` entry like `NEXT_PUBLIC_PLAUSIBLE_DOMAIN=yourcustomdomain.com`.
+  3. Restart the dev server so the client component picks up the variable.
+  4. Plausible automatically tracks SPA navigation, and the component reruns `plausible("pageview")` whenever the Next.js path or query string changes.
+
+If you ever switch to another provider, replace the `ProductAnalytics` component or gate it behind a different env var so only one script is injected.
+
 Happy shipping!

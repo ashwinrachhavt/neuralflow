@@ -14,6 +14,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
     include: {
       column: true,
       note: true,
+      project: true,
     },
   });
 
@@ -27,10 +28,13 @@ export async function GET(_req: Request, { params }: RouteContext) {
       title: task.title,
       descriptionMarkdown: task.descriptionMarkdown ?? "",
       priority: task.priority,
+      estimatedPomodoros: task.estimatedPomodoros,
+      dueDate: task.dueDate,
       column: task.column
         ? { id: task.column.id, title: task.column.name }
         : null,
       tags: task.tags ?? [],
+      project: task.project ? { id: task.project.id, title: task.project.title } : null,
     },
     note: task.note
       ? {

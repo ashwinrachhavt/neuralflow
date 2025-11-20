@@ -28,6 +28,13 @@ export async function GET(_req: Request, { params }: Ctx) {
     status: t.status,
     tags: t.tags,
     aiPlanned: t.aiPlanned,
+    // AI fields for suggestions
+    aiSuggestedColumnId: (t as any).aiSuggestedColumnId ?? null,
+    aiSuggestedPriority: (t as any).aiSuggestedPriority ?? null,
+    aiSuggestedEstimateMin: (t as any).aiSuggestedEstimateMin ?? null,
+    aiNextAction: (t as any).aiNextAction ?? null,
+    aiState: (t as any).aiState ?? null,
+    aiConfidence: (t as any).aiConfidence ?? null,
   }));
 
   const columnOrder = board.columns.map(c => c.id);

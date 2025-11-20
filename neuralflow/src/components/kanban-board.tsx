@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 
 import {
   DndContext,
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/queryClient";
+import { CardMotionOverlay } from "@/components/cards/CardMotionOverlay";
 
 type Task = {
   id: string;
@@ -78,6 +80,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   const { data, isLoading } = useBoard(boardId);
 
   const [board, setBoard] = useState<BoardState>(INITIAL_BOARD);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
   // Hydrate board from API
   useEffect(() => {
@@ -291,11 +294,16 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
               onClassify={(taskId) => classifyTask.mutate(taskId)}
               onSuggest={(taskId) => suggestTask.mutate(taskId)}
               onAutoMove={(taskId) => autoMove.mutate(taskId)}
+              onOpen={(taskId) => setOpenTaskId(taskId)}
+              openTaskId={openTaskId}
               onCreateCard={(colId, title) => createCard.mutate({ boardId, columnId: colId, title })}
             />
           ))}
         </div>
       </div>
+      {openTaskId ? (
+        <CardMotionOverlay taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} />
+      ) : null}
     </DndContext>
   );
 }
@@ -310,10 +318,13 @@ type KanbanColumnProps = {
   onClassify: (taskId: string) => void;
   onSuggest: (taskId: string) => void;
   onAutoMove: (taskId: string) => void;
+  onOpen: (taskId: string) => void;
   onCreateCard: (columnId: string, title: string) => void;
+  onOpen: (taskId: string) => void;
+  openTaskId?: string | null;
 };
 
-function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove }: KanbanColumnProps) {
+function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId }: KanbanColumnProps) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   return (
@@ -363,7 +374,7 @@ function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz, o
             <EmptyColumnHint />
           ) : (
             column.taskIds.map(taskId => (
-              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} onClassify={onClassify} onSuggest={onSuggest} onAutoMove={onAutoMove} />
+              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} onClassify={onClassify} onSuggest={onSuggest} onAutoMove={onAutoMove} onOpen={onOpen} openTaskId={openTaskId} />
             ))
           )}
         </ColumnSortableArea>
@@ -409,9 +420,11 @@ type SortableTaskProps = {
   onClassify: (taskId: string) => void;
   onSuggest: (taskId: string) => void;
   onAutoMove: (taskId: string) => void;
+  onOpen: (taskId: string) => void;
+  openTaskId?: string | null;
 };
 
-function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify, onSuggest, onAutoMove }: SortableTaskProps) {
+function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify, onSuggest, onAutoMove, onOpen, openTaskId }: SortableTaskProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: task.id,
@@ -423,8 +436,10 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
     transition,
   } satisfies React.CSSProperties;
 
+  const isOpened = openTaskId === task.id;
   return (
-    <div
+    <motion.div
+      layoutId={`card-${task.id}`}
       ref={setNodeRef}
       style={style}
       {...attributes}
@@ -432,10 +447,17 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
       className={cn(
         "rounded-xl border border-border bg-background/90 p-4 text-left shadow-sm",
         isDragging && "opacity-60",
+        isOpened && "invisible",
       )}
+      onClick={(e) => {
+        // Ignore clicks originating from action buttons
+        const target = e.target as HTMLElement;
+        if (target.closest('button')) return;
+        onOpen(task.id);
+      }}
     >
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-sm">{task.title}</h3>
+        <motion.h3 layoutId={`card-title-${task.id}`} className="font-medium text-sm">{task.title}</motion.h3>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -499,7 +521,7 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
           ) : null}
         </div>
       ) : null}
-    </div>
+    </motion.div>
   );
 }
 

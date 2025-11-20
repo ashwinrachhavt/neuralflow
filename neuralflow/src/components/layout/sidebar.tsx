@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const links = [
   { href: "/dashboard", label: "Today", icon: CalendarDays },
   { href: "/boards", label: "Board", icon: LayoutGrid },
+  { href: "/assistant", label: "Assistant", icon: Sparkles },
 ];
 
 export function Sidebar() {
@@ -31,13 +32,7 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <Link
-        href="/plan"
-        className="flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm hover:border-foreground/50"
-      >
-        <Sparkles className="size-4" /> Flow Planner
-      </Link>
+      {/* AI assistant entry point can go here later; removed Plan button */}
     </div>
   );
 }
-

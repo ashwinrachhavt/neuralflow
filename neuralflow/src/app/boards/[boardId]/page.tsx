@@ -7,14 +7,15 @@ export const metadata = {
   description: 'Kanban board view',
 };
 
-export default function BoardPage({ params }: { params: { boardId: string } }) {
+export default async function BoardPage({ params }: { params: Promise<{ boardId: string }> }) {
+  const { boardId } = await params;
   return (
     <PageShell>
       <SectionHeader
         title="Board"
         description="Drag tasks between columns or use AI tools on cards."
       />
-      <KanbanBoard boardId={params.boardId} />
+      <KanbanBoard boardId={boardId} />
     </PageShell>
   );
 }

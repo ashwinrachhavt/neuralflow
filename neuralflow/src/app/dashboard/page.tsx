@@ -19,7 +19,7 @@ export default function DashboardPage() {
         actions={
           <div className="flex gap-2 text-sm">
             <Link className="rounded border px-3 py-2" href="/boards">Open Board</Link>
-            <Link className="rounded border px-3 py-2" href="/plan">Plan</Link>
+            
           </div>
         }
       />

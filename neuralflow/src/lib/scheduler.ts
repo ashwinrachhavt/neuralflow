@@ -1,4 +1,5 @@
-import type { PlannedTask } from "@/lib/schemas/plan";
+// Plan feature removed
+type PlannedTask = never;
 
 export type ScheduledBlock =
   | { type: "focus"; taskIndex: number; minutes: number }
@@ -51,4 +52,3 @@ export function scheduleBlocks(tasks: PlannedTask[]): ScheduledBlock[] {
 
   return blocks;
 }
-
