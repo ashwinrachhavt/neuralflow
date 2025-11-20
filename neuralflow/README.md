@@ -116,6 +116,12 @@ Visit [http://localhost:3000](http://localhost:3000). The app expects a Clerk se
   2. Add a `.env.local` entry like `NEXT_PUBLIC_PLAUSIBLE_DOMAIN=yourcustomdomain.com`.
   3. Restart the dev server so the client component picks up the variable.
   4. Plausible automatically tracks SPA navigation, and the component reruns `plausible("pageview")` whenever the Next.js path or query string changes.
+- **Custom product signals** – `src/hooks/use-product-analytics.ts` exposes a `trackEvent` helper that mirrors events to both Vercel Analytics and Plausible (if enabled). The Flomodor todo widget (`src/components/todos/flomodor.tsx`) now tracks quick adds, completions, deletes, AI enrich requests, and card openings so you can see how people move tasks through the workflow. Use it elsewhere like:
+
+```tsx
+const { trackEvent } = useProductAnalytics();
+trackEvent("note_create", { surface: "daily-brief" });
+```
 
 If you ever switch to another provider, replace the `ProductAnalytics` component or gate it behind a different env var so only one script is injected.
 

@@ -38,16 +38,10 @@ export function TodayMain({ filters }: { filters: { type?: 'deep'|'shallow'|'all
     return true;
   }
 
-  const planned = tasks.filter(t => t.aiPlanned && t.status !== 'DONE' && matchFilters(t));
-  const upcoming = tasks.filter(t => !t.aiPlanned && (t.status === 'TODO' || !t.status) && matchFilters(t));
+  const upcoming = tasks.filter(t => (t.status === 'TODO' || !t.status) && matchFilters(t));
 
   return (
     <div className="space-y-6">
-      <Section title="AI Planned">
-        {planned.length ? planned.map(t => (<TaskRow key={t.id} task={{ id: t.id, title: t.title, priority: t.priority ?? undefined, estimatedPomodoros: t.estimatedPomodoros ?? undefined, tags: t.tags ?? undefined }} />)) : (
-          <Card><CardContent className="p-4 text-sm text-muted-foreground">No AI planned tasks yet.</CardContent></Card>
-        )}
-      </Section>
       <Section title="Upcoming">
         {upcoming.length ? upcoming.map(t => (<TaskRow key={t.id} task={{ id: t.id, title: t.title, priority: t.priority ?? undefined, estimatedPomodoros: t.estimatedPomodoros ?? undefined, tags: t.tags ?? undefined }} />)) : (
           <Card><CardContent className="p-4 text-sm text-muted-foreground">Nothing upcoming.</CardContent></Card>
@@ -56,4 +50,3 @@ export function TodayMain({ filters }: { filters: { type?: 'deep'|'shallow'|'all
     </div>
   );
 }
-

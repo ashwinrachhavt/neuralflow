@@ -296,7 +296,29 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
               onAutoMove={(taskId) => autoMove.mutate(taskId)}
               onOpen={(taskId) => setOpenTaskId(taskId)}
               openTaskId={openTaskId}
-              onCreateCard={(colId, title) => createCard.mutate({ boardId, columnId: colId, title })}
+              onCreateCard={async (colId, title) => {
+                try {
+                  const res = await createCard.mutateAsync({ boardId, columnId: colId, title });
+                  const newId = (res as any)?.id as string | undefined;
+                  if (newId) {
+                    // Optimistically inject into local board so shared-element animation has a source
+                    setBoard(current => {
+                      if (!current.columns[colId]) return current;
+                      const next = { ...current, tasks: { ...current.tasks }, columns: { ...current.columns } };
+                      next.tasks[newId] = { id: newId, title, description: '', aiSuggestedColumnId: null, aiSuggestedPriority: null, aiSuggestedEstimateMin: null, aiNextAction: null, aiState: null, aiConfidence: null };
+                      next.columns[colId] = { ...next.columns[colId], taskIds: [...next.columns[colId].taskIds, newId] };
+                      return next;
+                    });
+                    // Defer opening to next frame so the tile is present for layoutId animation
+                    requestAnimationFrame(() => setOpenTaskId(newId));
+                  }
+                } catch {
+                  // ignore — toast handled by hook onError if needed
+                } finally {
+                  // ensure board refresh
+                  await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
+                }
+              }}
             />
           ))}
         </div>
