@@ -7,7 +7,7 @@ export default function PomodoroPage() {
     <PageShell size="md">
       <div className="mx-auto max-w-3xl text-center">
         <SectionHeader
-          title="Pomodoro Timer"
+          title="Focus"
           description="Stay deliberate about focus and recovery. Use 25‑minute sprints paired with short breaks."
           className="items-center text-center"
         />

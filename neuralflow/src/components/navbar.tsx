@@ -19,7 +19,7 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/plan", label: "Plan" },
   { href: "/boards", label: "Board" },
-  { href: "/pomodoro", label: "Timer" },
+  { href: "/pomodoro", label: "Focus" },
   { href: "/quickchat", label: "Chat" },
   { href: "/profile", label: "Profile" },
 ];

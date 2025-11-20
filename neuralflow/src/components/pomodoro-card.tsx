@@ -225,7 +225,7 @@ export function PomodoroCard() {
           </div>
         </CardItem>
         <CardItem translateZ={80} className="mt-2 flex items-center gap-3">
-          <h2 className="text-2xl font-semibold">Pomodoro Timer</h2>
+  <h2 className="text-2xl font-semibold">Focus</h2>
           <Badge className={cn("font-medium", activeConfig.accentClass)}>
             {activeConfig.label}
           </Badge>
