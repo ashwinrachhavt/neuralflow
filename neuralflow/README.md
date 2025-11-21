@@ -126,3 +126,25 @@ trackEvent("note_create", { surface: "daily-brief" });
 If you ever switch to another provider, replace the `ProductAnalytics` component or gate it behind a different env var so only one script is injected.
 
 Happy shipping!
+
+## 9. Deploying on Vercel
+
+The repo now includes everything needed for a one-click Vercel flow:
+
+- `vercel.json` pins Node 20, reuses the PNPM scripts (`pnpm run build`/`pnpm run dev`), and disables the default telemetry so local and hosted behavior match.
+- `.github/workflows/vercel-deploy.yml` runs lint + build on every push/PR and, after successful checks, deploys through the Vercel CLI. Preview deployments run for feature branches, while pushes to `main` promote the build with `--prod`.
+
+### Required secrets
+
+Add these GitHub Actions secrets (Settings → Secrets → Actions):
+
+- `VERCEL_TOKEN` – Personal token from the Vercel dashboard.
+- `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` – Find them via `vercel whoami --scope <org>` and `vercel projects ls`, or copy from the project settings UI.
+
+Once the secrets exist, the workflow will automatically:
+
+1. Pull the right environment configuration (`vercel pull --environment preview|production`).
+2. Build the project with Turbopack (`vercel build`).
+3. Publish the prebuilt artifacts (`vercel deploy --prebuilt [--prod]`).
+
+You can still deploy manually with the Vercel Git integration, but keeping this workflow ensures every deployment passes the same lint/build gates you use locally (`pnpm lint`, `pnpm build`).

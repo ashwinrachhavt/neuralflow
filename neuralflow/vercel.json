@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "framework": "nextjs",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run build",
+  "devCommand": "pnpm run dev",
+  "nodeVersion": "20.x",
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "preview": true
+    }
+  }
+}

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2, Wand2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+// Input unused currently; will reintroduce if needed
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type DraftTask = {
@@ -133,4 +133,3 @@ export function AssistantDock({ open, onClose }: { open: boolean; onClose: () =>
     </Transition>
   );
 }
-

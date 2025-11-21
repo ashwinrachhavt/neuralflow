@@ -5,7 +5,7 @@ import { CardSheet } from '@/components/cards/CardSheet';
 
 export default function BoardTaskOverlay({ params }: { params: Promise<{ boardId: string; taskId: string }> }) {
   // Next 16: params is a Promise in client route segments
-  const [boardId, taskId] = useParamsSync(params);
+  const [_boardId, taskId] = useParamsSync(params);
   const router = useRouter();
   if (!taskId) return null;
   return (
@@ -19,11 +19,11 @@ export default function BoardTaskOverlay({ params }: { params: Promise<{ boardId
   );
 }
 
+import { useEffect, useState } from 'react';
 function useParamsSync(p: Promise<{ boardId: string; taskId: string }>): [string | null, string | null] {
-  const [vals, setVals] = (require('react') as typeof import('react')).useState<[string | null, string | null]>([null, null]);
-  (require('react') as typeof import('react')).useEffect(() => {
+  const [vals, setVals] = useState<[string | null, string | null]>([null, null]);
+  useEffect(() => {
     p.then(({ boardId, taskId }) => setVals([boardId, taskId]));
   }, [p]);
   return vals;
 }
-

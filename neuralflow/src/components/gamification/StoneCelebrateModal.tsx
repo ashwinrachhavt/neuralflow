@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { RewardImage } from './RewardImage';
 
@@ -16,7 +16,6 @@ type Props = {
 export function StoneCelebrateModal({ open, onClose, stone, bagSelector = '#bag-anchor' }: Props) {
   // simple particle burst
   const [particles, setParticles] = useState(Array.from({ length: 24 }, (_, i) => i));
-  const [isFlying, setIsFlying] = useState(false);
   const flyRef = useRef<HTMLDivElement | null>(null);
   const imgSrc = stone?.image ?? '/diamond.png';
   useEffect(() => { if (!open) setParticles(Array.from({ length: 24 }, (_, i) => i)); }, [open]);
@@ -29,9 +28,8 @@ export function StoneCelebrateModal({ open, onClose, stone, bagSelector = '#bag-
     const flyRect = fly.getBoundingClientRect();
     const dx = bagRect.left + bagRect.width / 2 - (flyRect.left + flyRect.width / 2);
     const dy = bagRect.top + bagRect.height / 2 - (flyRect.top + flyRect.height / 2);
-    setIsFlying(true);
     // Animate via Framer motion state; close after 450ms
-    setTimeout(() => { setIsFlying(false); onClose(); }, 480);
+    setTimeout(() => { onClose(); }, 480);
     // Store offsets on element style for the motion component to pick up via CSS vars
     fly.style.setProperty('--tx', `${dx}px`);
     fly.style.setProperty('--ty', `${dy}px`);
@@ -79,16 +77,4 @@ export function StoneCelebrateModal({ open, onClose, stone, bagSelector = '#bag-
 }
 
 // A small fixed container used to animate the gem flying to the bag icon
-function FlyToBag({ src, active }: { src: string; active: boolean }) {
-  if (!active) return null;
-  return (
-    <motion.img
-      src={src}
-      alt="fly"
-      className="pointer-events-none fixed left-1/2 top-1/2 z-[60] h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full object-cover object-center"
-      initial={{ opacity: 1, scale: 1 }}
-      animate={{ opacity: 0, scale: 0.4, x: 'var(--tx)', y: 'var(--ty)' }}
-      transition={{ duration: 0.45, ease: 'easeInOut' }}
-    />
-  );
-}
+// FlyToBag component is currently unused; remove to satisfy lint
