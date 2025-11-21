@@ -1,8 +1,0 @@
-{
-  "name": "neuralflow-root",
-  "private": true,
-  "scripts": {
-    "vercel-build": "cd neuralflow && npm ci --no-audit --no-fund && npm run build"
-  }
-}
-
