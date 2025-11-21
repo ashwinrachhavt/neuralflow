@@ -1,7 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus";
+import Link from "@tiptap/extension-link";
+import { Underline } from "@tiptap/extension-underline";
+import { Highlight } from "@tiptap/extension-highlight";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
+import { TextAlign } from "@tiptap/extension-text-align";
+import { HorizontalRule } from "@tiptap/extension-horizontal-rule";
+import { Typography } from "@tiptap/extension-typography";
+import { CharacterCount } from "@tiptap/extension-character-count";
+import { Image } from "@tiptap/extension-image";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
+import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
@@ -25,17 +39,32 @@ export function CardDescriptionEditor({
   className,
 }: { taskId: string; initial: string; className?: string }) {
   const updateDesc = useUpdateCardDescription();
+  const lowlight = useMemo(() => createLowlight(common), []);
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-      }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3] }, codeBlock: false }),
+      CodeBlockLowlight.configure({ lowlight }),
       Placeholder.configure({ placeholder: "Write details, subtasks, notes…" }),
       TaskList,
       TaskItem.configure({ nested: true }),
-    ],
-    content: toInitialHTML(initial),
-    editorProps: {
+      Link.configure({ openOnClick: true, autolink: true, linkOnPaste: true, protocols: ["http", "https", "mailto"] }),
+      Underline,
+      Highlight,
+      TextStyle,
+      Color,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      HorizontalRule,
+      Typography,
+      CharacterCount,
+      Image.configure({ allowBase64: true }),
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableHeader,
+    TableCell,
+  ],
+  content: toInitialHTML(initial),
+  immediatelyRender: false,
+  editorProps: {
       attributes: {
         class: cn("prose dark:prose-invert max-w-none focus:outline-none", "min-h-[120px] whitespace-pre-wrap"),
       },
@@ -75,11 +104,22 @@ export function CardDescriptionEditor({
               <ToolbarButton active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>B</ToolbarButton>
               <ToolbarButton active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>I</ToolbarButton>
               <ToolbarButton active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}>S</ToolbarButton>
+              <ToolbarButton active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()}>U</ToolbarButton>
               <ToolbarButton active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>• List</ToolbarButton>
               <ToolbarButton active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}>1. List</ToolbarButton>
               <ToolbarButton active={editor.isActive('taskList')} onClick={() => editor.chain().focus().toggleTaskList().run()}>☑︎ Tasks</ToolbarButton>
               <ToolbarButton active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()}>❝</ToolbarButton>
               <ToolbarButton active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()}>Code</ToolbarButton>
+              <ToolbarButton onClick={() => {
+                const prev = editor.getAttributes('link')?.href as string | undefined;
+                const url = window.prompt('Set link URL', prev ?? 'https://');
+                if (url === null) return;
+                if (url === '' || url === 'http://' || url === 'https://') {
+                  editor.chain().focus().unsetLink().run();
+                } else {
+                  editor.chain().focus().setLink({ href: url }).run();
+                }
+              }}>🔗</ToolbarButton>
             </div>
           </BubbleMenu>
           <FloatingMenu editor={editor} tippyOptions={{ duration: 100 }}>
@@ -87,6 +127,19 @@ export function CardDescriptionEditor({
               <span className="text-muted-foreground">/</span>
               <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().toggleHeading({ level: 2 }).run()}>Heading</button>
               <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().toggleTaskList().run()}>Tasks</button>
+              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().setHorizontalRule().run()}>HR</button>
+              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().toggleCodeBlock().run()}>Code block</button>
+              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run()}>Table</button>
+              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => {
+                const url = window.prompt('Image URL');
+                if (!url) return;
+                editor!.chain().focus().setImage({ src: url }).run();
+              }}>Image</button>
+              <div className="ml-2 inline-flex overflow-hidden rounded border">
+                <button className="px-2 py-1 hover:bg-muted/50" title="Align left" onClick={() => editor!.chain().focus().setTextAlign('left').run()}>⟸</button>
+                <button className="px-2 py-1 hover:bg-muted/50" title="Align center" onClick={() => editor!.chain().focus().setTextAlign('center').run()}>╳</button>
+                <button className="px-2 py-1 hover:bg-muted/50" title="Align right" onClick={() => editor!.chain().focus().setTextAlign('right').run()}>⟹</button>
+              </div>
               <button className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-muted/50" onClick={() => enrich.mutate()}>
                 <Wand2 className="size-3.5" /> Enrich
               </button>
@@ -117,4 +170,3 @@ function ToolbarButton({ active, onClick, children }: { active?: boolean; onClic
     </button>
   );
 }
-

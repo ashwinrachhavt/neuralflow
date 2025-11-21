@@ -13,6 +13,8 @@ model User {
   email     String?
   name      String?
   image     String?
+  energyProfile    String?
+  goals            String?
   createdAt DateTime @default(now())
 
   boards              Board[]
@@ -93,6 +95,7 @@ model Task {
   title               String
   descriptionMarkdown String       @default("")
   priority            TaskPriority @default(MEDIUM)
+  estimateMinutes     Int?
   status              TaskStatus   @default(TODO)
   estimatedPomodoros  Int?
   completedPomodoros  Int          @default(0)

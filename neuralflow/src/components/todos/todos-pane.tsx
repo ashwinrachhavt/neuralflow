@@ -12,10 +12,17 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useMarkDone, useMyTodos } from "@/hooks/api";
+import type { MyTodo } from "@/hooks/api";
 import { CardSheet } from "@/components/cards/CardSheet";
 import { AssistantDock } from "@/components/assistant/AssistantDock";
 import { StoneCelebrateModal } from "@/components/gamification/StoneCelebrateModal";
 import { GEM_ICON_PATHS, GEM_META } from "@/lib/gamification/catalog";
+
+const PRIORITY_STYLES: Record<NonNullable<MyTodo['priority']>, string> = {
+  HIGH: "border-rose-400/80 bg-rose-500/10 text-rose-200",
+  MEDIUM: "border-amber-400/80 bg-amber-500/10 text-amber-200",
+  LOW: "border-emerald-400/80 bg-emerald-500/10 text-emerald-200",
+};
 
 export function TodosPane() {
   const qc = useQueryClient();
@@ -39,6 +46,9 @@ export function TodosPane() {
   });
 
   const markDone = useMarkDone();
+  const totalTodos = todos.length;
+  const highPriorityCount = todos.filter((t) => t.priority === "HIGH").length;
+  const estimatedPomodoros = todos.reduce((sum, t) => sum + (t.estimatedPomodoros ?? 0), 0);
 
   useEffect(() => {
     const handleFocusQuickAdd = () => {
@@ -60,83 +70,191 @@ export function TodosPane() {
       window.removeEventListener('keydown', handleKey);
     };
   }, []);
+
   async function invalidateBoardsAndTodos() {
     try {
-      // Invalidate any board-related queries so Kanban updates
       await qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] === 'board' || q.queryKey[0] === 'cards' || q.queryKey[0] === 'boards') });
     } catch {}
     await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
   }
 
-  return (
-    <div className="flex w-full justify-center">
-      <div className="w-full max-w-xl">
-        <div className="mb-3 flex items-center justify-end">
-          <div className="flex items-center gap-2">
-          <Link href="/visualize/embeddings" className="rounded-full border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/40">
-            <span className="inline-flex items-center gap-1"><ScatterChart className="size-3.5" /> Spatial</span>
-          </Link>
-          <Button variant="outline" className="gap-2" onClick={() => setAssistantOpen(true)}>
-            <Wand2 className="size-4" /> Generate with AI
-          </Button>
-          </div>
-        </div>
-        <Card className="border border-border/70 bg-card/90 text-foreground shadow-xl">
-          <CardHeader className="border-b border-white/10 p-0"></CardHeader>
-          <CardContent className="p-0">
-            
+  const handleQuickAddSubmit = () => {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    addMutation.mutate(trimmed);
+    setTitle('');
+  };
 
-            {/* List */}
-            <div className="max-h-[420px] overflow-auto px-2">
+  return (
+    <div className="flex w-full justify-center px-4 py-6">
+      <div className="w-full max-w-5xl space-y-6">
+        <section className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-900/80 via-slate-950/80 to-slate-950/95 px-6 py-6 shadow-[0_35px_60px_rgba(15,23,42,0.85)] text-white">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] uppercase tracking-[0.4em] text-muted-foreground/70">Todos dashboard</p>
+              <h2 className="text-3xl font-semibold leading-tight">Flow into focus</h2>
+              <p className="text-sm text-muted-foreground/80">Keep your focus lane soft but structured; the next action should feel like a breeze.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/visualize/embeddings"
+                className="rounded-full border border-white/30 px-5 py-2 text-[11px] uppercase tracking-[0.3em] text-white/80 transition hover:border-white/60 hover:text-white"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <ScatterChart className="size-3.5" /> Spatial
+                </span>
+              </Link>
+              <Button
+                variant="outline"
+                className="rounded-full border-white/40 bg-white/10 text-white shadow-lg hover:border-white/60"
+                onClick={() => setAssistantOpen(true)}
+              >
+                <Wand2 className="size-4" /> Generate with AI
+              </Button>
+            </div>
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground/70">Active</p>
+              <p className="text-3xl font-semibold">{totalTodos}</p>
+              <p className="text-sm text-muted-foreground/80">Stay steady with {totalTodos ? 'your next actions' : 'a fresh plan'}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground/70">Urgent</p>
+              <p className="text-3xl font-semibold">{highPriorityCount}</p>
+              <p className="text-sm text-muted-foreground/80">
+                {highPriorityCount ? `${highPriorityCount} high-priority task${highPriorityCount === 1 ? '' : 's'}` : 'No urgencies'}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground/70">Pomodoros</p>
+              <p className="text-3xl font-semibold">{estimatedPomodoros}</p>
+              <p className="text-sm text-muted-foreground/80">
+                {estimatedPomodoros ? `${estimatedPomodoros} pomodoro${estimatedPomodoros === 1 ? '' : 's'}` : 'No estimates yet'}
+              </p>
+            </div>
+          </div>
+        </section>
+        <Card className="rounded-[2rem] border border-white/10 bg-slate-950/80 text-white shadow-[0_25px_60px_rgba(2,6,23,0.6)]">
+          <CardHeader className="px-6 pt-6 pb-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground/70">Today</p>
+                <h3 className="text-2xl font-semibold">Your focus lane</h3>
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-[0.4em] text-emerald-300">
+                {highPriorityCount ? `${highPriorityCount} urgent` : 'All calm'}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground/70">Tap an item to open the full card and keep context in a single glance.</p>
+          </CardHeader>
+          <CardContent className="px-0 pb-6 pt-0">
+            <div className="max-h-[460px] overflow-hidden px-6">
               {isLoading ? (
-                <div className="space-y-3 p-2">
-                  {[0,1,2,3].map(i => (
-                    <div key={i} className="rounded-lg border border-border/60 bg-muted/30 p-4">
-                      <Skeleton className="h-4 w-56" />
+                <div className="space-y-3 py-2">
+                  {[0, 1, 2, 3].map((idx) => (
+                    <div key={idx} className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-inner">
+                      <Skeleton className="h-4 w-48" />
                     </div>
                   ))}
                 </div>
+              ) : todos.length === 0 ? (
+                <div className="rounded-3xl border border-dashed border-white/20 bg-white/5 p-6 text-center text-sm text-muted-foreground/80">
+                  Your focus queue is empty—add a quick task to begin a new streak.
+                </div>
               ) : (
-                <ul className="divide-y divide-border/60">
-                  {todos.map(t => (
+                <ul className="flex flex-col gap-3 pb-2">
+                  {todos.map((t) => (
                     <li key={t.id}>
-                      <motion.div layoutId={`card-${t.id}`} className="flex cursor-pointer items-center gap-3 px-4 py-4 hover:bg-muted/40" onClick={() => { try { router.push(`/todos/tasks/${t.id}`); } catch { setOpenTaskId(t.id); } }}>
+                      <motion.div
+                        layoutId={`card-${t.id}`}
+                        whileHover={{ scale: 1.01 }}
+                        className="group flex cursor-pointer items-center justify-between gap-4 rounded-[1.5rem] border border-white/5 bg-gradient-to-br from-white/5 to-transparent px-5 py-4 shadow-[0_20px_50px_rgba(2,6,23,0.55)] transition hover:border-white/30 hover:bg-white/10"
+                        onClick={() => {
+                          try {
+                            router.push(`/todos/tasks/${t.id}`);
+                          } catch {
+                            setOpenTaskId(t.id);
+                          }
+                        }}
+                      >
+                        <div className="flex-1 space-y-2">
+                          <motion.h3 layoutId={`card-title-${t.id}`} className="text-lg font-semibold text-white">
+                            {t.title}
+                          </motion.h3>
+                          <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-wide">
+                            {t.priority ? (
+                              <span className={`rounded-full border px-2 py-0.5 font-semibold ${PRIORITY_STYLES[t.priority]}`}>
+                                {t.priority}
+                              </span>
+                            ) : null}
+                            {typeof t.estimatedPomodoros === "number" ? (
+                              <span className="rounded-full border border-white/20 px-2 py-0.5 text-[12px] text-muted-foreground/70">
+                                {t.estimatedPomodoros} pomodor{t.estimatedPomodoros === 1 ? "o" : "os"}
+                              </span>
+                            ) : null}
+                            {t.tags?.slice(0, 2).map((tag) => (
+                              <span key={`${t.id}-${tag}`} className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[12px] text-muted-foreground">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                         <button
-                          className="grid size-5 place-items-center rounded-full border border-border/60 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500"
+                          className="grid h-10 w-10 place-items-center rounded-2xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
                           title="Mark done"
-                          onClick={async (e) => { e.stopPropagation(); await markDone.mutateAsync(t.id); try { const g = await fetch('/api/gamify/on-task-completed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: t.id }) }); const data = await g.json().catch(() => null); const first: string | undefined = (data?.awards?.[0]) as any; if (first && first in GEM_ICON_PATHS) { const meta = GEM_META[first as keyof typeof GEM_ICON_PATHS]; setCelebrate({ name: meta.name, image: GEM_ICON_PATHS[first as keyof typeof GEM_ICON_PATHS], rarity: meta.rarity }); } } catch {} await invalidateBoardsAndTodos(); }}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await markDone.mutateAsync(t.id);
+                            try {
+                              const g = await fetch('/api/gamify/on-task-completed', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ taskId: t.id }),
+                              });
+                              const data = await g.json().catch(() => null);
+                              const first: string | undefined = (data?.awards?.[0]) as any;
+                              if (first && first in GEM_ICON_PATHS) {
+                                const meta = GEM_META[first as keyof typeof GEM_ICON_PATHS];
+                                setCelebrate({ name: meta.name, image: GEM_ICON_PATHS[first as keyof typeof GEM_ICON_PATHS], rarity: meta.rarity });
+                              }
+                            } catch {}
+                            await invalidateBoardsAndTodos();
+                          }}
                         >
-                          <Check className="size-3" />
+                          <Check className="size-4" />
                         </button>
-                        <motion.h3 layoutId={`card-title-${t.id}`} className="text-sm">{t.title}</motion.h3>
                       </motion.div>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-
-            {/* Quick Add */}
-            <div className="flex items-center gap-2 border-t border-border/60 px-3 py-3">
-              <Input
-                id="todos-quick-add-input"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const v = title.trim();
-                    if (!v) return;
-                    addMutation.mutate(v);
-                    setTitle('');
-                  }
-                }}
-                placeholder="Enter task name"
-                className="flex-1"
-              />
-              <Button className="gap-1" onClick={() => { const v = title.trim(); if (!v) return; addMutation.mutate(v); setTitle(''); }} disabled={addMutation.isPending}>
-                <Plus className="size-4" />
-                Add
-              </Button>
+            <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-gradient-to-r from-indigo-500/10 via-slate-900/70 to-slate-950/70 p-4 shadow-[0_10px_40px_rgba(15,23,42,0.35)] backdrop-blur">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Input
+                  id="todos-quick-add-input"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleQuickAddSubmit();
+                    }
+                  }}
+                  placeholder="What needs your attention next?"
+                  className="flex-1 bg-transparent text-white placeholder:text-white/70"
+                />
+                <Button
+                  className="w-full gap-2 sm:w-auto"
+                  onClick={handleQuickAddSubmit}
+                  disabled={addMutation.isPending}
+                >
+                  <Plus className="size-4" />
+                  Add
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground/80">Press Enter or tap Add to drop a new card into your flow.</p>
             </div>
           </CardContent>
         </Card>
