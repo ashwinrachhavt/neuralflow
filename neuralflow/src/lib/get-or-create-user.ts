@@ -5,7 +5,10 @@ export async function getOrCreateDbUser() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  const existing = await prisma.user.findUnique({ where: { id: userId } });
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, image: true, createdAt: true },
+  });
   if (existing) {
     return existing;
   }
@@ -18,5 +21,6 @@ export async function getOrCreateDbUser() {
       name: clerkUser?.fullName ?? null,
       image: clerkUser?.imageUrl ?? null,
     },
+    select: { id: true, email: true, name: true, image: true, createdAt: true },
   });
 }

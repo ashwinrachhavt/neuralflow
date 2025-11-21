@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
-import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus";
 import Link from "@tiptap/extension-link";
 import { Underline } from "@tiptap/extension-underline";
 import { Highlight } from "@tiptap/extension-highlight";
@@ -98,54 +97,45 @@ export function CardDescriptionEditor({
   return (
     <div className={cn("rounded-xl border border-border/60 bg-background/60 p-3", className)}>
       {editor ? (
-        <>
-          <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
-            <div className="flex items-center gap-1 rounded border bg-background/80 p-1 shadow">
-              <ToolbarButton active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>B</ToolbarButton>
-              <ToolbarButton active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>I</ToolbarButton>
-              <ToolbarButton active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}>S</ToolbarButton>
-              <ToolbarButton active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()}>U</ToolbarButton>
-              <ToolbarButton active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>• List</ToolbarButton>
-              <ToolbarButton active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}>1. List</ToolbarButton>
-              <ToolbarButton active={editor.isActive('taskList')} onClick={() => editor.chain().focus().toggleTaskList().run()}>☑︎ Tasks</ToolbarButton>
-              <ToolbarButton active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()}>❝</ToolbarButton>
-              <ToolbarButton active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()}>Code</ToolbarButton>
-              <ToolbarButton onClick={() => {
-                const prev = editor.getAttributes('link')?.href as string | undefined;
-                const url = window.prompt('Set link URL', prev ?? 'https://');
-                if (url === null) return;
-                if (url === '' || url === 'http://' || url === 'https://') {
-                  editor.chain().focus().unsetLink().run();
-                } else {
-                  editor.chain().focus().setLink({ href: url }).run();
-                }
-              }}>🔗</ToolbarButton>
-            </div>
-          </BubbleMenu>
-          <FloatingMenu editor={editor} tippyOptions={{ duration: 100 }}>
-            <div className="flex items-center gap-2 rounded border bg-background/80 px-2 py-1 text-xs shadow">
-              <span className="text-muted-foreground">/</span>
-              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().toggleHeading({ level: 2 }).run()}>Heading</button>
-              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().toggleTaskList().run()}>Tasks</button>
-              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().setHorizontalRule().run()}>HR</button>
-              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().toggleCodeBlock().run()}>Code block</button>
-              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => editor!.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run()}>Table</button>
-              <button className="rounded px-2 py-1 hover:bg-muted/50" onClick={() => {
-                const url = window.prompt('Image URL');
-                if (!url) return;
-                editor!.chain().focus().setImage({ src: url }).run();
-              }}>Image</button>
-              <div className="ml-2 inline-flex overflow-hidden rounded border">
-                <button className="px-2 py-1 hover:bg-muted/50" title="Align left" onClick={() => editor!.chain().focus().setTextAlign('left').run()}>⟸</button>
-                <button className="px-2 py-1 hover:bg-muted/50" title="Align center" onClick={() => editor!.chain().focus().setTextAlign('center').run()}>╳</button>
-                <button className="px-2 py-1 hover:bg-muted/50" title="Align right" onClick={() => editor!.chain().focus().setTextAlign('right').run()}>⟹</button>
-              </div>
-              <button className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-muted/50" onClick={() => enrich.mutate()}>
-                <Wand2 className="size-3.5" /> Enrich
-              </button>
-            </div>
-          </FloatingMenu>
-        </>
+        <div className="mb-2 flex flex-wrap items-center gap-1 rounded-md border bg-background/70 p-1">
+          <ToolbarButton active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>B</ToolbarButton>
+          <ToolbarButton active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>I</ToolbarButton>
+          <ToolbarButton active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()}>S</ToolbarButton>
+          <ToolbarButton active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()}>U</ToolbarButton>
+          <ToolbarButton active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>• List</ToolbarButton>
+          <ToolbarButton active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}>1. List</ToolbarButton>
+          <ToolbarButton active={editor.isActive('taskList')} onClick={() => editor.chain().focus().toggleTaskList().run()}>☑︎ Tasks</ToolbarButton>
+          <ToolbarButton active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()}>❝</ToolbarButton>
+          <ToolbarButton active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()}>Code</ToolbarButton>
+          <ToolbarButton onClick={() => {
+            const prev = editor.getAttributes('link')?.href as string | undefined;
+            const url = window.prompt('Set link URL', prev ?? 'https://');
+            if (url === null) return;
+            if (url === '' || url === 'http://' || url === 'https://') {
+              editor.chain().focus().unsetLink().run();
+            } else {
+              editor.chain().focus().setLink({ href: url }).run();
+            }
+          }}>🔗</ToolbarButton>
+          <div className="mx-1 h-5 w-px bg-border" />
+          <button className="rounded px-2 py-1 text-xs hover:bg-muted/60" onClick={() => editor!.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
+          <button className="rounded px-2 py-1 text-xs hover:bg-muted/60" onClick={() => editor!.chain().focus().setHorizontalRule().run()}>HR</button>
+          <button className="rounded px-2 py-1 text-xs hover:bg-muted/60" onClick={() => editor!.chain().focus().toggleCodeBlock().run()}>Code block</button>
+          <button className="rounded px-2 py-1 text-xs hover:bg-muted/60" onClick={() => editor!.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run()}>Table</button>
+          <button className="rounded px-2 py-1 text-xs hover:bg-muted/60" onClick={() => {
+            const url = window.prompt('Image URL');
+            if (!url) return;
+            editor!.chain().focus().setImage({ src: url }).run();
+          }}>Image</button>
+          <div className="ml-auto inline-flex overflow-hidden rounded border">
+            <button className="px-2 py-1 text-xs hover:bg-muted/60" title="Align left" onClick={() => editor!.chain().focus().setTextAlign('left').run()}>⟸</button>
+            <button className="px-2 py-1 text-xs hover:bg-muted/60" title="Align center" onClick={() => editor!.chain().focus().setTextAlign('center').run()}>╳</button>
+            <button className="px-2 py-1 text-xs hover:bg-muted/60" title="Align right" onClick={() => editor!.chain().focus().setTextAlign('right').run()}>⟹</button>
+          </div>
+          <button className="ml-2 inline-flex items-center gap-1 rounded px-2 py-1 text-xs hover:bg-muted/60" onClick={() => enrich.mutate()}>
+            <Wand2 className="size-3.5" /> Enrich
+          </button>
+        </div>
       ) : null}
 
       <EditorContent editor={editor} onBlur={save} />
