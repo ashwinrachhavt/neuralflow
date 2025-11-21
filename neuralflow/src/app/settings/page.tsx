@@ -1,13 +1,14 @@
-export const metadata = { title: 'Settings', description: 'Profile and preferences' };
+export const metadata = { title: 'Settings', description: '' };
+
+import { PageShell } from '@/components/layout/page-shell';
+import { SectionHeader } from '@/components/section-header';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export default function SettingsPage() {
   return (
-    <main className="mx-auto max-w-3xl p-6">
-      <h1 className="mb-4 text-2xl font-semibold">Settings</h1>
-      <div className="rounded-xl border p-6">
-        <p className="text-sm text-muted-foreground">Manage your profile, integrations, and preferences here. (Coming soon)</p>
-      </div>
-    </main>
+    <PageShell size="sm">
+      <SectionHeader title="Settings" />
+      <EmptyState title="Coming soon" />
+    </PageShell>
   );
 }
-

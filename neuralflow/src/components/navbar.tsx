@@ -5,22 +5,21 @@ import { usePathname } from "next/navigation";
 
 import {
   SignInButton,
-  SignUpButton,
   SignedIn,
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
 
 import { cn } from "@/lib/utils";
+import { Container } from "@/components/layout/container";
 import { ModeToggle } from "@/components/mode-toggle";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/boards", label: "Boards" },
-  { href: "/notes", label: "Notes" },
-  { href: "/flashcards", label: "Flashcards" },
-  { href: "/quizzes", label: "Quizzes" },
-  { href: "/pomodoro", label: "Pomodoro" },
+  { href: "/boards", label: "Board" },
+  { href: "/todos", label: "Todos" },
+  { href: "/pomodoro", label: "Focus" },
+  { href: "/gamify/bag", label: "Bag" },
 ];
 
 export function Navbar() {
@@ -28,9 +27,9 @@ export function Navbar() {
 
   return (
     <header className="border-b border-border/60 bg-background/70 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/todos" className="text-lg font-semibold tracking-tight">
-          NeuralFlow
+      <Container className="flex items-center justify-between py-4">
+        <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
+          Dao
         </Link>
         <div className="flex items-center gap-4">
           <nav className="flex items-center gap-1 rounded-full border border-border/60 bg-background/80 p-1 text-sm shadow-sm">
@@ -56,25 +55,18 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             <ModeToggle />
             <SignedOut>
-              <div className="flex items-center gap-2 text-sm">
-                <SignInButton mode="modal" afterSignInUrl="/todos" afterSignUpUrl="/todos">
-                  <span className="rounded-full border border-border/70 px-4 py-2 font-medium hover:border-foreground/50">
-                    Sign in
-                  </span>
-                </SignInButton>
-                <SignUpButton mode="modal" afterSignUpUrl="/todos" afterSignInUrl="/todos">
-                  <span className="rounded-full bg-foreground px-4 py-2 font-medium text-background shadow">
-                    Sign up
-                  </span>
-                </SignUpButton>
-              </div>
+              <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">
+                <span className="cursor-pointer text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                  Sign in
+                </span>
+              </SignInButton>
             </SignedOut>
             <SignedIn>
               <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "size-9" } }} />
             </SignedIn>
           </div>
         </div>
-      </div>
+      </Container>
     </header>
   );
 }

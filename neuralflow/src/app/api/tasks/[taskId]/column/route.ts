@@ -1,35 +1,24 @@
 import { NextResponse } from "next/server";
-
-import { getOrCreateDbUser } from "@/lib/get-or-create-user";
 import { prisma } from "@/server/db/client";
-import { getByIdForUser, moveToColumn } from "@/server/db/cards";
+import { getUserOr401, readJson } from "@/lib/api-helpers";
 
-type RouteContext = { params: { taskId: string } };
+type Ctx = { params: Promise<{ taskId: string }> };
 
-export async function PATCH(req: Request, { params }: RouteContext) {
-  const user = await getOrCreateDbUser();
-  if (!user) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+export async function PATCH(req: Request, ctx: Ctx) {
+  const { taskId } = await ctx.params;
+  const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
 
-  const body = await req.json().catch(() => null);
+  const body = await readJson<{ columnId?: string }>(req);
   const columnId = (body?.columnId as string | undefined)?.trim();
-  if (!columnId) {
-    return NextResponse.json({ message: "columnId is required" }, { status: 400 });
-  }
+  if (!columnId) return NextResponse.json({ message: "columnId required" }, { status: 400 });
 
-  // Ensure task belongs to user
-  const task = await getByIdForUser(params.taskId, user.id).catch(() => null);
+  const task = await prisma.task.findFirst({ where: { id: taskId, board: { userId: (user as any).id } }, select: { id: true, boardId: true } });
   if (!task) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-  // Ensure column belongs to user's board
-  const column = await prisma.column.findFirst({
-    where: { id: columnId, board: { userId: user.id } },
-    select: { id: true },
-  });
-  if (!column) return NextResponse.json({ message: "Invalid column" }, { status: 400 });
+  const col = await prisma.column.findFirst({ where: { id: columnId, boardId: task.boardId }, select: { id: true } });
+  if (!col) return NextResponse.json({ message: "Invalid column" }, { status: 400 });
 
-  await moveToColumn(params.taskId, columnId, user.id);
-
+  await prisma.task.update({ where: { id: taskId }, data: { columnId } });
   return NextResponse.json({ ok: true });
 }

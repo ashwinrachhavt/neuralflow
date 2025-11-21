@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./client";
-import { Result, ok, err, NotFoundError, ForbiddenError } from "./result";
+import { NotFoundError, ForbiddenError } from "./result";
 
 export async function getByIdForUser(taskId: string, userId: string) {
   const task = await prisma.task.findFirst({ where: { id: taskId, board: { userId } } });
@@ -33,4 +33,3 @@ export async function deleteForUser(taskId: string, userId: string) {
   if (!existing) throw new ForbiddenError();
   return prisma.task.delete({ where: { id: taskId } });
 }
-

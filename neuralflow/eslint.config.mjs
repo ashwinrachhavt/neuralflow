@@ -1,24 +1,68 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import js from "@eslint/js";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
+import nextPlugin from "@next/eslint-plugin-next";
+import globals from "globals";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const customTypeScriptRules = {
+  "@typescript-eslint/no-explicit-any": "off",
+  "@typescript-eslint/no-unused-vars": [
+    "warn",
+    {
+      argsIgnorePattern: "^_",
+      varsIgnorePattern: "^_",
+      caughtErrorsIgnorePattern: "^_",
+    },
+  ],
+};
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  // Next.js recommended rules + TypeScript support
-  ...compat.extends(
-    "next/core-web-vitals",
-    "next/typescript",
-    // TypeScript rules
-    "plugin:@typescript-eslint/recommended",
-    // Disable ESLint rules that would conflict with Prettier formatting
-    "prettier",
-  ),
+export default [
+  {
+    ignores: ["**/node_modules/**", ".next/**", "dist/**", "coverage/**"],
+  },
+  js.configs.recommended,
+  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        ecmaFeatures: { jsx: true },
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        React: "readonly",
+        RequestInit: "readonly",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      ...tsPlugin.configs.recommended.rules,
+      ...customTypeScriptRules,
+    },
+  },
+  {
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    plugins: {
+      "@next/next": nextPlugin,
+    },
+    rules: {
+      ...nextPlugin.configs["core-web-vitals"].rules,
+      "@next/next/no-img-element": "off",
+    },
+  },
+  {
+    files: ["**/*.{js,jsx,mjs}"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        React: "readonly",
+      },
+    },
+  },
 ];
-
-export default eslintConfig;

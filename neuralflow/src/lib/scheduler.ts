@@ -1,4 +1,9 @@
-import type { PlannedTask } from "@/lib/schemas/plan";
+export type PlannedTask = {
+  priority: "high" | "medium" | "low";
+  kind: "deep" | "shallow";
+  estimateMinutes: number;
+  title?: string;
+};
 
 export type ScheduledBlock =
   | { type: "focus"; taskIndex: number; minutes: number }
@@ -51,4 +56,3 @@ export function scheduleBlocks(tasks: PlannedTask[]): ScheduledBlock[] {
 
   return blocks;
 }
-

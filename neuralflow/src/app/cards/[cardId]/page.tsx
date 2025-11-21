@@ -2,6 +2,10 @@
 
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { PageShell } from '@/components/layout/page-shell';
+import { SectionHeader } from '@/components/section-header';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type TaskDetail = { task: { id: string; title: string; descriptionMarkdown: string }; note?: { id: string; contentMarkdown: string } | null };
 
@@ -17,24 +21,35 @@ export default function CardDetailPage() {
   });
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
-      {isLoading ? <div>Loading…</div> : null}
+    <PageShell size="sm">
+      {isLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      ) : null}
       {data ? (
-        <div>
-          <h1 className="text-2xl font-semibold">{data.task.title}</h1>
-          {data.task.descriptionMarkdown ? (
-            <pre className="mt-4 whitespace-pre-wrap rounded border p-4 text-sm">{data.task.descriptionMarkdown}</pre>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">No description yet. Use Enrich from the board or Todos.</p>
-          )}
+        <div className="space-y-4">
+          <SectionHeader title={data.task.title} />
+          <Card>
+            <CardContent className="p-4">
+              {data.task.descriptionMarkdown ? (
+                <pre className="whitespace-pre-wrap text-sm">{data.task.descriptionMarkdown}</pre>
+              ) : (
+                <p className="text-sm text-muted-foreground">No description.</p>
+              )}
+            </CardContent>
+          </Card>
           {data.note ? (
-            <div className="mt-6">
-              <h2 className="text-sm font-medium text-muted-foreground">Note</h2>
-              <pre className="mt-2 whitespace-pre-wrap rounded border p-3 text-xs bg-background/60">{data.note.contentMarkdown}</pre>
-            </div>
+            <Card>
+              <CardContent className="p-4">
+                <h2 className="mb-1 text-sm font-medium text-muted-foreground">Note</h2>
+                <pre className="whitespace-pre-wrap text-xs text-foreground/90">{data.note.contentMarkdown}</pre>
+              </CardContent>
+            </Card>
           ) : null}
         </div>
       ) : null}
-    </main>
+    </PageShell>
   );
 }

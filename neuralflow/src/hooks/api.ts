@@ -15,7 +15,27 @@ export type BoardNormalized = {
   };
 };
 
-export type CardDetail = { task: { id: string; title: string; descriptionMarkdown: string }; note?: { id: string; contentMarkdown: string } | null };
+export type CardDetail = {
+  task: {
+    id: string;
+    title: string;
+    descriptionMarkdown: string;
+    priority?: 'LOW' | 'MEDIUM' | 'HIGH' | null;
+    estimatedPomodoros?: number | null;
+    dueDate?: string | null;
+    column?: { id: string; title: string } | null;
+    tags?: string[];
+    project?: { id: string; title: string } | null;
+    aiSuggestedColumnId?: string | null;
+    aiSuggestedPriority?: string | null;
+    aiSuggestedEstimateMin?: number | null;
+    aiNextAction?: string | null;
+    aiState?: string | null;
+    aiConfidence?: number | null;
+    suggestedColumn?: { id: string; title: string } | null;
+  };
+  note?: { id: string; title: string; contentJson: string; contentMarkdown: string } | null;
+};
 export type NoteListItem = { id: string; title: string; updatedAt: string };
 export type NoteDetail = { id: string; title: string; contentJson: string; contentMarkdown: string; updatedAt: string };
 
@@ -46,13 +66,7 @@ export function useCard(cardId: string) {
   return useQuery<CardDetail>({ queryKey: queryKeys.card(cardId), queryFn: () => getJSON(`/api/cards/${cardId}`), staleTime: 5000 });
 }
 
-export function useNotes() {
-  return useQuery<NoteListItem[]>({ queryKey: queryKeys.notes(), queryFn: () => getJSON('/api/notes'), staleTime: 5000 });
-}
-
-export function useNote(noteId: string) {
-  return useQuery<NoteDetail>({ queryKey: queryKeys.note(noteId), queryFn: () => getJSON(`/api/notes/${noteId}`), staleTime: 5000 });
-}
+// Notes APIs removed
 
 // Mutations (cards)
 export function useCreateCard() {
@@ -145,4 +159,9 @@ export function useCreateBoard() {
 
 export function useDefaultBoardId() {
   return useQuery<{ id: string; title: string }>({ queryKey: ['boards', 'default'], queryFn: () => getJSON('/api/boards/default'), staleTime: 5000 });
+}
+// All-user todos (across boards)
+export type MyTodo = { id: string; title: string; descriptionMarkdown: string | null; boardId: string; columnId: string; status: string; priority?: 'LOW'|'MEDIUM'|'HIGH'|null; estimatedPomodoros?: number | null; tags?: string[] | null };
+export function useMyTodos(status: 'TODO' | 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED' = 'TODO') {
+  return useQuery<{ tasks: MyTodo[] }>({ queryKey: ['my-todos', status], queryFn: () => getJSON(`/api/tasks/my?status=${status}`), staleTime: 5000 });
 }

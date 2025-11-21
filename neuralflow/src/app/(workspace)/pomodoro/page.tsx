@@ -1,16 +1,16 @@
 import { PomodoroCard } from "@/components/pomodoro-card";
+import { PageShell } from "@/components/layout/page-shell";
+import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 
 export default function PomodoroPage() {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col items-center gap-10 text-center">
-      <div className="space-y-4">
-        <h1 className="text-4xl font-semibold tracking-tight">Pomodoro Timer</h1>
-        <p className="text-muted-foreground">
-          Stay deliberate about focus and recovery. Use the timer to run 25-minute sprints paired
-          with short breaks, keeping momentum anchored to a single task at a time.
-        </p>
+    <PageShell size="md">
+      <div className="mx-auto flex max-w-xl flex-col items-center gap-4">
+        <SegmentedTabs items={[{ href: '/todos', label: 'Tasks', active: false }, { href: '/pomodoro', label: 'Timer', active: true }]} />
+        <div className="w-full rounded-2xl border border-border/60 bg-card/90 p-4 shadow-xl">
+          <PomodoroCard />
+        </div>
       </div>
-      <PomodoroCard />
-    </div>
+    </PageShell>
   );
 }

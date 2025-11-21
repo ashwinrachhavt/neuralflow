@@ -175,8 +175,11 @@ export function PomodoroCard() {
 
   useEffect(() => {
     if (state.activeTaskId || taskOptions.length === 0) return;
-    setState(current => ({ ...current, activeTaskId: taskOptions[0]?.id ?? null }));
-  }, [taskOptions.length]);
+    setState((current) => ({
+      ...current,
+      activeTaskId: taskOptions[0]?.id ?? null,
+    }));
+  }, [state.activeTaskId, taskOptions]);
 
   const selectedTask =
     taskOptions.find((task) => task.id === state.activeTaskId) ?? null;
@@ -225,7 +228,7 @@ export function PomodoroCard() {
           </div>
         </CardItem>
         <CardItem translateZ={80} className="mt-2 flex items-center gap-3">
-          <h2 className="text-2xl font-semibold">Pomodoro Timer</h2>
+  <h2 className="text-2xl font-semibold">Focus</h2>
           <Badge className={cn("font-medium", activeConfig.accentClass)}>
             {activeConfig.label}
           </Badge>

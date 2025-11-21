@@ -1,7 +1,7 @@
-import { jsonSchema, streamObject } from 'ai';
+import { streamText } from 'ai';
 import { textModel } from '../config';
-import { plannedTaskJsonSchema, type PlannedTask } from '@/lib/schemas/plan';
-import { logAgentRunStart, logAgentRunEvent, logAgentRunFinish } from '@/server/db/agentRuns';
+export type PlannedTask = never;
+import { logAgentRunStart, logAgentRunFinish } from '@/server/db/agentRuns';
 
 export type PlannerInput = {
   prompt: string;
@@ -9,7 +9,7 @@ export type PlannerInput = {
   modelName?: string;
 };
 
-export const PROMPT = `You are Flow, a calm productivity planner.
+export const PROMPT = `You are Flow, a calm productivity assistant.
 
 The user describes work for TODAY. Return an array of 3–10 planned tasks as JSON matching the schema.
 
@@ -26,26 +26,18 @@ export function streamPlan({ prompt, userId, modelName }: PlannerInput) {
   const startedAt = Date.now();
   const runPromise = logAgentRunStart({ userId, type: 'planner', model: modelName }).catch(() => null);
 
-  const { elementStream } = streamObject({
-    model: textModel(modelName),
-    output: 'array',
-    schema: jsonSchema(plannedTaskJsonSchema as any),
-    prompt: fullPrompt,
-  });
-
+  const { textStream } = streamText({ model: textModel(modelName), prompt: fullPrompt });
   const stream = (async function* () {
-    let count = 0;
     try {
-      for await (const element of elementStream as AsyncIterable<PlannedTask>) {
-        count++;
-        yield element;
+      for await (const chunk of textStream) {
+        yield chunk;
       }
       const run = await runPromise;
       await logAgentRunFinish({
         runId: run?.id,
         status: 'ok',
         durationMs: Date.now() - startedAt,
-        output: { items: count },
+        output: { },
       }).catch(() => {});
     } catch (e: any) {
       const run = await runPromise;
@@ -61,4 +53,3 @@ export function streamPlan({ prompt, userId, modelName }: PlannerInput) {
 
   return { elementStream: stream };
 }
-

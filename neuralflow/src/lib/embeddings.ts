@@ -36,3 +36,40 @@ export async function updateNoteEmbeddings({
     },
   });
 }
+
+type UpdateTaskEmbeddingsInput = {
+  taskId: string;
+  userId: string;
+  title: string;
+  descriptionMarkdown?: string;
+};
+
+/**
+ * Placeholder helper to upsert task embeddings (title + description) into the Embedding table.
+ * Replace with real chunking + embedding model when wiring pgvector/Qdrant.
+ */
+export async function updateTaskEmbeddings({
+  taskId,
+  userId,
+  title,
+  descriptionMarkdown,
+}: UpdateTaskEmbeddingsInput) {
+  const text = `${title}\n\n${(descriptionMarkdown ?? '').trim()}`.trim();
+  if (!text) return;
+
+  console.info(
+    "[embeddings] queue task update",
+    JSON.stringify({ taskId, userId, length: text.length }),
+  );
+
+  await prisma.embedding.deleteMany({ where: { taskId } });
+
+  await prisma.embedding.create({
+    data: {
+      taskId,
+      userId,
+      chunkText: text.slice(0, 512),
+      embedding: { placeholder: true },
+    },
+  });
+}

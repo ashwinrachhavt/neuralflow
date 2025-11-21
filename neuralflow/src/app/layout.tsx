@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
+import { ProductAnalytics } from "@/components/product-analytics";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,11 +21,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "NeuralFlow Workspace",
-    template: "%s | NeuralFlow",
+    default: "Dao Workspace",
+    template: "%s | Dao",
   },
   description:
-    "Plan tasks, organise work, and protect focus with the NeuralFlow productivity workspace.",
+    "Plan tasks, organise work, and protect focus with the Dao productivity workspace.",
 };
 
 export default function RootLayout({
@@ -35,8 +37,8 @@ export default function RootLayout({
     <ClerkProvider
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
-      afterSignInUrl="/dashboard"
-      afterSignUpUrl="/dashboard"
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/dashboard"
     >
       <html lang="en" suppressHydrationWarning>
         <body
@@ -55,7 +57,9 @@ export default function RootLayout({
               </div>
               <Toaster richColors position="top-right" />
             </QueryProvider>
+            <ProductAnalytics />
           </ThemeProvider>
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
