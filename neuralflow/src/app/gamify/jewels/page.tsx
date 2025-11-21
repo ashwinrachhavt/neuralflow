@@ -6,17 +6,16 @@ import { JewelsGrid } from "./view";
 
 export const dynamic = "force-dynamic";
 
-export default async function JewelsPage() {
+export default async function RewardsPage() {
   const images = await listPublicImages();
   const milestones = generateMilestones(images.length || 12);
   return (
     <PageShell>
       <SectionHeader
-        title="Jewels"
+        title="Rewards"
         description="All rewards are locked. Finish tasks to earn priority points and unlock them one by one."
       />
       <JewelsGrid images={images} milestones={milestones} />
     </PageShell>
   );
 }
-
