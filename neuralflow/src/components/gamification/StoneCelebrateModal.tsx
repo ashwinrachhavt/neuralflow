@@ -13,7 +13,7 @@ type Props = {
   bagSelector?: string;
 };
 
-export function StoneCelebrateModal({ open, onClose, stone, bagSelector = '#bag-anchor' }: Props) {
+export function StoneCelebrateModal({ open, onClose, stone, bagSelector = '#jewels-anchor' }: Props) {
   // simple particle burst
   const [particles, setParticles] = useState(Array.from({ length: 24 }, (_, i) => i));
   const flyRef = useRef<HTMLDivElement | null>(null);

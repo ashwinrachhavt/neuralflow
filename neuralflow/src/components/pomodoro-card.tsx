@@ -195,9 +195,46 @@ export function PomodoroCard() {
     }));
   };
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Ignore when typing
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, textarea, [contenteditable="true"], select')) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleToggle();
+        return;
+      }
+      const key = e.key.toLowerCase();
+      if (key === 'r') {
+        e.preventDefault();
+        handleReset();
+        return;
+      }
+      if (key === 's') {
+        e.preventDefault();
+        handleSkip();
+        return;
+      }
+      if (key === 'f') {
+        e.preventDefault();
+        handleStartMode('focus');
+        return;
+      }
+      if (key === 'b') {
+        e.preventDefault();
+        handleStartMode('break');
+        return;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [handleReset]);
+
   return (
     <CardContainer className="w-full max-w-sm">
-      <CardBody className="backdrop-blur-md">
+      <CardBody className="backdrop-blur-md !border-0 !border-transparent">
         <CardItem
           translateZ={60}
           className="text-sm font-medium text-muted-foreground"
@@ -212,7 +249,7 @@ export function PomodoroCard() {
             <select
               value={state.activeTaskId ?? ""}
               onChange={handleTaskChange}
-              className="w-full rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm outline-none transition focus:border-primary"
+              className="w-full rounded-lg bg-background/80 px-3 py-2 text-sm transition outline-none !border-0 !ring-0 focus:!border-0 focus:!ring-2 focus:!ring-primary/40 shadow-none"
             >
               {taskOptions.map((task) => (
                 <option key={task.id} value={task.id}>
@@ -221,7 +258,7 @@ export function PomodoroCard() {
               ))}
             </select>
             {selectedTask?.description ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words line-clamp-3">
                 {selectedTask.description}
               </p>
             ) : null}

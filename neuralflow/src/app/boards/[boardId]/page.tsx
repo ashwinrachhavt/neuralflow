@@ -7,8 +7,9 @@ export const metadata = {
   description: 'Kanban board view',
 };
 
-export default async function BoardPage({ params }: { params: { boardId: string } }) {
-  const { boardId } = params;
+// Next 16: params is now a Promise and must be awaited
+export default async function BoardPage({ params }: { params: Promise<{ boardId: string }> }) {
+  const { boardId } = await params;
   return (
     <PageShell>
       <SectionHeader

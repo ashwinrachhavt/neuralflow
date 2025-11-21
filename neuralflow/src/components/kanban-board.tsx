@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus } from "lucide-react";
+import { Plus, Wand2, Tag, Lightbulb, FileText, GraduationCap, MoveRight } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMoveCard, useCreateCard, useBoard } from "@/hooks/api";
@@ -36,6 +36,29 @@ import {
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/queryClient";
 import { CardSheet } from "@/components/cards/CardSheet";
+import { NewCardModal } from "@/components/cards/NewCardModal";
+
+function ActionButton({
+  title,
+  onClick,
+  children,
+}: {
+  title: string;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center justify-center rounded p-1 text-xs text-muted-foreground hover:text-foreground"
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+    >
+      {children}
+    </button>
+  );
+}
 
 type Task = {
   id: string;
@@ -241,7 +264,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-4">
           {isLoading ? (
             <>
               {[0,1,2].map(i => (
@@ -284,16 +307,16 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
                 try { router.push(`/boards/${boardId}/tasks/${taskId}`); } catch { setOpenTaskId(taskId); }
               }}
               openTaskId={openTaskId}
-              onCreateCard={async (colId, title) => {
+              onCreateCard={async (colId, title, description) => {
                 try {
-                  const res = await createCard.mutateAsync({ boardId, columnId: colId, title });
+                  const res = await createCard.mutateAsync({ boardId, columnId: colId, title, descriptionMarkdown: description });
                   const newId = (res as any)?.id as string | undefined;
                   if (newId) {
                     // Optimistically inject into local board so shared-element animation has a source
                     setBoard(current => {
                       if (!current.columns[colId]) return current;
                       const next = { ...current, tasks: { ...current.tasks }, columns: { ...current.columns } };
-                      next.tasks[newId] = { id: newId, title, description: '', aiSuggestedColumnId: null, aiSuggestedPriority: null, aiSuggestedEstimateMin: null, aiNextAction: null, aiState: null, aiConfidence: null };
+                      next.tasks[newId] = { id: newId, title, description: description ?? '', aiSuggestedColumnId: null, aiSuggestedPriority: null, aiSuggestedEstimateMin: null, aiNextAction: null, aiState: null, aiConfidence: null };
                       next.columns[colId] = { ...next.columns[colId], taskIds: [...next.columns[colId].taskIds, newId] };
                       return next;
                     });
@@ -328,17 +351,16 @@ type KanbanColumnProps = {
   onSuggest: (taskId: string) => void;
   onAutoMove: (taskId: string) => void;
   onOpen: (taskId: string) => void;
-  onCreateCard: (columnId: string, title: string) => void;
+  onCreateCard: (columnId: string, title: string, description?: string) => void;
   openTaskId?: string | null;
   onApplyMove?: (taskId: string, targetColumnId: string) => void;
 };
 
 function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId, onApplyMove }: KanbanColumnProps) {
-  const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState("");
+  const [newOpen, setNewOpen] = useState(false);
   return (
     <Card className="flex w-full max-w-xs flex-1 flex-col bg-card/60 backdrop-blur-md">
-      <CardHeader>
+      <CardHeader className="py-3">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base font-semibold">
@@ -350,34 +372,12 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
               </CardDescription>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowForm(true)}>
+          <Button variant="ghost" size="icon" className="size-8" onClick={() => setNewOpen(true)}>
             <Plus className="size-4" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        {showForm ? (
-          <form
-            className="mb-3 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const v = title.trim();
-              if (!v) return;
-              onCreateCard(column.id, v);
-              setTitle("");
-              setShowForm(false);
-            }}
-          >
-            <input
-              className="flex-1 rounded border px-2 py-1 text-sm bg-background/80"
-              placeholder="New card title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <Button size="sm" type="submit">Add</Button>
-            <Button size="sm" variant="ghost" type="button" onClick={() => { setShowForm(false); setTitle(""); }}>Cancel</Button>
-          </form>
-        ) : null}
+      <CardContent className="pt-2">
         <ColumnSortableArea columnId={column.id} taskIds={column.taskIds}>
           {column.taskIds.length === 0 ? (
             <EmptyColumnHint />
@@ -388,6 +388,7 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
           )}
         </ColumnSortableArea>
       </CardContent>
+      <NewCardModal open={newOpen} onClose={() => setNewOpen(false)} onSubmit={(t, d) => onCreateCard(column.id, t, d)} />
     </Card>
   );
 }
@@ -409,7 +410,7 @@ function ColumnSortableArea({ columnId, taskIds, children }: ColumnSortableAreaP
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-[120px] flex-col gap-3",
+          "flex min-h-[120px] flex-col gap-2",
           isOver && "rounded-lg border border-dashed border-primary/40 bg-primary/5",
         )}
         data-column-id={columnId}
@@ -455,7 +456,7 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
       {...attributes}
       {...listeners}
       className={cn(
-        "rounded-xl border border-border bg-background/90 p-4 text-left shadow-sm",
+        "rounded-lg border border-border bg-background/90 p-3 text-left shadow-sm",
         isDragging && "opacity-60",
         isOpened && "invisible",
       )}
@@ -466,52 +467,36 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
         onOpen(task.id);
       }}
     >
-      <div className="flex items-center justify-between">
-        <motion.h3 layoutId={`card-title-${task.id}`} className="font-medium text-sm">{task.title}</motion.h3>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={(e) => { e.stopPropagation(); onEnrich(task.id); }}
-            title="AI: Enrich"
-          >✨</button>
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={(e) => { e.stopPropagation(); onClassify(task.id); }}
-            title="AI: Classify"
-          >🏷️</button>
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={(e) => { e.stopPropagation(); onSuggest(task.id); }}
-            title="AI: Suggest next action"
-          >🔮</button>
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={(e) => { e.stopPropagation(); onSummary(task.id); }}
-            title="AI: Summary"
-          >📝</button>
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={(e) => { e.stopPropagation(); onQuiz(task.id); }}
-            title="AI: Quiz"
-          >🧠</button>
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={(e) => { e.stopPropagation(); onAutoMove(task.id); }}
-            title="AI: Auto-move"
-          >↪️</button>
+      <div className="flex items-start justify-between gap-3">
+        <motion.h3 layoutId={`card-title-${task.id}`} className="font-medium text-sm break-words leading-tight line-clamp-2">
+          {task.title}
+        </motion.h3>
+        <div className="flex items-center gap-1.5">
+          <ActionButton title="AI: Enrich" onClick={(e) => { e.stopPropagation(); onEnrich(task.id); }}>
+            <Wand2 className="size-4" />
+          </ActionButton>
+          <ActionButton title="AI: Classify" onClick={(e) => { e.stopPropagation(); onClassify(task.id); }}>
+            <Tag className="size-4" />
+          </ActionButton>
+          <ActionButton title="AI: Suggest next action" onClick={(e) => { e.stopPropagation(); onSuggest(task.id); }}>
+            <Lightbulb className="size-4" />
+          </ActionButton>
+          <ActionButton title="AI: Summary" onClick={(e) => { e.stopPropagation(); onSummary(task.id); }}>
+            <FileText className="size-4" />
+          </ActionButton>
+          <ActionButton title="AI: Quiz" onClick={(e) => { e.stopPropagation(); onQuiz(task.id); }}>
+            <GraduationCap className="size-4" />
+          </ActionButton>
+          <ActionButton title="AI: Auto-move" onClick={(e) => { e.stopPropagation(); onAutoMove(task.id); }}>
+            <MoveRight className="size-4" />
+          </ActionButton>
         </div>
       </div>
       {task.aiNextAction ? (
-        <p className="mt-2 text-xs text-primary/90">Next: {task.aiNextAction}</p>
+        <p className="mt-2 text-xs text-primary/90 break-words leading-snug line-clamp-1">Next: {task.aiNextAction}</p>
       ) : null}
       {task.description ? (
-        <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+        <p className="mt-2 text-xs text-muted-foreground leading-relaxed break-words whitespace-pre-wrap line-clamp-3">
           {task.description}
         </p>
       ) : null}

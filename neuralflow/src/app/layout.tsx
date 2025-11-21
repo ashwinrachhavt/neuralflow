@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -8,6 +9,7 @@ import { Navbar } from "@/components/navbar";
 import { ProductAnalytics } from "@/components/product-analytics";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
+import { GlobalShortcuts } from "@/components/shortcuts/GlobalShortcuts";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,8 +58,11 @@ export default function RootLayout({
                 {children}
               </div>
               <Toaster richColors position="top-right" />
+              <GlobalShortcuts />
             </QueryProvider>
-            <ProductAnalytics />
+            <Suspense fallback={null}>
+              <ProductAnalytics />
+            </Suspense>
           </ThemeProvider>
           <Analytics />
         </body>

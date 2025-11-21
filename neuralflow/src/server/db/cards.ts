@@ -22,6 +22,18 @@ export async function updateTitle(taskId: string, title: string, userId: string)
   return prisma.task.update({ where: { id: taskId }, data: { title } });
 }
 
+export async function updateDescription(taskId: string, descriptionMarkdown: string, userId: string) {
+  const existing = await prisma.task.findFirst({ where: { id: taskId, board: { userId } }, select: { id: true } });
+  if (!existing) throw new ForbiddenError();
+  return prisma.task.update({ where: { id: taskId }, data: { descriptionMarkdown } });
+}
+
+export async function updatePartial(taskId: string, data: { title?: string; descriptionMarkdown?: string }, userId: string) {
+  const existing = await prisma.task.findFirst({ where: { id: taskId, board: { userId } }, select: { id: true } });
+  if (!existing) throw new ForbiddenError();
+  return prisma.task.update({ where: { id: taskId }, data });
+}
+
 export async function moveToColumn(taskId: string, columnId: string, userId: string) {
   const existing = await prisma.task.findFirst({ where: { id: taskId, board: { userId } }, select: { id: true } });
   if (!existing) throw new ForbiddenError();

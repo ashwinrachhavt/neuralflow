@@ -13,14 +13,14 @@ export default function BagPage() {
 
   return (
     <PageShell>
-      <SectionHeader title="Rewards Bag" description={`${ownedCount}/${items.length} gemstones collected`} />
+      <SectionHeader title="Jewels" description={`${ownedCount}/${items.length} gemstones collected`} />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((it) => (
           <div key={it.id} className="group rounded-2xl border border-border/60 bg-card/80 p-4 shadow-sm">
             <div className="relative mx-auto">
               <div className="grid place-items-center">
-                {/* bag anchor for fly animation when on this page */}
-                <div id="bag-anchor" className="absolute -top-8 right-0 h-4 w-4"></div>
+                {/* jewels anchor for fly animation when on this page */}
+                <div id="jewels-anchor" className="absolute -top-8 right-0 h-4 w-4"></div>
               </div>
               <div className="mx-auto">
                 <img src={it.image ?? '/diamond.png'} alt="preload" className="hidden" />

@@ -93,6 +93,19 @@ export function useUpdateCard() {
   });
 }
 
+export function useUpdateCardDescription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { taskId: string; descriptionMarkdown: string; boardId?: string }) =>
+      getJSON(`/api/tasks/${input.taskId}`, { method: 'PATCH', body: JSON.stringify({ descriptionMarkdown: input.descriptionMarkdown }) }),
+    onSuccess: async (_res, vars) => {
+      if (vars.boardId) await qc.invalidateQueries({ queryKey: queryKeys.board(vars.boardId) });
+      await qc.invalidateQueries({ queryKey: queryKeys.card(vars.taskId) });
+      await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
+    },
+  });
+}
+
 export function useDeleteCard() {
   const qc = useQueryClient();
   return useMutation({

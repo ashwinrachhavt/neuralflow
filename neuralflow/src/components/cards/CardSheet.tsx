@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment } from "react";
-import { Dialog, Transition } from "@headlessui/react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { Dialog, DialogPanel, DialogBackdrop, Transition } from "@headlessui/react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useCard } from "@/hooks/api";
@@ -9,6 +9,7 @@ import { CardTitleEditor } from "./CardTitleEditor";
 import { CardMetadata } from "./CardMetadata";
 import { CardAIDock } from "./CardAIDock";
 import { Button } from "@/components/ui/button";
+import { CardDescriptionEditor } from "@/components/cards/CardDescriptionEditor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Props = {
@@ -22,6 +23,7 @@ type Props = {
 export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = "" }: Props) {
   const { data, isLoading } = useCard(taskId);
   const qc = useQueryClient();
+  const [descExpanded, setDescExpanded] = useState(false);
   const applyMove = useMutation({
     mutationFn: async (columnId: string) => {
       const res = await fetch(`/api/tasks/${taskId}/column`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ columnId }) });
@@ -38,19 +40,37 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
     },
   });
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, textarea, [contenteditable="true"], select')) return;
+      if (e.key.toLowerCase() === 'e' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        setDescExpanded(v => !v);
+      }
+      if (e.key.toLowerCase() === 'o' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        onOpenFull?.(taskId);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onOpenFull, taskId]);
+
   return (
     <Transition show={open} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
-        {/* Backdrop */}
+        {/* Clickable backdrop that triggers onClose when clicked (Notion-like click-away) */}
         <Transition.Child as={Fragment} enter="ease-out duration-150" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+          <DialogBackdrop className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
         </Transition.Child>
 
         {/* Panel */}
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 translate-y-3" enterTo="opacity-100 translate-y-0" leave="ease-in duration-150" leaveFrom="opacity-100 translate-y-0" leaveTo="opacity-0 translate-y-2">
-              <motion.div
+              <DialogPanel as={motion.div}
                 layoutId={`${layoutIdBase}card-${taskId}`}
                 className="w-full max-w-2xl overflow-hidden rounded-2xl border bg-white shadow-2xl dark:border-white/10 dark:bg-[#1b1b28]"
                 transition={{ type: "spring", stiffness: 320, damping: 30 }}
@@ -96,20 +116,13 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
                           </Button>
                         </div>
                       ) : null}
-                      <CardMetadata task={data.task} className="mb-4" />
-                      {/* One-liner description preview */}
-                      {data.task.descriptionMarkdown ? (
-                        <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap dark:text-slate-300">
-                          {data.task.descriptionMarkdown}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground dark:text-slate-400">No description yet. Use Enrich to expand.</p>
-                      )}
+                      <CardMetadata task={data.task} className="mb-3" />
+                      <CardDescriptionEditor taskId={taskId} initial={data.task.descriptionMarkdown ?? ''} />
                       <CardAIDock taskId={taskId} className="mt-4" />
                     </>
                   )}
                 </div>
-              </motion.div>
+              </DialogPanel>
             </Transition.Child>
           </div>
         </div>
