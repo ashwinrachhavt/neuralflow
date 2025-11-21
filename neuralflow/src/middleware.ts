@@ -1,21 +1,30 @@
 // src/middleware.ts (or /middleware.ts depending on your structure)
-import { clerkMiddleware, type ClerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export default clerkMiddleware(
   async (auth, req: NextRequest) => {
-    const { userId, isPublicRoute } = await auth();
+    const { userId } = await auth();
     const { pathname } = new URL(req.url);
 
     // Keep landing and auth pages fully public; no redirects here
-    const isExplicitPublic = [
+    const publicMatchers = [
       "/",
       "/sign-in",
       "/sign-up",
-    ].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+      "/api/healthcheck",
+      "/favicon.ico",
+      "/robots.txt",
+      "/sitemap.xml",
+      "/.well-known",
+    ];
 
-    if (!userId && !isPublicRoute && !isExplicitPublic) {
+    const isExplicitPublic = publicMatchers.some((p) =>
+      pathname === p || pathname.startsWith(`${p}/`)
+    );
+
+    if (!userId && !isExplicitPublic) {
       // API/TRPC get JSON 401
       if (pathname.startsWith("/api") || pathname.startsWith("/trpc")) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -25,21 +34,8 @@ export default clerkMiddleware(
     }
 
     return NextResponse.next();
-  },
-  {
-    publicRoutes: [
-      "/",
-      "/sign-in(.*)",
-      "/sign-up(.*)",
-      "/api/healthcheck",
-      "/favicon.ico",
-      "/robots.txt",
-      "/sitemap.xml",
-      "/.well-known/(.*)"
-    ],
-    ignoredRoutes: ["/api/healthcheck"]
   }
-) as ClerkMiddleware;
+);
 
 export const config = {
   matcher: [
