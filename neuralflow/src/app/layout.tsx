@@ -9,6 +9,7 @@ import { Navbar } from "@/components/navbar";
 import { ProductAnalytics } from "@/components/product-analytics";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
+import { GlobalShortcuts } from "@/components/shortcuts/GlobalShortcuts";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,6 +58,7 @@ export default function RootLayout({
                 {children}
               </div>
               <Toaster richColors position="top-right" />
+              <GlobalShortcuts />
             </QueryProvider>
             <Suspense fallback={null}>
               <ProductAnalytics />

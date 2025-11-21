@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogPanel, DialogBackdrop, Transition } from "@headlessui/react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -9,6 +9,7 @@ import { CardTitleEditor } from "./CardTitleEditor";
 import { CardMetadata } from "./CardMetadata";
 import { CardAIDock } from "./CardAIDock";
 import { Button } from "@/components/ui/button";
+import { CardDescriptionEditor } from "@/components/cards/CardDescriptionEditor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Props = {
@@ -22,6 +23,7 @@ type Props = {
 export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = "" }: Props) {
   const { data, isLoading } = useCard(taskId);
   const qc = useQueryClient();
+  const [descExpanded, setDescExpanded] = useState(false);
   const applyMove = useMutation({
     mutationFn: async (columnId: string) => {
       const res = await fetch(`/api/tasks/${taskId}/column`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ columnId }) });
@@ -37,6 +39,24 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
       onClose();
     },
   });
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, textarea, [contenteditable="true"], select')) return;
+      if (e.key.toLowerCase() === 'e' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        setDescExpanded(v => !v);
+      }
+      if (e.key.toLowerCase() === 'o' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        onOpenFull?.(taskId);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onOpenFull, taskId]);
 
   return (
     <Transition show={open} as={Fragment}>
@@ -96,15 +116,8 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
                           </Button>
                         </div>
                       ) : null}
-                      <CardMetadata task={data.task} className="mb-4" />
-                      {/* One-liner description preview */}
-                      {data.task.descriptionMarkdown ? (
-                        <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap dark:text-slate-300">
-                          {data.task.descriptionMarkdown}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground dark:text-slate-400">No description yet. Use Enrich to expand.</p>
-                      )}
+                      <CardMetadata task={data.task} className="mb-3" />
+                      <CardDescriptionEditor taskId={taskId} initial={data.task.descriptionMarkdown ?? ''} />
                       <CardAIDock taskId={taskId} className="mt-4" />
                     </>
                   )}

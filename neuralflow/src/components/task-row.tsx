@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { StoneCelebrateModal } from "@/components/gamification/StoneCelebrateModal";
 import { GEM_ICON_PATHS, GEM_META } from "@/lib/gamification/catalog";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ type TaskLite = {
 
 export function TaskRow({ task, onDone }: { task: TaskLite; onDone?: (id: string) => void }) {
   const [localDone, setLocalDone] = useState(!!task.completed);
+  const qc = useQueryClient();
   const [celebrate, setCelebrate] = useState<null | { name: string; image?: string; rarity?: string }>(null);
 
   const mins = task.estimatedPomodoros ? Math.max(5, task.estimatedPomodoros * 25) : null;
@@ -41,6 +43,7 @@ export function TaskRow({ task, onDone }: { task: TaskLite; onDone?: (id: string
           setCelebrate({ name: meta.name, image: GEM_ICON_PATHS[first as keyof typeof GEM_ICON_PATHS], rarity: meta.rarity });
         }
       } catch {}
+      try { await qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] === 'board' || q.queryKey[0] === 'cards' || q.queryKey[0] === 'boards') }); } catch {}
       toast.success('Task completed');
       onDone?.(task.id);
     } catch {

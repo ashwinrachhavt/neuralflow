@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Wand2, ScatterChart } from "lucide-react";
 import Link from "next/link";
 
-import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,19 +33,45 @@ export function TodosPane() {
       if (!res.ok) throw new Error('failed');
       return (await res.json()) as { id: string };
     },
-    onSuccess: async (r) => {
+    onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
-      try { router.push(`/todos/tasks/${r.id}`); } catch { setOpenTaskId(r.id); }
     }
   });
 
   const markDone = useMarkDone();
 
+  useEffect(() => {
+    const handleFocusQuickAdd = () => {
+      const el = document.getElementById('todos-quick-add-input') as HTMLInputElement | null;
+      el?.focus();
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing = !!target?.closest('input, textarea, [contenteditable="true"], select');
+      if (!typing && e.key.toLowerCase() === 'a' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        setAssistantOpen(true);
+      }
+    };
+    window.addEventListener('focus-todos-quick-add', handleFocusQuickAdd as EventListener);
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('focus-todos-quick-add', handleFocusQuickAdd as EventListener);
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, []);
+  async function invalidateBoardsAndTodos() {
+    try {
+      // Invalidate any board-related queries so Kanban updates
+      await qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] === 'board' || q.queryKey[0] === 'cards' || q.queryKey[0] === 'boards') });
+    } catch {}
+    await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
+  }
+
   return (
     <div className="flex w-full justify-center">
       <div className="w-full max-w-xl">
-        <div className="mb-3 flex items-center justify-between">
-          <SegmentedTabs items={[{ href: '/todos', label: 'Tasks', active: true }, { href: '/pomodoro', label: 'Timer', active: false }]} />
+        <div className="mb-3 flex items-center justify-end">
           <div className="flex items-center gap-2">
           <Link href="/visualize/embeddings" className="rounded-full border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/40">
             <span className="inline-flex items-center gap-1"><ScatterChart className="size-3.5" /> Spatial</span>
@@ -79,7 +104,7 @@ export function TodosPane() {
                         <button
                           className="grid size-5 place-items-center rounded-full border border-border/60 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500"
                           title="Mark done"
-                          onClick={async (e) => { e.stopPropagation(); await markDone.mutateAsync(t.id); try { const g = await fetch('/api/gamify/on-task-completed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: t.id }) }); const data = await g.json().catch(() => null); const first: string | undefined = (data?.awards?.[0]) as any; if (first && first in GEM_ICON_PATHS) { const meta = GEM_META[first as keyof typeof GEM_ICON_PATHS]; setCelebrate({ name: meta.name, image: GEM_ICON_PATHS[first as keyof typeof GEM_ICON_PATHS], rarity: meta.rarity }); } } catch {} await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] }); }}
+                          onClick={async (e) => { e.stopPropagation(); await markDone.mutateAsync(t.id); try { const g = await fetch('/api/gamify/on-task-completed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: t.id }) }); const data = await g.json().catch(() => null); const first: string | undefined = (data?.awards?.[0]) as any; if (first && first in GEM_ICON_PATHS) { const meta = GEM_META[first as keyof typeof GEM_ICON_PATHS]; setCelebrate({ name: meta.name, image: GEM_ICON_PATHS[first as keyof typeof GEM_ICON_PATHS], rarity: meta.rarity }); } } catch {} await invalidateBoardsAndTodos(); }}
                         >
                           <Check className="size-3" />
                         </button>
@@ -93,7 +118,21 @@ export function TodosPane() {
 
             {/* Quick Add */}
             <div className="flex items-center gap-2 border-t border-border/60 px-3 py-3">
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter task name" className="flex-1" />
+              <Input
+                id="todos-quick-add-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const v = title.trim();
+                    if (!v) return;
+                    addMutation.mutate(v);
+                    setTitle('');
+                  }
+                }}
+                placeholder="Enter task name"
+                className="flex-1"
+              />
               <Button className="gap-1" onClick={() => { const v = title.trim(); if (!v) return; addMutation.mutate(v); setTitle(''); }} disabled={addMutation.isPending}>
                 <Plus className="size-4" />
                 Add

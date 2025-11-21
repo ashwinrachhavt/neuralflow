@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/queryClient";
 import { CardSheet } from "@/components/cards/CardSheet";
+import { NewCardModal } from "@/components/cards/NewCardModal";
 
 function ActionButton({
   title,
@@ -306,16 +307,16 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
                 try { router.push(`/boards/${boardId}/tasks/${taskId}`); } catch { setOpenTaskId(taskId); }
               }}
               openTaskId={openTaskId}
-              onCreateCard={async (colId, title) => {
+              onCreateCard={async (colId, title, description) => {
                 try {
-                  const res = await createCard.mutateAsync({ boardId, columnId: colId, title });
+                  const res = await createCard.mutateAsync({ boardId, columnId: colId, title, descriptionMarkdown: description });
                   const newId = (res as any)?.id as string | undefined;
                   if (newId) {
                     // Optimistically inject into local board so shared-element animation has a source
                     setBoard(current => {
                       if (!current.columns[colId]) return current;
                       const next = { ...current, tasks: { ...current.tasks }, columns: { ...current.columns } };
-                      next.tasks[newId] = { id: newId, title, description: '', aiSuggestedColumnId: null, aiSuggestedPriority: null, aiSuggestedEstimateMin: null, aiNextAction: null, aiState: null, aiConfidence: null };
+                      next.tasks[newId] = { id: newId, title, description: description ?? '', aiSuggestedColumnId: null, aiSuggestedPriority: null, aiSuggestedEstimateMin: null, aiNextAction: null, aiState: null, aiConfidence: null };
                       next.columns[colId] = { ...next.columns[colId], taskIds: [...next.columns[colId].taskIds, newId] };
                       return next;
                     });
@@ -350,14 +351,13 @@ type KanbanColumnProps = {
   onSuggest: (taskId: string) => void;
   onAutoMove: (taskId: string) => void;
   onOpen: (taskId: string) => void;
-  onCreateCard: (columnId: string, title: string) => void;
+  onCreateCard: (columnId: string, title: string, description?: string) => void;
   openTaskId?: string | null;
   onApplyMove?: (taskId: string, targetColumnId: string) => void;
 };
 
 function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId, onApplyMove }: KanbanColumnProps) {
-  const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState("");
+  const [newOpen, setNewOpen] = useState(false);
   return (
     <Card className="flex w-full max-w-xs flex-1 flex-col bg-card/60 backdrop-blur-md">
       <CardHeader className="py-3">
@@ -372,34 +372,12 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
               </CardDescription>
             ) : null}
           </div>
-          <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowForm(true)}>
+          <Button variant="ghost" size="icon" className="size-8" onClick={() => setNewOpen(true)}>
             <Plus className="size-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-2">
-        {showForm ? (
-          <form
-            className="mb-2 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const v = title.trim();
-              if (!v) return;
-              onCreateCard(column.id, v);
-              setTitle("");
-              setShowForm(false);
-            }}
-          >
-            <input
-              className="flex-1 rounded border px-2 py-1 text-sm bg-background/80"
-              placeholder="New card title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <Button size="sm" type="submit">Add</Button>
-            <Button size="sm" variant="ghost" type="button" onClick={() => { setShowForm(false); setTitle(""); }}>Cancel</Button>
-          </form>
-        ) : null}
         <ColumnSortableArea columnId={column.id} taskIds={column.taskIds}>
           {column.taskIds.length === 0 ? (
             <EmptyColumnHint />
@@ -410,6 +388,7 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
           )}
         </ColumnSortableArea>
       </CardContent>
+      <NewCardModal open={newOpen} onClose={() => setNewOpen(false)} onSubmit={(t, d) => onCreateCard(column.id, t, d)} />
     </Card>
   );
 }
