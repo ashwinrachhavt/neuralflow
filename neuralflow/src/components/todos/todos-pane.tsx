@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { useMarkDone, useMyTodos } from "@/hooks/api";
 import { CardSheet } from "@/components/cards/CardSheet";
 import { AssistantDock } from "@/components/assistant/AssistantDock";
+import { StoneCelebrateModal } from "@/components/gamification/StoneCelebrateModal";
+import { GEM_ICON_PATHS, GEM_META } from "@/lib/gamification/catalog";
 
 export function TodosPane() {
   const qc = useQueryClient();
@@ -23,6 +25,7 @@ export function TodosPane() {
   const todos = useMemo(() => data?.tasks ?? [], [data?.tasks]);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [celebrate, setCelebrate] = useState<null | { name: string; image?: string; rarity?: string }>(null);
   const [title, setTitle] = useState("");
   const [source, setSource] = useState("Flowmo");
 
@@ -86,7 +89,7 @@ export function TodosPane() {
                         <button
                           className="grid size-5 place-items-center rounded-full border border-border/60 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500"
                           title="Mark done"
-                          onClick={async (e) => { e.stopPropagation(); await markDone.mutateAsync(t.id); await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] }); }}
+                          onClick={async (e) => { e.stopPropagation(); await markDone.mutateAsync(t.id); try { const g = await fetch('/api/gamify/on-task-completed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: t.id }) }); const data = await g.json().catch(() => null); const first: string | undefined = (data?.awards?.[0]) as any; if (first && first in GEM_ICON_PATHS) { const meta = GEM_META[first as keyof typeof GEM_ICON_PATHS]; setCelebrate({ name: meta.name, image: GEM_ICON_PATHS[first as keyof typeof GEM_ICON_PATHS], rarity: meta.rarity }); } } catch {} await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] }); }}
                         >
                           <Check className="size-3" />
                         </button>
@@ -112,6 +115,7 @@ export function TodosPane() {
       {openTaskId ? (
         <CardSheet taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} onOpenFull={(id) => (window.location.href = `/tasks/${id}`)} />
       ) : null}
+      <StoneCelebrateModal open={!!celebrate} onClose={() => setCelebrate(null)} stone={celebrate} />
       <AssistantDock open={assistantOpen} onClose={() => setAssistantOpen(false)} />
     </div>
   );
