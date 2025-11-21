@@ -7,10 +7,12 @@ type EventRouteContext = { params: Promise<{ eventId: string }> };
 export async function PUT(request: NextRequest, context: EventRouteContext) {
   const { eventId } = await context.params;
   const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
+  const userId = (user as any).id as string;
   const body = await request.json();
   const { title, type, startAt, endAt, descriptionMarkdown, location, tags } = body ?? {};
   const updated = await prisma.calendarEvent.updateMany({
-    where: { id: eventId, userId: user.id },
+    where: { id: eventId, userId },
     data: {
       title,
       type,
@@ -28,7 +30,9 @@ export async function PUT(request: NextRequest, context: EventRouteContext) {
 export async function DELETE(_request: NextRequest, context: EventRouteContext) {
   const { eventId } = await context.params;
   const user = await getUserOr401();
-  const deleted = await prisma.calendarEvent.deleteMany({ where: { id: eventId, userId: user.id } });
+  if (!(user as any).id) return user as unknown as NextResponse;
+  const userId = (user as any).id as string;
+  const deleted = await prisma.calendarEvent.deleteMany({ where: { id: eventId, userId } });
   if (deleted.count === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

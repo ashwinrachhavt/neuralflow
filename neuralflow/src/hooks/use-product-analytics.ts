@@ -15,7 +15,7 @@ function sendPlausibleEvent(name: string, props?: AnalyticsProps) {
 
   const filteredProps = Object.fromEntries(
     Object.entries(props ?? {}).filter(([, value]) => value !== undefined)
-  );
+  ) as Record<string, string | number | boolean | null>;
 
   window.plausible(name, Object.keys(filteredProps).length ? { props: filteredProps } : undefined);
 }

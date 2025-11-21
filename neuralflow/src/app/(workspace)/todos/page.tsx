@@ -5,7 +5,10 @@ import { SectionHeader } from "@/components/section-header";
 export default function TodosPage() {
   return (
     <PageShell>
-      <SectionHeader />
+      <SectionHeader
+        title="Todos"
+        description="Capture quick tasks, enrich them with AI, and drag the most important work into focus."
+      />
       <TodosPane />
     </PageShell>
   );

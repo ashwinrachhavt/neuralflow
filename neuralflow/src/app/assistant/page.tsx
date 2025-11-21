@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
 import { PageShell } from "@/components/layout/page-shell";
 import { SectionHeader } from "@/components/section-header";
 import { Button } from "@/components/ui/button";
@@ -16,9 +17,21 @@ function Msg({ role, content }: { role: string; content: string }) {
   );
 }
 
+function getMessageText(message: UIMessage) {
+  if (Array.isArray(message.parts) && message.parts.length) {
+    return message.parts
+      .map((part) => (part.type === "text" && typeof part.text === "string" ? part.text : ""))
+      .filter(Boolean)
+      .join("\n");
+  }
+  const fallback = (message as any)?.content;
+  return typeof fallback === "string" ? fallback : "";
+}
+
 export default function AssistantPage() {
   const [text, setText] = React.useState("");
-  const { messages, sendMessage, isLoading, reload } = useChat({ api: "/api/chat" });
+  const { messages, sendMessage, status, regenerate } = useChat();
+  const isThinking = status === "streaming" || status === "submitted";
 
   return (
     <PageShell size="md">
@@ -27,16 +40,16 @@ export default function AssistantPage() {
           title="Assistant"
           actions={
             messages.length > 0 ? (
-              <Button variant="outline" size="sm" onClick={() => reload()}>Retry</Button>
+              <Button variant="outline" size="sm" onClick={() => regenerate()}>Retry</Button>
             ) : null
           }
         />
 
         <div className="space-y-2">
           {messages.map((m) => (
-            <Msg key={m.id} role={m.role} content={(m.content as any) ?? ""} />
+            <Msg key={m.id} role={m.role} content={getMessageText(m)} />
           ))}
-          {isLoading ? (
+          {isThinking ? (
             <Card><CardContent className="p-3 text-sm text-muted-foreground">Thinking…</CardContent></Card>
           ) : null}
         </div>
@@ -57,7 +70,7 @@ export default function AssistantPage() {
             placeholder="Message"
             className="flex-1 rounded border bg-background px-3 py-2 text-sm"
           />
-          <Button type="submit" disabled={!text.trim() || isLoading}>Send</Button>
+          <Button type="submit" disabled={!text.trim() || isThinking}>Send</Button>
         </form>
       </div>
     </PageShell>

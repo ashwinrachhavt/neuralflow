@@ -1,16 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { getUserOr401 } from "@/lib/api-helpers";
 
-type RouteContext = { params: { taskId: string } };
+type RouteContext = { params: Promise<{ taskId: string }> };
 
-export async function GET(_req: Request, { params }: RouteContext) {
+export async function GET(_req: NextRequest, context: RouteContext) {
+  const { taskId } = await context.params;
   const user = await getUserOr401();
   if (!(user as any).id) return user as unknown as NextResponse;
 
   const task = await prisma.task.findFirst({
-    where: { id: params.taskId, board: { userId: (user as any).id } },
+    where: { id: taskId, board: { userId: (user as any).id } },
     include: {
       column: true,
       note: true,

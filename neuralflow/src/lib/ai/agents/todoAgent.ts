@@ -60,7 +60,7 @@ ${input}
     const braceMatch = text.match(/\{[\s\S]*\}$/);
     const candidate = fencedMatch?.[1] ?? braceMatch?.[0] ?? "{}";
 
-    let parsed: z.SafeParseReturnType<any, any>;
+    let parsed: ReturnType<typeof TodoAgentOutputSchema.safeParse>;
     try {
       parsed = TodoAgentOutputSchema.safeParse(JSON.parse(candidate));
     } catch (_e) {

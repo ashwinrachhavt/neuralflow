@@ -19,6 +19,7 @@
     "prisma:seed": "ts-node --transpile-only prisma/seed.ts"
   },
   "dependencies": {
+    "3d-force-graph": "^1.79.0",
     "@ai-sdk/openai": "^2.0.8",
     "@ai-sdk/react": "^2.0.93",
     "@clerk/nextjs": "^6.34.4",

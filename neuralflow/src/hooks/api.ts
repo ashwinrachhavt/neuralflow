@@ -26,6 +26,13 @@ export type CardDetail = {
     column?: { id: string; title: string } | null;
     tags?: string[];
     project?: { id: string; title: string } | null;
+    aiSuggestedColumnId?: string | null;
+    aiSuggestedPriority?: string | null;
+    aiSuggestedEstimateMin?: number | null;
+    aiNextAction?: string | null;
+    aiState?: string | null;
+    aiConfidence?: number | null;
+    suggestedColumn?: { id: string; title: string } | null;
   };
   note?: { id: string; title: string; contentJson: string; contentMarkdown: string } | null;
 };

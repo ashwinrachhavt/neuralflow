@@ -58,7 +58,12 @@ export function StoneCelebrateModal({ open, onClose, stone, bagSelector = '#bag-
                 ))}
               </div>
               {/* Cropped & centered preview with spin reveal */}
-              <motion.div initial={{ rotate: -12, scale: 0.92, opacity: 0 }} animate={{ rotate: 0, scale: 1, opacity: 1 }} transition={{ duration: 0.5, ease: 'easeOut' }}>
+              <motion.div
+                ref={flyRef}
+                initial={{ rotate: -12, scale: 0.92, opacity: 0 }}
+                animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              >
                 <RewardImage src={imgSrc} size={112} />
               </motion.div>
               <motion.h3 className="mt-3 text-lg font-semibold" initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.24 }}>

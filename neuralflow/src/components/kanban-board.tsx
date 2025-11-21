@@ -77,7 +77,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   // Hydrate board from API
   useEffect(() => {
     if (!data) return;
-    const { columns: apiColumns, columnOrder, tasks: apiTasks } = (data as any).board;
+    const { columns: apiColumns, columnOrder, tasks: apiTasks } = data.board;
 
     const columns: Record<string, Column> = {};
     for (const columnId of columnOrder) {

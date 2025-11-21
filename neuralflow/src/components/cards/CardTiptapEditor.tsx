@@ -54,9 +54,7 @@ export function CardTiptapEditor({ initialContent, noteId, className }: CardTipt
         heading: { levels: [1, 2, 3] },
         bulletList: { keepMarks: true },
         orderedList: { keepMarks: true },
-        codeBlock: true,
-        taskList: false,
-        taskItem: false,
+        codeBlock: {},
       }),
       TaskList.configure({ HTMLAttributes: { class: "not-prose space-y-1" } }),
       TaskItem.configure({ nested: true }),
@@ -83,7 +81,7 @@ export function CardTiptapEditor({ initialContent, noteId, className }: CardTipt
       editor.commands.clearContent();
       return;
     }
-    editor.commands.setContent(parsedContent, false);
+    editor.commands.setContent(parsedContent, { emitUpdate: false });
   }, [editor, parsedContent]);
 
   useEffect(() => {
@@ -146,7 +144,13 @@ type ToolbarConfig = {
 };
 
 function buildToolbar(editor: Editor | null): ToolbarButton[] {
-  if (!editor) return TOOLBAR_ITEMS.map((item) => ({ ...item, active: false }));
+  if (!editor)
+    return TOOLBAR_ITEMS.map((item) => ({
+      id: item.id,
+      label: item.label,
+      icon: item.icon,
+      active: false,
+    }));
   return TOOLBAR_ITEMS.map((item) => ({
     id: item.id,
     label: item.label,

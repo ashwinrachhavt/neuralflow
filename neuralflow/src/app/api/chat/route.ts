@@ -51,15 +51,15 @@ export async function POST(req: Request) {
     }
   }
 
-  const system = `You are a concise helpful assistant. If web context is provided, use it and include bracketed citations like [1], [2] mapping to the source list provided.`;
+  const baseSystem = `You are a concise helpful assistant. If web context is provided, use it and include bracketed citations like [1], [2] mapping to the source list provided.`;
+  const system = context ? `${baseSystem}\n\nContext:\n${context}\n\nWhen you cite, reference the matching bracket number.` : baseSystem;
 
   const result = streamText({
     model: openai(modelName),
     messages,
     system,
     temperature: 0.3,
-    maxTokens: 600,
-    prompt: context ? `${context}\n\nAnswer:` : undefined,
+    maxOutputTokens: 600,
   });
 
   const anyResult: any = result as any;

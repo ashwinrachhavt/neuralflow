@@ -1,5 +1,9 @@
-// Plan feature removed
-type PlannedTask = never;
+export type PlannedTask = {
+  priority: "high" | "medium" | "low";
+  kind: "deep" | "shallow";
+  estimateMinutes: number;
+  title?: string;
+};
 
 export type ScheduledBlock =
   | { type: "focus"; taskIndex: number; minutes: number }

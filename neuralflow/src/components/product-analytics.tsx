@@ -34,7 +34,7 @@ export function ProductAnalytics() {
   const pageProps = useMemo(
     () => ({
       route: pathname ?? "/",
-      search: queryString || undefined,
+      search: queryString || null,
       auth: authState,
     }),
     [pathname, queryString, authState],

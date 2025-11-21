@@ -47,6 +47,7 @@ export const config = {
     // Only run middleware on protected app sections and APIs
     "/dashboard/:path*",
     "/boards/:path*",
+    "/todos/:path*",
     "/assistant/:path*",
     "/profile/:path*",
     "/pomodoro/:path*",

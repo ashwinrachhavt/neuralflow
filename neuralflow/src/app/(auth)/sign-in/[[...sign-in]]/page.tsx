@@ -3,8 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { GooeyText } from "@/components/ui/gooey-text-morphing";
 
-export default function SignInPage() {
-  const { userId } = auth();
+export default async function SignInPage() {
+  const { userId } = await auth();
   if (userId) {
     redirect("/dashboard");
   }
