@@ -543,36 +543,56 @@ export const PromptInput = ({
     [matchesAccept, maxFiles, maxFileSize, onError]
   );
 
-  const add = usingProvider
-    ? (files: File[] | FileList) => controller.attachments.add(files)
-    : addLocal;
+  const removeLocal = useCallback(
+    (id: string) =>
+      setItems((prev) => {
+        const found = prev.find((file) => file.id === id);
+        if (found?.url) {
+          URL.revokeObjectURL(found.url);
+        }
+        return prev.filter((file) => file.id !== id);
+      }),
+    [setItems]
+  );
 
-  const remove = usingProvider
-    ? (id: string) => controller.attachments.remove(id)
-    : (id: string) =>
-        setItems((prev) => {
-          const found = prev.find((file) => file.id === id);
-          if (found?.url) {
-            URL.revokeObjectURL(found.url);
-          }
-          return prev.filter((file) => file.id !== id);
-        });
+  const clearLocal = useCallback(() => {
+    setItems((prev) => {
+      for (const file of prev) {
+        if (file.url) {
+          URL.revokeObjectURL(file.url);
+        }
+      }
+      return [];
+    });
+  }, [setItems]);
 
-  const clear = usingProvider
-    ? () => controller.attachments.clear()
-    : () =>
-        setItems((prev) => {
-          for (const file of prev) {
-            if (file.url) {
-              URL.revokeObjectURL(file.url);
-            }
-          }
-          return [];
-        });
+  const add: (files: File[] | FileList) => void = useMemo(() => {
+    if (usingProvider && controller) {
+      return (files: File[] | FileList) => controller.attachments.add(files);
+    }
+    return addLocal;
+  }, [usingProvider, controller, addLocal]);
 
-  const openFileDialog = usingProvider
-    ? () => controller.attachments.openFileDialog()
-    : openFileDialogLocal;
+  const remove: (id: string) => void = useMemo(() => {
+    if (usingProvider && controller) {
+      return (id: string) => controller.attachments.remove(id);
+    }
+    return removeLocal;
+  }, [usingProvider, controller, removeLocal]);
+
+  const clear: () => void = useMemo(() => {
+    if (usingProvider && controller) {
+      return () => controller.attachments.clear();
+    }
+    return clearLocal;
+  }, [usingProvider, controller, clearLocal]);
+
+  const openFileDialog: () => void = useMemo(() => {
+    if (usingProvider && controller) {
+      return () => controller.attachments.openFileDialog();
+    }
+    return openFileDialogLocal;
+  }, [usingProvider, controller, openFileDialogLocal]);
 
   // Let provider know about our hidden file input so external menus can call openFileDialog()
   useEffect(() => {
@@ -697,7 +717,7 @@ export const PromptInput = ({
 
     // Convert blob URLs to data URLs asynchronously
     Promise.all(
-      files.map(async ({ id, ...item }) => {
+      files.map(async ({ id: _id, ...item }) => {
         if (item.url && item.url.startsWith("blob:")) {
           return {
             ...item,
@@ -729,7 +749,7 @@ export const PromptInput = ({
             controller.textInput.clear();
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // Don't clear on error - user may want to retry
       }
     });

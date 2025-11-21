@@ -73,7 +73,7 @@ export function FlomodorTodos() {
               setNewTitle('');
             }}
           >
-            <Input placeholder="Quick add a task" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+            <Input placeholder="Add task" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
             <Button type="submit" disabled={quickAdd.isPending} className="gap-2">
               {quickAdd.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />} Add
             </Button>
@@ -158,7 +158,7 @@ export function FlomodorTodos() {
             {todos.length === 0 && !isLoading ? (
               <li>
                 <div className="rounded-xl border border-dashed border-border/70 p-6 text-center text-sm text-muted-foreground">
-                  No tasks in Todo. Add something above, or plan from the Board.
+                  No tasks yet.
                 </div>
               </li>
             ) : null}

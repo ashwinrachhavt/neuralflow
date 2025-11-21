@@ -137,7 +137,6 @@ export function GemDashboard() {
         <h2 className="text-lg font-semibold">Gem Catalog</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
           {data.catalog.map((g) => {
-            const pct = Math.round((g.shards.current / g.shards.target) * 100);
             return (
               <Card key={g.slug}>
                 <CardContent className="p-3">

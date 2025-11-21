@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/queryClient";
-import { CardMotionOverlay } from "@/components/cards/CardMotionOverlay";
+import { CardSheet } from "@/components/cards/CardSheet";
 
 type Task = {
   id: string;
@@ -324,7 +324,14 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
         </div>
       </div>
       {openTaskId ? (
-        <CardMotionOverlay taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} />
+        <CardSheet
+          taskId={openTaskId}
+          open={true}
+          onClose={() => setOpenTaskId(null)}
+          onOpenFull={(id) => {
+            window.location.assign(`/tasks/${id}`);
+          }}
+        />
       ) : null}
     </DndContext>
   );

@@ -2,11 +2,10 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -445,18 +444,14 @@ export default function CalendarPage() {
             <div className="px-4 py-3 text-sm text-muted-foreground">Loading events…</div>
           ) : null}
         </CardContent>
-        <CardDescription className="px-6 py-3 text-sm text-muted-foreground">
-          Click any day to schedule a block, then open it from the grid to edit details and add notes.
-        </CardDescription>
+        
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{selectedEvent ? 'Edit block' : 'Add block'}</DialogTitle>
-            <DialogDescription>
-              Fill in the title, type, and time. Use the notes area to capture meeting context or focus intention.
-            </DialogDescription>
+            
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -464,7 +459,7 @@ export default function CalendarPage() {
               <Input
                 value={formState.title}
                 onChange={(event) => setFormState((prev) => ({ ...prev, title: event.target.value }))}
-                placeholder="Block title"
+                placeholder="Title"
               />
               <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Type</label>
               <Select value={formState.type} onValueChange={(value) => setFormState((prev) => ({ ...prev, type: value as EventType }))}>
@@ -497,7 +492,7 @@ export default function CalendarPage() {
               <Input
                 value={formState.location}
                 onChange={(event) => setFormState((prev) => ({ ...prev, location: event.target.value }))}
-                placeholder="Meeting room, Zoom link…"
+                placeholder="Location"
               />
             </div>
             <div className="space-y-1">
@@ -505,7 +500,7 @@ export default function CalendarPage() {
               <Input
                 value={formState.tagsInput}
                 onChange={(event) => setFormState((prev) => ({ ...prev, tagsInput: event.target.value }))}
-                placeholder="e.g. planning, async"
+                placeholder="Tags"
               />
             </div>
             <div className="space-y-1">
@@ -513,7 +508,7 @@ export default function CalendarPage() {
               <Textarea
                 value={formState.descriptionMarkdown}
                 onChange={(event) => setFormState((prev) => ({ ...prev, descriptionMarkdown: event.target.value }))}
-                placeholder="Add context, meeting notes, focus intention…"
+                placeholder="Notes"
                 rows={3}
               />
             </div>

@@ -25,7 +25,6 @@ export default function AssistantPage() {
       <div className="mx-auto max-w-3xl">
         <SectionHeader
           title="Assistant"
-          description="Ask anything. The assistant can help plan, analyze, and execute."
           actions={
             messages.length > 0 ? (
               <Button variant="outline" size="sm" onClick={() => reload()}>Retry</Button>
@@ -55,7 +54,7 @@ export default function AssistantPage() {
           <input
             value={text}
             onChange={(e) => setText((e.target as HTMLInputElement).value)}
-            placeholder="Type your message…"
+            placeholder="Message"
             className="flex-1 rounded border bg-background px-3 py-2 text-sm"
           />
           <Button type="submit" disabled={!text.trim() || isLoading}>Send</Button>
@@ -64,4 +63,3 @@ export default function AssistantPage() {
     </PageShell>
   );
 }
-

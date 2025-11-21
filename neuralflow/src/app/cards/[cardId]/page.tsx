@@ -36,7 +36,7 @@ export default function CardDetailPage() {
               {data.task.descriptionMarkdown ? (
                 <pre className="whitespace-pre-wrap text-sm">{data.task.descriptionMarkdown}</pre>
               ) : (
-                <p className="text-sm text-muted-foreground">No description yet. Use Enrich from the board or Todos.</p>
+                <p className="text-sm text-muted-foreground">No description.</p>
               )}
             </CardContent>
           </Card>

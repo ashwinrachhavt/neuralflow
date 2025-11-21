@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getUserOr401, readJson, jsonError } from "@/lib/api-helpers";
+import { getUserOr401, readJson } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDefaultBoard } from "@/lib/board";
 

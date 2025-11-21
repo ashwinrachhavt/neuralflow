@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useMarkDone, useMyTodos } from "@/hooks/api";
-import { CardMotionOverlay } from "@/components/cards/CardMotionOverlay";
+import { CardSheet } from "@/components/cards/CardSheet";
 
 export function TodosPane() {
   const qc = useQueryClient();
@@ -97,7 +97,7 @@ export function TodosPane() {
         </Card>
       </div>
       {openTaskId ? (
-        <CardMotionOverlay taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} />
+        <CardSheet taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} onOpenFull={(id) => (window.location.href = `/tasks/${id}`)} />
       ) : null}
     </div>
   );

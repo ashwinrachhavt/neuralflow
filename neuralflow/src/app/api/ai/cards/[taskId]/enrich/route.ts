@@ -4,9 +4,10 @@ import { getUserOr401 } from "@/lib/api-helpers";
 import { enrichTask } from "@/lib/ai/agents/cardEnrichmentAgent";
 import { logAgentRunFinish, logAgentRunStart } from "@/server/db/agentRuns";
 
-type Ctx = { params: { taskId: string } };
+type Ctx = { params: Promise<{ taskId: string }> };
 
-export async function POST(_req: Request, { params }: Ctx) {
+export async function POST(_req: Request, ctx: Ctx) {
+  const { taskId } = await ctx.params;
   const user = await getUserOr401();
   if (!(user as any).id) return user as unknown as NextResponse;
   const userId = (user as any).id as string;
@@ -14,7 +15,7 @@ export async function POST(_req: Request, { params }: Ctx) {
   const run = await logAgentRunStart({ userId, type: "/api/ai/cards/[taskId]/enrich", model: process.env.AI_MODEL ?? null });
 
   const task = await prisma.task.findFirst({
-    where: { id: params.taskId, board: { userId } },
+    where: { id: taskId, board: { userId } },
     include: { board: { select: { id: true } } },
   });
   if (!task) return NextResponse.json({ message: "Not found" }, { status: 404 });

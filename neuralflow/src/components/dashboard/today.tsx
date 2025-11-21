@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useDefaultBoardId, useBoard } from "@/hooks/api";
 import { TaskRow } from "@/components/task-row";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 type BoardTask = { id: string; title: string; descriptionMarkdown?: string | null; columnId: string; priority?: 'LOW'|'MEDIUM'|'HIGH'|null; estimatedPomodoros?: number|null; tags?: string[]|null; aiPlanned?: boolean|null; status?: string };
 
