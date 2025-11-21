@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Check, Loader2, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { Loader2, Trash2 } from "lucide-react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,21 +24,6 @@ export function TodoList() {
   }, [tasksArray.length]);
 
   const markDone = useMarkDone();
-  const moveToColumn = useMutation({
-    mutationFn: async ({ taskId, columnId }: { taskId: string; columnId: string }) => {
-      const res = await fetch(`/api/tasks/${taskId}/column`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ columnId }),
-      });
-      if (!res.ok) throw new Error("Unable to move task");
-      return (await res.json()) as { ok: boolean };
-    },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["my-todos", 'TODO'] });
-    },
-  });
-
   const deleteTask = useDeleteCard();
 
   const enrichTask = useMutation({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 import {
@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Loader2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMoveCard, useCreateCard, useBoard } from "@/hooks/api";
 import { toast } from "sonner";
@@ -64,16 +64,6 @@ type BoardState = {
 };
 
 const INITIAL_BOARD: BoardState = { tasks: {}, columns: {}, columnOrder: [] };
-
-type ApiBoard = {
-  board: {
-    id: string;
-    title: string;
-    columnOrder: string[];
-    columns: Record<string, { id: string; name: string; position: number; taskIds: string[] }>;
-    tasks: Record<string, { id: string; title: string; descriptionMarkdown: string | null; columnId: string; priority?: string | null; aiSuggestedColumnId?: string | null; aiSuggestedPriority?: 'LOW'|'MEDIUM'|'HIGH'|null; aiSuggestedEstimateMin?: number | null; aiNextAction?: string | null; aiState?: 'RAW'|'CLASSIFIED'|'ENRICHED'|'SUGGESTED'|'COMPLETED'|null; aiConfidence?: number | null }>;
-  };
-};
 
 export function KanbanBoard({ boardId }: { boardId: string }) {
   const queryClient = useQueryClient();
@@ -246,11 +236,6 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
     }
   };
 
-  const addTask = (_columnId: string) => {
-    // Intentionally disabled until a create-task API is added.
-    // Kept for UI parity.
-  };
-
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-6">
@@ -290,7 +275,6 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
               onEnrich={(taskId) => enrichTask.mutate(taskId)}
               onSummary={(taskId) => summarizeNote.mutate(taskId)}
               onQuiz={(taskId) => quizFromNote.mutate(taskId)}
-              onAddTask={() => {}}
               onClassify={(taskId) => classifyTask.mutate(taskId)}
               onSuggest={(taskId) => suggestTask.mutate(taskId)}
               onAutoMove={(taskId) => autoMove.mutate(taskId)}
@@ -340,7 +324,6 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
 type KanbanColumnProps = {
   column: Column;
   tasks: Record<string, Task>;
-  onAddTask: () => void;
   onEnrich: (taskId: string) => void;
   onSummary: (taskId: string) => void;
   onQuiz: (taskId: string) => void;
@@ -349,11 +332,10 @@ type KanbanColumnProps = {
   onAutoMove: (taskId: string) => void;
   onOpen: (taskId: string) => void;
   onCreateCard: (columnId: string, title: string) => void;
-  onOpen: (taskId: string) => void;
   openTaskId?: string | null;
 };
 
-function KanbanColumn({ column, tasks, onAddTask, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId }: KanbanColumnProps) {
+function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId }: KanbanColumnProps) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   return (

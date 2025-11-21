@@ -342,7 +342,6 @@ export const gamificationEngine = {
     const stones = await prisma.stoneDefinition.findMany();
     const progress = await prisma.userStoneProgress.findMany({ where: { userId } });
     const owned = await prisma.userStone.findMany({ where: { userId } });
-    const ownedIds = new Set(owned.map((e) => e.stoneId));
     return stones
       .map((s) => {
         const p = progress.find((x) => x.stoneId === s.id);
