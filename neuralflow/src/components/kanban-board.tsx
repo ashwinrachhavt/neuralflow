@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Plus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useMoveCard, useCreateCard, useBoard } from "@/hooks/api";
 import { toast } from "sonner";
 
@@ -67,10 +68,11 @@ const INITIAL_BOARD: BoardState = { tasks: {}, columns: {}, columnOrder: [] };
 
 export function KanbanBoard({ boardId }: { boardId: string }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { data, isLoading } = useBoard(boardId);
 
   const [board, setBoard] = useState<BoardState>(INITIAL_BOARD);
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null); // fallback when routing not available
 
   // Hydrate board from API
   useEffect(() => {
@@ -278,7 +280,9 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
               onClassify={(taskId) => classifyTask.mutate(taskId)}
               onSuggest={(taskId) => suggestTask.mutate(taskId)}
               onAutoMove={(taskId) => autoMove.mutate(taskId)}
-              onOpen={(taskId) => setOpenTaskId(taskId)}
+              onOpen={(taskId) => {
+                try { router.push(`/boards/${boardId}/tasks/${taskId}`); } catch { setOpenTaskId(taskId); }
+              }}
               openTaskId={openTaskId}
               onCreateCard={async (colId, title) => {
                 try {
@@ -308,14 +312,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
         </div>
       </div>
       {openTaskId ? (
-        <CardSheet
-          taskId={openTaskId}
-          open={true}
-          onClose={() => setOpenTaskId(null)}
-          onOpenFull={(id) => {
-            window.location.assign(`/tasks/${id}`);
-          }}
-        />
+        <CardSheet taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} onOpenFull={(id) => (window.location.href = `/tasks/${id}`)} />
       ) : null}
     </DndContext>
   );
@@ -333,9 +330,10 @@ type KanbanColumnProps = {
   onOpen: (taskId: string) => void;
   onCreateCard: (columnId: string, title: string) => void;
   openTaskId?: string | null;
+  onApplyMove?: (taskId: string, targetColumnId: string) => void;
 };
 
-function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId }: KanbanColumnProps) {
+function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId, onApplyMove }: KanbanColumnProps) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   return (
@@ -385,7 +383,7 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
             <EmptyColumnHint />
           ) : (
             column.taskIds.map(taskId => (
-              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} onClassify={onClassify} onSuggest={onSuggest} onAutoMove={onAutoMove} onOpen={onOpen} openTaskId={openTaskId} />
+              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} onClassify={onClassify} onSuggest={onSuggest} onAutoMove={onAutoMove} onOpen={onOpen} openTaskId={openTaskId} onApplyMove={onApplyMove} />
             ))
           )}
         </ColumnSortableArea>
@@ -433,9 +431,10 @@ type SortableTaskProps = {
   onAutoMove: (taskId: string) => void;
   onOpen: (taskId: string) => void;
   openTaskId?: string | null;
+  onApplyMove?: (taskId: string, targetColumnId: string) => void;
 };
 
-function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify, onSuggest, onAutoMove, onOpen, openTaskId }: SortableTaskProps) {
+function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify, onSuggest, onAutoMove, onOpen, openTaskId, onApplyMove }: SortableTaskProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: task.id,
@@ -525,7 +524,16 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
             <span className="rounded bg-slate-100/60 px-2 py-0.5">≈ {task.aiSuggestedEstimateMin}m</span>
           ) : null}
           {task.aiSuggestedColumnId && task.aiSuggestedColumnId !== columnId ? (
-            <span className="rounded bg-emerald-100/60 px-2 py-0.5 text-emerald-700">→ suggested move</span>
+            <>
+              <span className="rounded bg-emerald-100/60 px-2 py-0.5 text-emerald-700">→ suggested move</span>
+              {onApplyMove ? (
+                <button
+                  type="button"
+                  className="rounded bg-emerald-600/10 px-2 py-0.5 text-emerald-700 hover:bg-emerald-600/20"
+                  onClick={(e) => { e.stopPropagation(); onApplyMove(task.id, task.aiSuggestedColumnId!); }}
+                >Apply</button>
+              ) : null}
+            </>
           ) : null}
           {typeof task.aiConfidence === 'number' ? (
             <span className="rounded bg-indigo-100/60 px-2 py-0.5 text-indigo-700">{Math.round(task.aiConfidence * 100)}%</span>

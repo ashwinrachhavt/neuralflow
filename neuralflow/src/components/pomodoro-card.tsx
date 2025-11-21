@@ -175,8 +175,11 @@ export function PomodoroCard() {
 
   useEffect(() => {
     if (state.activeTaskId || taskOptions.length === 0) return;
-    setState(current => ({ ...current, activeTaskId: taskOptions[0]?.id ?? null }));
-  }, [taskOptions.length]);
+    setState((current) => ({
+      ...current,
+      activeTaskId: taskOptions[0]?.id ?? null,
+    }));
+  }, [state.activeTaskId, taskOptions]);
 
   const selectedTask =
     taskOptions.find((task) => task.id === state.activeTaskId) ?? null;

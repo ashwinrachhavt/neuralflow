@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Check, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, Check, Plus, Wand2, ScatterChart } from "lucide-react";
+import Link from "next/link";
 
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -12,12 +14,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useMarkDone, useMyTodos } from "@/hooks/api";
 import { CardSheet } from "@/components/cards/CardSheet";
+import { AssistantDock } from "@/components/assistant/AssistantDock";
 
 export function TodosPane() {
   const qc = useQueryClient();
+  const router = useRouter();
   const { data, isLoading } = useMyTodos('TODO');
   const todos = useMemo(() => data?.tasks ?? [], [data?.tasks]);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [source, setSource] = useState("Flowmo");
 
@@ -29,7 +34,7 @@ export function TodosPane() {
     },
     onSuccess: async (r) => {
       await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
-      setOpenTaskId(r.id);
+      try { router.push(`/todos/tasks/${r.id}`); } catch { setOpenTaskId(r.id); }
     }
   });
 
@@ -38,8 +43,16 @@ export function TodosPane() {
   return (
     <div className="flex w-full justify-center">
       <div className="w-full max-w-xl">
-        <div className="mb-3 flex justify-center">
+        <div className="mb-3 flex items-center justify-between">
           <SegmentedTabs items={[{ href: '/todos', label: 'Tasks', active: true }, { href: '/pomodoro', label: 'Timer', active: false }]} />
+          <div className="flex items-center gap-2">
+          <Link href="/visualize/embeddings" className="rounded-full border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/40">
+            <span className="inline-flex items-center gap-1"><ScatterChart className="size-3.5" /> Spatial</span>
+          </Link>
+          <Button variant="outline" className="gap-2" onClick={() => setAssistantOpen(true)}>
+            <Wand2 className="size-4" /> Generate with AI
+          </Button>
+          </div>
         </div>
         <Card className="border border-border/70 bg-card/90 text-foreground shadow-xl">
           <CardHeader className="border-b border-white/10 p-0"></CardHeader>
@@ -69,7 +82,7 @@ export function TodosPane() {
                 <ul className="divide-y divide-border/60">
                   {todos.map(t => (
                     <li key={t.id}>
-                      <motion.div layoutId={`card-${t.id}`} className="flex cursor-pointer items-center gap-3 px-4 py-4 hover:bg-muted/40" onClick={() => setOpenTaskId(t.id)}>
+                      <motion.div layoutId={`card-${t.id}`} className="flex cursor-pointer items-center gap-3 px-4 py-4 hover:bg-muted/40" onClick={() => { try { router.push(`/todos/tasks/${t.id}`); } catch { setOpenTaskId(t.id); } }}>
                         <button
                           className="grid size-5 place-items-center rounded-full border border-border/60 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500"
                           title="Mark done"
@@ -99,6 +112,7 @@ export function TodosPane() {
       {openTaskId ? (
         <CardSheet taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} onOpenFull={(id) => (window.location.href = `/tasks/${id}`)} />
       ) : null}
+      <AssistantDock open={assistantOpen} onClose={() => setAssistantOpen(false)} />
     </div>
   );
 }

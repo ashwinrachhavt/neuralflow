@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 
 import {
   SignInButton,
-  SignUpButton,
   SignedIn,
   SignedOut,
   UserButton,
@@ -20,7 +19,7 @@ const navLinks = [
   { href: "/boards", label: "Board" },
   { href: "/todos", label: "Todos" },
   { href: "/pomodoro", label: "Focus" },
-  { href: "/profile", label: "Profile" },
+  { href: "/gamify/bag", label: "Bag" },
 ];
 
 export function Navbar() {

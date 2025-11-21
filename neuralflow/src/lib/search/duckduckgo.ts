@@ -14,10 +14,20 @@ function decodeUddg(url: string) {
 
 export async function duckDuckGoSearch(query: string, limit = 5, headers?: IncomingHttpHeaders): Promise<SearchResult[]> {
   const q = encodeURIComponent(query);
+  const requestHeaders: Record<string, string> = {
+    'User-Agent': 'Mozilla/5.0 (compatible; DaoBot/1.0)'
+  };
+  if (headers) {
+    for (const [key, value] of Object.entries(headers)) {
+      if (typeof value === 'string') {
+        requestHeaders[key] = value;
+      } else if (Array.isArray(value)) {
+        requestHeaders[key] = value.join(', ');
+      }
+    }
+  }
   const res = await fetch(`https://html.duckduckgo.com/html/?q=${q}&kl=us-en`, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; DaoBot/1.0)'
-    },
+    headers: requestHeaders,
     cache: 'no-store',
   });
   const html = await res.text();

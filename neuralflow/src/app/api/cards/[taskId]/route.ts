@@ -15,6 +15,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
       column: true,
       note: true,
       project: true,
+      board: { select: { columns: { select: { id: true, name: true } } } },
     },
   });
 
@@ -35,6 +36,19 @@ export async function GET(_req: Request, { params }: RouteContext) {
         : null,
       tags: task.tags ?? [],
       project: task.project ? { id: task.project.id, title: task.project.title } : null,
+      // AI fields
+      aiSuggestedColumnId: (task as any).aiSuggestedColumnId ?? null,
+      aiSuggestedPriority: (task as any).aiSuggestedPriority ?? null,
+      aiSuggestedEstimateMin: (task as any).aiSuggestedEstimateMin ?? null,
+      aiNextAction: (task as any).aiNextAction ?? null,
+      aiState: (task as any).aiState ?? null,
+      aiConfidence: (task as any).aiConfidence ?? null,
+      suggestedColumn: (task as any).aiSuggestedColumnId
+        ? (() => {
+            const c = task.board?.columns?.find((x) => x.id === (task as any).aiSuggestedColumnId);
+            return c ? { id: c.id, title: c.name } : null;
+          })()
+        : null,
     },
     note: task.note
       ? {

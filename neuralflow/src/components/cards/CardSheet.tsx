@@ -8,6 +8,8 @@ import { useCard } from "@/hooks/api";
 import { CardTitleEditor } from "./CardTitleEditor";
 import { CardMetadata } from "./CardMetadata";
 import { CardAIDock } from "./CardAIDock";
+import { Button } from "@/components/ui/button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   taskId: string;
@@ -19,6 +21,22 @@ type Props = {
 
 export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = "" }: Props) {
   const { data, isLoading } = useCard(taskId);
+  const qc = useQueryClient();
+  const applyMove = useMutation({
+    mutationFn: async (columnId: string) => {
+      const res = await fetch(`/api/tasks/${taskId}/column`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ columnId }) });
+      if (!res.ok) throw new Error('Move failed');
+      return res.json();
+    },
+    onSuccess: async () => {
+      await Promise.allSettled([
+        qc.invalidateQueries({ queryKey: ['board'] as any }),
+        qc.invalidateQueries({ queryKey: ['card', taskId] as any }),
+        qc.invalidateQueries({ queryKey: ['my-todos','TODO'] as any }),
+      ]);
+      onClose();
+    },
+  });
 
   return (
     <Transition show={open} as={Fragment}>
@@ -63,6 +81,21 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
                     </div>
                   ) : (
                     <>
+                      {/* AI suggested move banner */}
+                      {data.task.aiSuggestedColumnId && data.task.column && data.task.aiSuggestedColumnId !== data.task.column.id ? (
+                        <div className="mb-3 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+                          <div>
+                            AI suggests moving to
+                            <span className="ml-1 font-medium">{data.task.suggestedColumn?.title ?? 'another column'}</span>
+                            {typeof data.task.aiConfidence === 'number' ? (
+                              <span className="ml-2 text-xs">({Math.round(data.task.aiConfidence * 100)}%)</span>
+                            ) : null}
+                          </div>
+                          <Button size="sm" className="h-7" onClick={() => applyMove.mutate(data.task.aiSuggestedColumnId!)} disabled={applyMove.isPending}>
+                            {applyMove.isPending ? 'Applying…' : 'Apply move'}
+                          </Button>
+                        </div>
+                      ) : null}
                       <CardMetadata task={data.task} className="mb-4" />
                       {/* One-liner description preview */}
                       {data.task.descriptionMarkdown ? (
@@ -84,4 +117,3 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
     </Transition>
   );
 }
-
