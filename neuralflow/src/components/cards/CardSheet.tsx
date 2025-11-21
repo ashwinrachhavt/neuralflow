@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
-import { Dialog, Transition } from "@headlessui/react";
+import { Dialog, DialogPanel, DialogBackdrop, Transition } from "@headlessui/react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useCard } from "@/hooks/api";
@@ -41,16 +41,16 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
   return (
     <Transition show={open} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
-        {/* Backdrop */}
+        {/* Clickable backdrop that triggers onClose when clicked (Notion-like click-away) */}
         <Transition.Child as={Fragment} enter="ease-out duration-150" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+          <DialogBackdrop className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
         </Transition.Child>
 
         {/* Panel */}
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 translate-y-3" enterTo="opacity-100 translate-y-0" leave="ease-in duration-150" leaveFrom="opacity-100 translate-y-0" leaveTo="opacity-0 translate-y-2">
-              <motion.div
+              <DialogPanel as={motion.div}
                 layoutId={`${layoutIdBase}card-${taskId}`}
                 className="w-full max-w-2xl overflow-hidden rounded-2xl border bg-white shadow-2xl dark:border-white/10 dark:bg-[#1b1b28]"
                 transition={{ type: "spring", stiffness: 320, damping: 30 }}
@@ -109,7 +109,7 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
                     </>
                   )}
                 </div>
-              </motion.div>
+              </DialogPanel>
             </Transition.Child>
           </div>
         </div>

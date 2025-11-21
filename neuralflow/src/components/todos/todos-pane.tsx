@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Check, Plus, Wand2, ScatterChart } from "lucide-react";
+import { Check, Plus, Wand2, ScatterChart } from "lucide-react";
 import Link from "next/link";
 
 import { SegmentedTabs } from "@/components/ui/segmented-tabs";
@@ -27,7 +27,6 @@ export function TodosPane() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [celebrate, setCelebrate] = useState<null | { name: string; image?: string; rarity?: string }>(null);
   const [title, setTitle] = useState("");
-  const [source, setSource] = useState("Flowmo");
 
   const addMutation = useMutation({
     mutationFn: async (t: string) => {
@@ -60,16 +59,7 @@ export function TodosPane() {
         <Card className="border border-border/70 bg-card/90 text-foreground shadow-xl">
           <CardHeader className="border-b border-white/10 p-0"></CardHeader>
           <CardContent className="p-0">
-            {/* Task Source */}
-            <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Task Source</p>
-                <p className="text-sm text-slate-200">{source}</p>
-              </div>
-              <button className="inline-flex items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-xs text-slate-300 hover:bg-white/5" onClick={() => setSource(source === 'Flowmo' ? 'Dao' : 'Flowmo')}>
-                {source} <ChevronDown className="size-3" />
-              </button>
-            </div>
+            
 
             {/* List */}
             <div className="max-h-[420px] overflow-auto px-2">
