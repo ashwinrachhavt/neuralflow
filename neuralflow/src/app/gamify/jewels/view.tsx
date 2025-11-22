@@ -51,7 +51,7 @@ export function JewelsGrid({ images, milestones }: { images: PublicImage[]; mile
               <div className="absolute inset-0 grid place-items-center bg-black/40 text-[10px] uppercase tracking-widest text-white">Locked</div>
             </div>
             <div className="mt-3 text-center">
-              <div className="text-sm font-semibold line-clamp-1" title={im.name}>Reward: {im.name}</div>
+              <div className="text-sm font-semibold line-clamp-1" title={im.name}>{im.name}</div>
               <div className="mt-1 text-[11px] text-muted-foreground">Unlock at {milestones[idx] ?? milestones[milestones.length-1]} pts</div>
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
                 <div className="h-full w-0 bg-primary" />
