@@ -88,7 +88,7 @@ export function TodosPane() {
   return (
     <div className="flex w-full justify-center px-4 py-6">
       <div className="w-full max-w-5xl space-y-6">
-        <section className="rounded-[2rem] border border-border/20 bg-gradient-to-br from-slate-900/80 via-slate-950/80 to-slate-950/95 px-6 py-6 shadow-[0_35px_60px_rgba(15,23,42,0.85)] text-white">
+        <section className="rounded-[2rem] border border-border/20 bg-hero-gradient px-6 py-6 shadow-[0_35px_60px_rgba(15,23,42,0.85)] text-white">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1">
               <p className="text-[11px] uppercase tracking-[0.4em] text-muted-foreground/70">Todos dashboard</p>
@@ -135,7 +135,7 @@ export function TodosPane() {
             </div>
           </div>
         </section>
-        <Card className="rounded-[2rem] border border-border/20 bg-slate-950/80 text-white shadow-[0_25px_60px_rgba(2,6,23,0.6)]">
+        <Card className="rounded-[2rem] border border-border/20 bg-hero-surface text-white shadow-[0_25px_60px_rgba(2,6,23,0.6)]">
           <CardHeader className="px-6 pt-6 pb-1">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <div>
@@ -236,7 +236,7 @@ export function TodosPane() {
                 </ul>
               )}
             </div>
-            <div className="mt-6 rounded-[1.5rem] border border-border/20 bg-gradient-to-r from-indigo-500/10 via-slate-900/70 to-slate-950/70 p-4 shadow-[0_10px_40px_rgba(15,23,42,0.35)] backdrop-blur">
+            <div className="mt-6 rounded-[1.5rem] border border-border/20 bg-gradient-to-r from-indigo-500/10 via-[var(--hero-via)] to-[var(--hero-to)] p-4 shadow-[0_10px_40px_rgba(15,23,42,0.35)] backdrop-blur">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Input
                   id="todos-quick-add-input"

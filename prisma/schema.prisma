@@ -36,8 +36,6 @@ model User {
   gamificationProfile UserGamificationProfile?
   agentRuns           AgentRun[]
   projects            Project[]
-  tenants             Tenant[]
-  memberships         Membership[]
 }
 
 model Board {
