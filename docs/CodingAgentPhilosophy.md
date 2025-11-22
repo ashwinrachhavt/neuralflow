@@ -1,6 +1,6 @@
-# Neural Flow — Coding Agent Philosophy
+# Dao — Coding Agent Philosophy
 
-Guidelines for human and AI coding agents building Neural Flow. Use this alongside `docs/PRD.md`, `docs/TechSpec.md`, and feature-specific design briefs. The goal: ship changes that preserve user flow and reduce friction while keeping the product minimalist, calm, and genuinely helpful.
+Guidelines for human and AI coding agents building Dao. Use this alongside `docs/PRD.md`, `docs/TechSpec.md`, and feature-specific design briefs. The goal: ship changes that preserve user flow and reduce friction while keeping the product minimalist, calm, and genuinely helpful.
 
 ## 1) First Principles
 
@@ -123,5 +123,4 @@ Copy and tone
 
 ---
 
-This philosophy exists to keep Neural Flow invisible at its best—letting people think, write, and do their best work with less friction and more momentum.
-
+This philosophy exists to keep Dao invisible at its best—letting people think, write, and do their best work with less friction and more momentum.

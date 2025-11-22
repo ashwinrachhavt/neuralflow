@@ -35,7 +35,28 @@ model User {
   dailySnapshots      UserDailySnapshot[]
   gamificationProfile UserGamificationProfile?
   agentRuns           AgentRun[]
+
   projects            Project[]
+  reporterProfile     ReporterProfile?
+}
+
+model ReporterProfile {
+  userId           String   @id
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Compact JSON, not full report history
+  personalityNotes Json?    // e.g. inferred tendencies
+  preferredCadence String?  // daily | weekly, etc.
+  longTermGoals    Json?    // list of goals, themes
+
+  // Experiment memory
+  experiments      Json?    // previous experiments & outcomes
+
+  // Trend memory
+  trendNotes       Json?    // repeated insights summarized
+
+  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now())
 }
 
 model Board {

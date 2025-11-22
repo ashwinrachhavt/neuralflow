@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Dialog, DialogBackdrop, DialogPanel, Transition } from "@headlessui/react";
 import type { PublicImage } from "@/lib/server/list-public-images";
 
-export function JewelsGrid({ images, milestones }: { images: PublicImage[]; milestones: number[] }) {
+export function JewelsGrid({ images, milestones, points = 0 }: { images: PublicImage[]; milestones: number[]; points?: number }) {
   const [openSlug, setOpenSlug] = React.useState<string | null>(null);
   const current = openSlug ? images.find(i => i.slug === openSlug) ?? null : null;
   const currentIndex = openSlug ? images.findIndex(i => i.slug === openSlug) : -1;
@@ -51,8 +51,10 @@ export function JewelsGrid({ images, milestones }: { images: PublicImage[]; mile
               <div className="absolute inset-0 grid place-items-center bg-black/40 text-[10px] uppercase tracking-widest text-white">Locked</div>
             </div>
             <div className="mt-3 text-center">
-              <div className="text-sm font-semibold line-clamp-1" title={im.name}>Reward: {im.name}</div>
-              <div className="mt-1 text-[11px] text-muted-foreground">Unlock at {milestones[idx] ?? milestones[milestones.length-1]} pts</div>
+              <div className="text-sm font-semibold line-clamp-1" title={im.name}>{im.name}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                Unlock at {milestones[idx] ?? milestones[milestones.length-1]} pts • You: {points}
+              </div>
               <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
                 <div className="h-full w-0 bg-primary" />
               </div>
@@ -86,7 +88,9 @@ export function JewelsGrid({ images, milestones }: { images: PublicImage[]; mile
                       <h3 className="text-lg font-semibold">{current.name}</h3>
                       <p className="mt-1 text-xs text-muted-foreground">A glimpse of the jewel you can unlock by reaching its milestone. Keep shipping.</p>
                       {currentIndex >= 0 ? (
-                        <p className="mt-2 text-xs font-medium text-muted-foreground">Unlock at <span className="font-semibold text-foreground">{milestones[currentIndex] ?? milestones[milestones.length - 1]}</span> pts</p>
+                        <p className="mt-2 text-xs font-medium text-muted-foreground">
+                          Unlock at <span className="font-semibold text-foreground">{milestones[currentIndex] ?? milestones[milestones.length - 1]}</span> pts • You: {points}
+                        </p>
                       ) : null}
                       <div className="mt-3 text-right">
                         <button onClick={() => setOpenSlug(null)} className="rounded-full border border-border/60 px-4 py-1.5 text-sm hover:bg-foreground/10">Close</button>

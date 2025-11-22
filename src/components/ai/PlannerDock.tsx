@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Wand2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-// Input unused currently; will reintroduce if needed
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type DraftTask = {
@@ -15,9 +14,12 @@ type DraftTask = {
   estimatePomodoros?: number | null;
   tags?: string[];
   selected?: boolean;
+  kind?: 'DEEP' | 'SHALLOW';
+  depthScore?: number | null;
 };
 
-export function AssistantDock({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function PlannerDock({ open, onClose, boardId }: { open: boolean; onClose: () => void; boardId?: string }) {
+  const qc = useQueryClient();
   const [prompt, setPrompt] = useState("");
   const [items, setItems] = useState<DraftTask[]>([]);
   const [pending, setPending] = useState(false);
@@ -52,7 +54,7 @@ export function AssistantDock({ open, onClose }: { open: boolean; onClose: () =>
       } else {
         // Fallback to non-streaming endpoint
         const j = await fetch('/api/dao/orchestrate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ brainDumpText: prompt }) }).then(r => r.json());
-        const t = (j?.tasks ?? []).map((x: any) => ({ title: x.title, descriptionMarkdown: x.description, priority: x.priority ?? 'MEDIUM', estimatePomodoros: x.estimatePomodoros ?? null, tags: x.tags ?? [], selected: true }));
+        const t = (j?.tasks ?? []).map((x: any) => ({ title: x.title, descriptionMarkdown: x.description, priority: x.priority ?? 'MEDIUM', estimatePomodoros: x.estimatePomodoros ?? null, tags: x.tags ?? [], kind: x.kind, depthScore: x.depthScore ?? null, selected: true }));
         setItems(t);
       }
     } catch (e: any) {
@@ -64,13 +66,26 @@ export function AssistantDock({ open, onClose }: { open: boolean; onClose: () =>
 
   const accept = useMutation({
     mutationFn: async () => {
-      const tasks = items.filter(i => i.selected).map(({ title, descriptionMarkdown, priority, estimatePomodoros, tags }) => ({ title, descriptionMarkdown, priority, estimatePomodoros, tags }));
+      const tasks = items.filter(i => i.selected).map(({ title, descriptionMarkdown, priority, estimatePomodoros, tags, kind }) => ({ title, descriptionMarkdown, priority, estimatePomodoros, tags, kind }));
       if (tasks.length === 0) return { created: 0 };
-      const res = await fetch('/api/dao/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tasks }) });
+      const payload: any = { tasks };
+      if (boardId) payload.boardId = boardId;
+      const res = await fetch('/api/dao/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error('Failed to accept');
       return res.json();
     },
-    onSuccess: () => { onClose(); },
+    onSuccess: async () => {
+      try {
+        if (boardId) {
+          await qc.invalidateQueries({ queryKey: ['board', boardId] });
+          await qc.invalidateQueries({ queryKey: ['cards', boardId] });
+          await qc.invalidateQueries({ queryKey: ['boards'] });
+        } else {
+          await qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] === 'board' || q.queryKey[0] === 'cards' || q.queryKey[0] === 'boards' || q.queryKey[0] === 'my-todos') });
+        }
+      } catch {}
+      onClose();
+    },
   });
 
   return (
@@ -86,7 +101,7 @@ export function AssistantDock({ open, onClose }: { open: boolean; onClose: () =>
               <Dialog.Panel className="w-screen max-w-md">
                 <Card className="h-full rounded-l-2xl border border-l-0 bg-card/80 backdrop-blur">
                   <CardHeader className="flex items-center justify-between border-b border-border/60">
-                    <CardTitle className="text-base flex items-center gap-2"><Wand2 className="size-4" /> Todo Agent</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2"><Wand2 className="size-4" /> AI Planner</CardTitle>
                     <button onClick={onClose} className="rounded-full border border-border/60 p-2 text-muted-foreground hover:bg-foreground/10" aria-label="Close"><X className="size-4" /></button>
                   </CardHeader>
                   <CardContent className="h-full overflow-y-auto p-4">
@@ -110,6 +125,8 @@ export function AssistantDock({ open, onClose }: { open: boolean; onClose: () =>
                               {t.descriptionMarkdown ? <div className="mt-1 text-xs text-muted-foreground line-clamp-2">{t.descriptionMarkdown}</div> : null}
                               <div className="mt-1 text-[10px] text-muted-foreground">
                                 {t.priority ?? 'MEDIUM'} {t.estimatePomodoros ? `• ${t.estimatePomodoros} pomodoro` : ''}
+                                {t.kind ? ` • ${t.kind}` : ''}
+                                {typeof t.depthScore === 'number' ? ` • depth ${Math.round((t.depthScore ?? 0) * 100)}%` : ''}
                               </div>
                             </div>
                           </label>
@@ -133,3 +150,4 @@ export function AssistantDock({ open, onClose }: { open: boolean; onClose: () =>
     </Transition>
   );
 }
+

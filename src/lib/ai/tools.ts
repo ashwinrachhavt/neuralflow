@@ -1,4 +1,4 @@
-import type { TaskCreateInput } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { tool } from "ai";
 import { prisma } from "@/lib/prisma";
@@ -30,8 +30,9 @@ export const getTools = async () => {
         priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
         estimateMinutes: z.number().optional(),
       }),
-      execute: async ({ title, priority, estimateMinutes }) => {
-        const data: TaskCreateInput = {
+      execute: async (args: any) => {
+        const { title, priority, estimateMinutes } = args;
+        const data: Prisma.TaskUncheckedCreateInput = {
           boardId: board.id,
           columnId: todoColumn.id,
           title,
@@ -49,6 +50,6 @@ export const getTools = async () => {
 
         return { success: true, taskId: task.id, message: `Task "${title}" created.` };
       },
-    }),
+    } as any),
   };
 };

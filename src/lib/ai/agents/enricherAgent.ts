@@ -8,7 +8,8 @@ const EnrichedTaskSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
-  kind: z.enum(["DEEP", "SHALLOW"]),
+  kind: z.enum(["DEEP", "SHALLOW"]).describe("Binary deep/shallow classification"),
+  depthScore: z.number().min(0).max(1).optional().describe("0..1 where 1 is deepest work"),
   storyPoints: z.number().int().min(1).max(13).optional(),
   tags: z.array(z.string()).optional(),
 });
@@ -25,18 +26,27 @@ export const enricherAgent: Agent = {
     const tasks = ctx.generatedTasks ?? ctx.enrichedTasks;
     if (!tasks || tasks.length === 0) return { context: ctx };
 
-    const prompt = `
-You are Dao's task analyzer.
+    const guidelines = `
+Deep vs Shallow (binary, with depthScore 0..1):
+- DEEP: cognitively demanding, requires sustained focus, creates new value (design doc, algorithm, implementing feature, studying complex topic). Typically > 25–50 minutes of uninterrupted work. Often involves problem-solving, writing, architecture, learning.
+- SHALLOW: logistical or administrative; low-friction execution (email, scheduling, formatting, filing, small cleanup, trivial edits). Generally < 25 minutes; can be interrupted without large cost.
 
-Given a list of tasks, you will:
-- classify each as "DEEP" or "SHALLOW"
-- assign priority (LOW, MEDIUM, HIGH)
-- optionally assign storyPoints (1,2,3,5,8,13)
-- add 2–4 tags per task
+Heuristics (non-binding):
+- Mentions like "email", "schedule", "book", "format", "cleanup", "organize", "sync" → SHALLOW.
+- "write", "implement", "debug", "design", "refactor", "study", "research", "practice" → DEEP.
+- estimatedPomodoros ≥ 2 or estimateMinutes ≥ 50 suggests DEEP; 0–1 suggests SHALLOW.
+- Tags like ["deep"] or ["admin"] can bias accordingly.
 
-Return ONLY JSON like:
+Output requirements:
+- Provide both binary kind and a depthScore (0..1). depthScore near 1 → very deep; near 0 → very shallow.
+- Keep titles unchanged; copy description when available.
+- Priorities: HIGH when time-sensitive/critical; MEDIUM default.
+- Add 2–4 tags (lowercase kebab-case) that reflect the nature (e.g., "deep", "admin", "learning", "shipping").
+`;
 
-{
+    const prompt = `You are Dao's task analyzer. Follow the guidelines strictly.
+
+GUIDELINES:\n${guidelines}\n\nTasks:\n${JSON.stringify(tasks, null, 2)}\n\nReturn ONLY JSON like:\n{
   "tasks": [
     {
       "id": "task-id-or-null",
@@ -44,15 +54,12 @@ Return ONLY JSON like:
       "description": "...",
       "priority": "HIGH",
       "kind": "DEEP",
+      "depthScore": 0.82,
       "storyPoints": 3,
-      "tags": ["job-search","deep"]
+      "tags": ["learning","deep"]
     }
   ]
-}
-
-Tasks:
-${JSON.stringify(tasks, null, 2)}
-`;
+}`;
 
     const { text } = await generateText({
       model: openai("gpt-4.1-mini"),
@@ -74,6 +81,8 @@ ${JSON.stringify(tasks, null, 2)}
       descriptionMarkdown: t.description ?? "",
       priority: t.priority,
       tags: t.tags ?? [],
+      kind: t.kind,
+      depthScore: typeof t.depthScore === 'number' ? t.depthScore : undefined,
     }));
 
     return {
@@ -85,4 +94,3 @@ ${JSON.stringify(tasks, null, 2)}
     };
   },
 };
-

@@ -91,6 +91,13 @@ export function PomodoroCard() {
     return result;
   }, [data]);
 
+  const inProgressColumnId = useMemo(() => {
+    const board = data?.board;
+    if (!board) return null as string | null;
+    const inProg = Object.values(board.columns).find(c => c.name.toLowerCase().includes("progress"));
+    return inProg?.id ?? null;
+  }, [data]);
+
   const [state, setState] = useState<TimerState>({
     mode: "focus",
     secondsRemaining: FOCUS_DURATION,
@@ -142,7 +149,19 @@ export function PomodoroCard() {
   const nextMode: Mode = activeMode === "focus" ? "break" : "focus";
   const progress = 1 - state.secondsRemaining / activeConfig.duration;
 
-  const handleToggle = () => {
+  const handleToggle = async () => {
+    // If starting a focus session, auto-move the task to In Progress
+    if (!state.isRunning && state.mode === "focus" && state.activeTaskId && inProgressColumnId) {
+      try {
+        await fetch(`/api/tasks/${state.activeTaskId}/column`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ columnId: inProgressColumnId }),
+        });
+      } catch {
+        // non-blocking
+      }
+    }
     setState((current) => ({ ...current, isRunning: !current.isRunning }));
   };
 
@@ -183,6 +202,12 @@ export function PomodoroCard() {
 
   const selectedTask =
     taskOptions.find((task) => task.id === state.activeTaskId) ?? null;
+  const selectedMeta = state.activeTaskId && data?.board?.tasks[state.activeTaskId] ? data.board.tasks[state.activeTaskId] : null;
+  const selectedColumnName = useMemo(() => {
+    if (!selectedMeta || !data?.board) return null as string | null;
+    const col = data.board.columns[selectedMeta.columnId];
+    return col?.name ?? null;
+  }, [selectedMeta, data]);
 
   const handleTaskChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const nextTaskId = event.target.value;
@@ -260,6 +285,12 @@ export function PomodoroCard() {
             {selectedTask?.description ? (
               <p className="text-xs text-muted-foreground whitespace-pre-wrap break-words line-clamp-3">
                 {selectedTask.description}
+              </p>
+            ) : null}
+            {selectedMeta ? (
+              <p className="text-[11px] text-muted-foreground">
+                From: {selectedColumnName ?? 'Board'}
+                {selectedMeta.priority ? ` • ${selectedMeta.priority}` : ''}
               </p>
             ) : null}
           </div>

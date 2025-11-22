@@ -61,3 +61,65 @@ export async function runDaoOrchestrator(input: OrchestratorInput): Promise<Agen
 
   return ctx;
 }
+
+import { runAnalyzerAgent } from "./agents/analyzerAgent";
+import { runReporterAgent, updateReporterProfile } from "./agents/reporterAgent";
+import { prisma } from "../prisma";
+import type { AgentOutputEnvelope } from "../types/agents";
+
+export async function runWeeklyReview(userId: string, start: Date, end: Date) {
+  // 1. Run Analyzer
+  const analyzerResult = await runAnalyzerAgent({
+    userId,
+    period: "weekly",
+    start,
+    end,
+  });
+
+  // 2. Fetch Profile
+  if (!(prisma as any).reporterProfile) {
+    console.error("❌ Critical: prisma.reporterProfile is undefined. Keys:", Object.keys(prisma));
+    throw new Error("Prisma client is stale and missing ReporterProfile. Please restart the server.");
+  }
+  const profile = await (prisma as any).reporterProfile.findUnique({
+    where: { userId },
+  });
+
+  // 3. Run Reporter
+  const reporterResult = await runReporterAgent({
+    userId,
+    metrics: analyzerResult.metrics,
+    insights: analyzerResult.insights,
+    profile,
+  });
+
+  // 4. Update Profile
+  await updateReporterProfile({
+    userId,
+    previousProfile: profile,
+    latestMetrics: analyzerResult.metrics,
+    latestInsights: analyzerResult.insights,
+    latestExperiments: reporterResult.experiments,
+  });
+
+  // 5. Log outputs (optional but recommended)
+  // We can create an AgentRun record if we want to track this execution
+  const run = await prisma.agentRun.create({
+    data: {
+      userId,
+      route: "weekly-review",
+      status: "COMPLETED",
+      model: "gpt-4.1", // approximate
+    },
+  });
+
+  await prisma.agentOutput.create({
+    data: {
+      runId: run.id,
+      kind: "reporter:weekly",
+      payload: reporterResult as any, // JSON
+    },
+  });
+
+  return { analyzerResult, reporterResult };
+}

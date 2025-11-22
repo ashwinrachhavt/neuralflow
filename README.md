@@ -116,7 +116,15 @@ Visit [http://localhost:3000](http://localhost:3000). The app expects a Clerk se
 
 ---
 
-## 8. Analytics
+## 8. Docs
+
+- `docs/README.md` – Docs index
+- `docs/Agents.md` – AI Agents overview and endpoints
+- `docs/TechSpec.md` – Technical Design Specification (MVP)
+- `docs/PRD.md` – Product Requirements Document (MVP)
+- `docs/CodingAgentPhilosophy.md` – Coding-agent philosophy and PR checklist
+
+## 9. Analytics
 
 - **Vercel Analytics** – the app now loads `@vercel/analytics/react` in `src/app/layout.tsx`, so any deployment that enables Vercel Web Analytics will start receiving page views without additional code. Just flip the analytics toggle for this project inside the Vercel dashboard.
 - **Free product analytics (Plausible)** – a lightweight Plausible snippet loads whenever `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set. To use it:
@@ -135,7 +143,7 @@ If you ever switch to another provider, replace the `ProductAnalytics` component
 
 Happy shipping!
 
-## 9. Deploying on Vercel
+## 10. Deploying on Vercel
 
 The repo now includes everything needed for a one-click Vercel flow:
 

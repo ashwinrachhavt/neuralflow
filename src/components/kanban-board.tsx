@@ -358,6 +358,8 @@ type KanbanColumnProps = {
 
 function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId, onApplyMove }: KanbanColumnProps) {
   const [newOpen, setNewOpen] = useState(false);
+  const isInProgress = (column.title ?? '').trim().toLowerCase() === 'in progress';
+  const wipCount = column.taskIds.length;
   return (
     <Card className="flex w-full max-w-xs flex-1 flex-col bg-card/60 backdrop-blur-md">
       <CardHeader className="py-3">
@@ -371,6 +373,11 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
                 {column.description}
               </CardDescription>
             ) : null}
+            {isInProgress && wipCount > 3 ? (
+              <div className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">
+                You have {wipCount} tasks in progress. Consider finishing one before starting another.
+              </div>
+            ) : null}
           </div>
           <Button variant="ghost" size="icon" className="size-8" onClick={() => setNewOpen(true)}>
             <Plus className="size-4" />
@@ -380,7 +387,7 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
       <CardContent className="pt-2">
         <ColumnSortableArea columnId={column.id} taskIds={column.taskIds}>
           {column.taskIds.length === 0 ? (
-            <EmptyColumnHint />
+            <EmptyColumnHint columnTitle={column.title} />
           ) : (
             column.taskIds.map(taskId => (
               <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} onClassify={onClassify} onSuggest={onSuggest} onAutoMove={onAutoMove} onOpen={onOpen} openTaskId={openTaskId} onApplyMove={onApplyMove} />
@@ -529,10 +536,13 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
   );
 }
 
-function EmptyColumnHint() {
+function EmptyColumnHint({ columnTitle }: { columnTitle?: string }) {
+  const isBacklog = (columnTitle ?? '').trim().toLowerCase() === 'backlog';
   return (
     <div className="rounded-lg border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground">
-      No tasks yet. Drop tasks here.
+      {isBacklog
+        ? 'Dump every idea here: job prep, reading, errands. Drag into To Do when you\'re ready to work on it.'
+        : 'No tasks yet. Drop tasks here.'}
     </div>
   );
 }
