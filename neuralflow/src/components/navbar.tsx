@@ -19,7 +19,7 @@ const navLinks = [
   { href: "/boards", label: "Board" },
   { href: "/todos", label: "Todos" },
   { href: "/pomodoro", label: "Focus" },
-  { href: "/gamify/jewels", label: "Stones" },
+  { href: "/gamify/jewels", label: "Rewards" },
 ];
 
 export function Navbar() {
