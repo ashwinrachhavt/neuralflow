@@ -164,7 +164,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
     mutationFn: async (taskId: string) => {
       const res = await fetch(`/api/ai/cards/${taskId}/classify`, { method: "POST" });
       if (!res.ok) throw new Error("Unable to classify task");
-      return (await res.json()) as { suggestedColumnId: string; suggestedPriority: 'LOW'|'MEDIUM'|'HIGH'; suggestedEstimateMin: number; confidence: number };
+      return (await res.json()) as { suggestedColumnId: string; suggestedPriority: 'LOW' | 'MEDIUM' | 'HIGH'; suggestedEstimateMin: number; confidence: number };
     },
     onSuccess: async (data) => {
       toast.success(`AI classified • ${Math.round((data.confidence ?? 0) * 100)}% confidence`, { description: `${data.suggestedPriority} • ≈ ${data.suggestedEstimateMin} min` });
@@ -264,16 +264,16 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap gap-4">
+        <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4">
           {isLoading ? (
             <>
-              {[0,1,2].map(i => (
+              {[0, 1, 2].map(i => (
                 <Card key={i} className="flex w-full max-w-xs flex-1 flex-col bg-card/60 backdrop-blur-md">
                   <CardHeader>
                     <Skeleton className="h-5 w-32" />
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {[0,1,2].map(j => (
+                    {[0, 1, 2].map(j => (
                       <div key={j} className="rounded-xl border border-border bg-background/90 p-4">
                         <Skeleton className="h-4 w-40" />
                         <div className="mt-2 space-y-2">

@@ -153,7 +153,20 @@ export function useMarkDone(boardId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (taskId: string) => getJSON(`/api/tasks/${taskId}/done`, { method: 'PATCH' }),
-    onSuccess: async () => {
+    onMutate: async (taskId: string) => {
+      await qc.cancelQueries({ queryKey: ['my-todos','TODO'] });
+      const prev = qc.getQueryData<{ tasks: MyTodo[] }>(['my-todos','TODO']);
+      if (prev) {
+        const next = { tasks: prev.tasks.filter(t => t.id !== taskId) };
+        qc.setQueryData(['my-todos','TODO'], next);
+      }
+      return { prevTodos: prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prevTodos) qc.setQueryData(['my-todos','TODO'], ctx.prevTodos);
+    },
+    onSettled: async () => {
+      await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
       if (boardId) await qc.invalidateQueries({ queryKey: queryKeys.board(boardId) });
       await qc.invalidateQueries({ queryKey: queryKeys.notes() });
     },
