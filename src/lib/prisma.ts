@@ -22,9 +22,7 @@ if (!prismaInstance) {
     console.warn("Detected stale Prisma client (missing reporterProfile). Recreating...");
     try {
       prismaInstance.$disconnect();
-    } catch (e) {
-      // ignore
-    }
+    } catch (_e) { /* ignore */ }
     prismaInstance = prismaClientSingleton();
   }
 }

@@ -1,15 +1,14 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect } from "react";
 import { Dialog, DialogPanel, DialogBackdrop, Transition } from "@headlessui/react";
 import { motion } from "framer-motion";
 import { X, Sparkles } from "lucide-react";
 import { useCard } from "@/hooks/api";
 import { CardTitleEditor } from "./CardTitleEditor";
-import { CardMetadata } from "./CardMetadata";
 import { CardAIDock } from "./CardAIDock";
 import { Button } from "@/components/ui/button";
-import { CardDescriptionEditor } from "@/components/cards/CardDescriptionEditor";
+// import { CardDescriptionEditor } from "@/components/cards/CardDescriptionEditor";
 import { CardTiptapEditor } from "./CardTiptapEditor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -24,7 +23,7 @@ type Props = {
 export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = "" }: Props) {
   const { data, isLoading } = useCard(taskId);
   const qc = useQueryClient();
-  const [descExpanded, setDescExpanded] = useState(false);
+  // const [descExpanded, setDescExpanded] = useState(false);
   const applyMove = useMutation({
     mutationFn: async (columnId: string) => {
       const res = await fetch(`/api/tasks/${taskId}/column`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ columnId }) });
@@ -46,10 +45,10 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest('input, textarea, [contenteditable="true"], select')) return;
-      if (e.key.toLowerCase() === 'e' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-        setDescExpanded(v => !v);
-      }
+      // if (e.key.toLowerCase() === 'e' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      //   e.preventDefault();
+      //   setDescExpanded(v => !v);
+      // }
       if (e.key.toLowerCase() === 'o' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         onOpenFull?.(taskId);
@@ -72,7 +71,7 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
               <DialogPanel as={motion.div}
                 layoutId={`${layoutIdBase}card-${taskId}`}
                 className="w-full max-w-5xl overflow-hidden rounded-xl border border-border/40 bg-background shadow-2xl"
-                // @ts-ignore - Framer motion types conflict with Headless UI
+                // @ts-expect-error - Framer motion types conflict with Headless UI
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               >
                 <div className="flex h-[85vh] flex-col bg-background shadow-xl">

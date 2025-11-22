@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, ChevronDown, Play, RefreshCw, CheckCircle2 } from "lucide-react";
-import { useDaoOrchestrator } from "@/hooks/useDaoOrchestrator";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Task = {
@@ -366,4 +364,3 @@ export function DaoPlayground() {
     </div>
   );
 }
-

@@ -65,7 +65,6 @@ export async function runDaoOrchestrator(input: OrchestratorInput): Promise<Agen
 import { runAnalyzerAgent } from "./agents/analyzerAgent";
 import { runReporterAgent, updateReporterProfile } from "./agents/reporterAgent";
 import { prisma } from "../prisma";
-import type { AgentOutputEnvelope } from "../types/agents";
 
 export async function runWeeklyReview(userId: string, start: Date, end: Date) {
   // 1. Run Analyzer

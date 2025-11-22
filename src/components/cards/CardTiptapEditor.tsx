@@ -24,7 +24,7 @@ export type CardTiptapEditorProps = {
 
 type SavePayload = { contentJson: JSONContent; contentMarkdown: string };
 
-export function CardTiptapEditor({ taskId, initialContent, noteId, className }: CardTiptapEditorProps) {
+export function CardTiptapEditor({ taskId: _taskId, initialContent, noteId, className }: CardTiptapEditorProps) {
   const parsedContent = useMemo<JSONContent | string>(() => {
     if (!initialContent) return "";
     try {
@@ -58,7 +58,7 @@ export function CardTiptapEditor({ taskId, initialContent, noteId, className }: 
       if (!res.ok) throw new Error("AI generation failed");
       return res.json();
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data, _variables) => {
       editor?.commands.insertContent(data.text);
       toast.success("AI generated content");
     },

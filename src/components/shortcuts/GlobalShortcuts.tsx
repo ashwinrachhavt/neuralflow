@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { QuickAddDialog } from "@/components/shortcuts/QuickAddDialog";
 import { ShortcutsHelp } from "@/components/shortcuts/ShortcutsHelp";
@@ -16,7 +16,7 @@ export function GlobalShortcuts() {
   const pathname = usePathname();
   const [openQuick, setOpenQuick] = useState(false);
   const [openHelp, setOpenHelp] = useState(false);
-  const [sequence, setSequence] = useState<string[]>([]);
+  const [_, setSequence] = useState<string[]>([]);
 
   useEffect(() => {
     let timer: number | null = null;
@@ -76,4 +76,3 @@ export function GlobalShortcuts() {
     </>
   );
 }
-

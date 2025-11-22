@@ -2,11 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { prisma } from "../../prisma";
 import { textModel } from "../config";
-import type {
-    AnalyzerAgentResult,
-    AnalyzerInsight,
-    AnalyzerMetricSummary,
-} from "../../types/agents";
+import type { AnalyzerAgentResult, AnalyzerMetricSummary } from "../../types/agents";
 
 const InsightSchema = z.object({
     title: z.string(),
@@ -60,7 +56,7 @@ async function runAnalyzerAgentInternal(input: {
     const tasksCompletionRate = tasksTotal > 0 ? tasksCompleted / tasksTotal : 0;
 
     const pomodorosTotal = pomodoros.length;
-    const deepWorkPomodoros = pomodoros.filter((p) => {
+    const deepWorkPomodoros = pomodoros.filter((_p) => {
         // Heuristic: if task type is DEEP_WORK or duration > 25
         // We'll assume standard pomodoro is deep work for now unless tagged otherwise
         return true;

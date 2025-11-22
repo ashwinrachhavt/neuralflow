@@ -3,13 +3,11 @@ import Suggestion from "@tiptap/suggestion";
 import { ReactRenderer } from "@tiptap/react";
 import tippy from "tippy.js";
 import {
-    Bold,
     CheckSquare,
     Code,
     Heading1,
     Heading2,
     Heading3,
-    Italic,
     List,
     ListOrdered,
     MessageSquarePlus,
@@ -18,7 +16,7 @@ import {
     TextQuote,
 } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { Button } from "@/components/ui/button";
+//
 
 const CommandList = forwardRef((props: any, ref) => {
     const [selectedIndex, setSelectedIndex] = useState(0);

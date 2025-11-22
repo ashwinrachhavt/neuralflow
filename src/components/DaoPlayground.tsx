@@ -105,7 +105,6 @@ export function DaoPlayground() {
                   key={g.slug}
                   className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={g.imageUrl}
                     alt={g.title}
@@ -126,4 +125,3 @@ export function DaoPlayground() {
     </div>
   );
 }
-

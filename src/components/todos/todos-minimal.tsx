@@ -119,7 +119,7 @@ export function TodosMinimal() {
 }
 
 function TodoRow({
-  id,
+  id: _id,
   title,
   tags,
   priority,

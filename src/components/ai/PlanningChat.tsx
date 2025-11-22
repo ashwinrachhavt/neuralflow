@@ -5,7 +5,7 @@ import { useActions, useUIState } from "@ai-sdk/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Send, Bot, User } from "lucide-react";
+import { Sparkles, Send, Bot } from "lucide-react";
 import { nanoid } from "nanoid";
 
 // This type needs to match what we define in the server action/provider

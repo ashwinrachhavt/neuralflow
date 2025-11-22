@@ -83,7 +83,7 @@ export function PlannerDock({ open, onClose, boardId }: { open: boolean; onClose
         } else {
           await qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] === 'board' || q.queryKey[0] === 'cards' || q.queryKey[0] === 'boards' || q.queryKey[0] === 'my-todos') });
         }
-      } catch {}
+      } catch (_e) { /* noop */ }
       onClose();
     },
   });
@@ -150,4 +150,3 @@ export function PlannerDock({ open, onClose, boardId }: { open: boolean; onClose
     </Transition>
   );
 }
-

@@ -49,7 +49,11 @@ async function main() {
     });
 
     // Helper to get column ID by name
-    const getColId = (name: string) => masterBoard.columns.find(c => c.name === name)?.id!;
+    const getColId = (name: string) => {
+        const id = masterBoard.columns.find(c => c.name === name)?.id;
+        if (!id) throw new Error(`Column not found: ${name}`);
+        return id;
+    };
 
     // --- 2. Seed Projects ---
 

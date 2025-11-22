@@ -2,13 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { prisma } from "../../prisma";
 import { textModel, STRONG_TEXT_MODEL } from "../config";
-import type {
-    AnalyzerAgentResult,
-    AnalyzerInsight,
-    AnalyzerMetricSummary,
-    ReporterAgentResult,
-    ReporterExperiment,
-} from "../../types/agents";
+import type { AnalyzerInsight, AnalyzerMetricSummary, ReporterAgentResult, ReporterExperiment } from "../../types/agents";
 import type { ReporterProfile } from "@prisma/client";
 
 const ExperimentSchema = z.object({

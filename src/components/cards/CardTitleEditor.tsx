@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useUpdateCard } from "@/hooks/api";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export type CardTitleEditorProps = {
   taskId: string;
