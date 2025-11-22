@@ -60,7 +60,7 @@ const typeStyles: Record<EventType, string> = {
   FOCUS: 'bg-sky-500/80 text-white shadow-sky-500/30',
   MEETING: 'bg-emerald-500/80 text-white shadow-emerald-500/30',
   PERSONAL: 'bg-violet-500/80 text-white shadow-violet-500/30',
-  BREAK: 'bg-amber-500/80 text-slate-900 shadow-amber-500/30',
+  BREAK: 'bg-amber-500/80 text-background shadow-amber-500/30',
 };
 
 function startOfWeek(date = new Date()) {

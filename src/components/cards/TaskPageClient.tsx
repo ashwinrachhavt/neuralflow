@@ -12,10 +12,10 @@ export default function TaskPageClient({ taskId }: { taskId: string }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <section className="rounded-2xl border bg-card/70 p-5 shadow-sm dark:bg-[#1b1b28] dark:border-white/10">
-        <div className="border-b pb-4 dark:border-white/10">
+      <section className="rounded-2xl border border-border/60 bg-card/80 p-5 shadow-sm">
+        <div className="border-b border-border/60 pb-4">
           {isLoading || !data ? (
-            <div className="h-9 w-60 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
+            <div className="h-9 w-60 animate-pulse rounded bg-muted" />
           ) : (
             <CardTitleEditor taskId={taskId} initialTitle={data.task.title} />
           )}
@@ -24,8 +24,8 @@ export default function TaskPageClient({ taskId }: { taskId: string }) {
         <div className="mt-4 space-y-5">
           {isLoading || !data ? (
             <div className="space-y-3">
-              <div className="h-4 w-56 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
-              <div className="h-[280px] animate-pulse rounded-xl bg-slate-50 dark:bg-white/5" />
+              <div className="h-4 w-56 animate-pulse rounded bg-muted" />
+              <div className="h-[280px] animate-pulse rounded-xl bg-muted/50" />
             </div>
           ) : (
             <>
@@ -41,4 +41,3 @@ export default function TaskPageClient({ taskId }: { taskId: string }) {
     </div>
   );
 }
-

@@ -16,7 +16,7 @@ export function RewardImage({ slug, src, className, size = 112, rounded = true }
   const cfg = selectRewardAsset({ slug, image: src });
   return (
     <div
-      className={cn('overflow-hidden bg-white/80 shadow-inner ring-2', cfg.bg ?? 'bg-white/80', cfg.ring ?? 'ring-foreground/10', rounded ? 'rounded-full' : 'rounded-xl', className)}
+      className={cn('overflow-hidden shadow-inner ring-2', cfg.bg ?? 'bg-card/80', cfg.ring ?? 'ring-foreground/10', rounded ? 'rounded-full' : 'rounded-xl', className)}
       style={{ width: size, height: size }}
     >
       <img
@@ -28,4 +28,3 @@ export function RewardImage({ slug, src, className, size = 112, rounded = true }
     </div>
   );
 }
-

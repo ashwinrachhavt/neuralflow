@@ -503,25 +503,25 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
       {(task.aiSuggestedPriority || task.aiSuggestedEstimateMin || task.aiSuggestedColumnId) ? (
         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
           {task.aiSuggestedPriority ? (
-            <span className="rounded bg-amber-100/60 px-2 py-0.5 text-amber-700">AI: {task.aiSuggestedPriority}</span>
+            <span className="rounded px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-300">AI: {task.aiSuggestedPriority}</span>
           ) : null}
           {task.aiSuggestedEstimateMin ? (
-            <span className="rounded bg-slate-100/60 px-2 py-0.5">≈ {task.aiSuggestedEstimateMin}m</span>
+            <span className="rounded bg-muted px-2 py-0.5 text-foreground/80">≈ {task.aiSuggestedEstimateMin}m</span>
           ) : null}
           {task.aiSuggestedColumnId && task.aiSuggestedColumnId !== columnId ? (
             <>
-              <span className="rounded bg-emerald-100/60 px-2 py-0.5 text-emerald-700">→ suggested move</span>
+              <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">→ suggested move</span>
               {onApplyMove ? (
                 <button
                   type="button"
-                  className="rounded bg-emerald-600/10 px-2 py-0.5 text-emerald-700 hover:bg-emerald-600/20"
+                  className="rounded bg-emerald-600/10 px-2 py-0.5 text-emerald-700 hover:bg-emerald-600/20 dark:text-emerald-300"
                   onClick={(e) => { e.stopPropagation(); onApplyMove(task.id, task.aiSuggestedColumnId!); }}
                 >Apply</button>
               ) : null}
             </>
           ) : null}
           {typeof task.aiConfidence === 'number' ? (
-            <span className="rounded bg-indigo-100/60 px-2 py-0.5 text-indigo-700">{Math.round(task.aiConfidence * 100)}%</span>
+            <span className="rounded bg-indigo-500/10 px-2 py-0.5 text-indigo-700 dark:text-indigo-300">{Math.round(task.aiConfidence * 100)}%</span>
           ) : null}
         </div>
       ) : null}

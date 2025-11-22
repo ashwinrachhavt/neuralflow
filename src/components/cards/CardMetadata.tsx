@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarDays, Flame, MapPin, Tag, TimerReset } from "lucide-react";
+import { CalendarDays, Flame, LayoutGrid, MapPin, Tag, TimerReset } from "lucide-react";
 
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH";
 
@@ -21,6 +21,7 @@ export type CardMetadataProps = {
     dueDate?: string | Date | null;
     column?: { id: string; title: string } | null;
     project?: { id: string; title: string } | null;
+    location?: string | null;
   };
   onPriorityChange?: (priority: TaskPriority) => void;
   className?: string;
@@ -64,8 +65,15 @@ export function CardMetadata({ task, onPriorityChange, className }: CardMetadata
 
         {task.column ? (
           <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-            <MapPin className="size-4" />
+            <LayoutGrid className="size-4" />
             {task.column.title}
+          </Button>
+        ) : null}
+
+        {task.location ? (
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+            <MapPin className="size-4" />
+            <span className="max-w-[180px] truncate">{task.location}</span>
           </Button>
         ) : null}
 
@@ -97,10 +105,10 @@ export function CardMetadata({ task, onPriorityChange, className }: CardMetadata
         ) : null}
       </div>
 
-      {task.tags && task.tags.length ? (
+        {task.tags && task.tags.length ? (
         <div className="flex flex-wrap gap-2">
           {task.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="bg-slate-100 text-xs uppercase tracking-wide">
+            <Badge key={tag} variant="secondary" className="text-xs uppercase tracking-wide">
               {tag}
             </Badge>
           ))}
@@ -119,6 +127,6 @@ function priorityColor(priority: TaskPriority) {
     case "LOW":
       return "text-emerald-500";
     default:
-      return "text-slate-500";
+      return "text-muted-foreground";
   }
 }

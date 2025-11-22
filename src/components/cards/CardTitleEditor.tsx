@@ -67,10 +67,7 @@ export function CardTitleEditor({
         ) : dirty ? (
           <>Tap enter to save</>
         ) : (
-          <>
-            <CheckCircle2 className="size-3 text-emerald-500" />
-            Title synced
-          </>
+          <span className="sr-only">Saved</span>
         )}
       </div>
     </div>

@@ -72,22 +72,22 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
             <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 translate-y-3" enterTo="opacity-100 translate-y-0" leave="ease-in duration-150" leaveFrom="opacity-100 translate-y-0" leaveTo="opacity-0 translate-y-2">
               <DialogPanel as={motion.div}
                 layoutId={`${layoutIdBase}card-${taskId}`}
-                className="w-full max-w-2xl overflow-hidden rounded-2xl border bg-white shadow-2xl dark:border-white/10 dark:bg-[#1b1b28]"
+                className="w-full max-w-2xl overflow-hidden rounded-2xl border border-border/60 bg-card/90 shadow-2xl"
                 transition={{ type: "spring", stiffness: 320, damping: 30 }}
               >
-                <div className="flex items-center justify-between border-b px-5 py-4 dark:border-white/10">
+                <div className="flex items-center justify-between border-b border-border/60 bg-background/70 px-5 py-4">
                   <motion.div layoutId={`${layoutIdBase}card-title-${taskId}`} className="flex-1">
                     {data ? (
                       <CardTitleEditor taskId={taskId} initialTitle={data.task.title} />
                     ) : (
-                      <div className="h-8 w-48 animate-pulse rounded bg-slate-100 dark:bg-white/10" />
+                      <div className="h-8 w-48 animate-pulse rounded bg-muted" />
                     )}
                   </motion.div>
                   <div className="flex items-center gap-2">
-                    <button className="rounded-full border px-3 py-1.5 text-xs text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5" onClick={() => onOpenFull?.(taskId)}>
+                    <button className="rounded-full border border-border/60 px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-foreground/10" onClick={() => onOpenFull?.(taskId)}>
                       Open Full View
                     </button>
-                    <button className="rounded-full border p-2 text-slate-500 transition hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5" onClick={onClose} aria-label="Close">
+                    <button className="rounded-full border border-border/60 p-2 text-muted-foreground transition hover:bg-foreground/10" onClick={onClose} aria-label="Close">
                       <X className="size-4" />
                     </button>
                   </div>
@@ -96,8 +96,8 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
                 <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
                   {isLoading || !data ? (
                     <div className="space-y-4">
-                      <div className="h-4 w-[60%] animate-pulse rounded bg-slate-100 dark:bg-white/10" />
-                      <div className="h-[160px] animate-pulse rounded-xl bg-slate-50 dark:bg-white/5" />
+                      <div className="h-4 w-[60%] animate-pulse rounded bg-muted" />
+                      <div className="h-[160px] animate-pulse rounded-xl bg-muted/50" />
                     </div>
                   ) : (
                     <>

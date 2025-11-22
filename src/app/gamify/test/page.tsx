@@ -1,13 +1,13 @@
 import { PageShell } from "@/components/layout/page-shell";
 import { SectionHeader } from "@/components/section-header";
-import { listPublicImages } from "@/lib/server/list-public-images";
+import { listStoneImages } from "@/lib/server/list-stone-images";
 import { SelectorAndSwitcher } from "./selector-and-switcher";
 import { RewardSimulator } from "./simulator";
 
 export const dynamic = "force-dynamic";
 
 export default async function GamifyTestPage() {
-  const images = await listPublicImages();
+  const images = await listStoneImages();
   // Server component: pass images to client components below via props
   return (
     <PageShell size="lg">

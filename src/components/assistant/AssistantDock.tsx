@@ -84,10 +84,10 @@ export function AssistantDock({ open, onClose }: { open: boolean; onClose: () =>
           <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
             <Transition.Child enter="transform transition ease-in-out duration-200" enterFrom="translate-x-full" enterTo="translate-x-0" leave="transform transition ease-in-out duration-150" leaveFrom="translate-x-0" leaveTo="translate-x-full">
               <Dialog.Panel className="w-screen max-w-md">
-                <Card className="h-full rounded-l-2xl border border-l-0 bg-card/80 backdrop-blur dark:bg-[#1b1b28] dark:border-white/10">
-                  <CardHeader className="flex items-center justify-between border-b dark:border-white/10">
+                <Card className="h-full rounded-l-2xl border border-l-0 bg-card/80 backdrop-blur">
+                  <CardHeader className="flex items-center justify-between border-b border-border/60">
                     <CardTitle className="text-base flex items-center gap-2"><Wand2 className="size-4" /> Todo Agent</CardTitle>
-                    <button onClick={onClose} className="rounded-full border p-2 text-slate-500 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5" aria-label="Close"><X className="size-4" /></button>
+                    <button onClick={onClose} className="rounded-full border border-border/60 p-2 text-muted-foreground hover:bg-foreground/10" aria-label="Close"><X className="size-4" /></button>
                   </CardHeader>
                   <CardContent className="h-full overflow-y-auto p-4">
                     <div className="space-y-3">
@@ -103,7 +103,7 @@ export function AssistantDock({ open, onClose }: { open: boolean; onClose: () =>
 
                       <div className="mt-3 space-y-2">
                         {items.map((t, idx) => (
-                          <label key={idx} className="flex cursor-pointer items-start gap-3 rounded-lg border bg-white/60 p-3 text-sm dark:border-white/10 dark:bg-white/5">
+                          <label key={idx} className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/60 bg-card/70 p-3 text-sm">
                             <input type="checkbox" checked={t.selected ?? true} onChange={(e) => setItems(prev => prev.map((x, i) => i === idx ? { ...x, selected: e.target.checked } : x))} className="mt-1" />
                             <div>
                               <div className="font-medium text-foreground">{t.title}</div>
@@ -118,7 +118,7 @@ export function AssistantDock({ open, onClose }: { open: boolean; onClose: () =>
                       </div>
                     </div>
                   </CardContent>
-                  <div className="flex items-center justify-between gap-2 border-t p-3 dark:border-white/10">
+                  <div className="flex items-center justify-between gap-2 border-t border-border/60 p-3">
                     <div className="text-xs text-muted-foreground">{items.filter(i => i.selected).length} selected</div>
                     <Button onClick={() => accept.mutate()} disabled={accept.isPending || items.filter(i => i.selected).length === 0}>
                       {accept.isPending ? <Loader2 className="size-4 animate-spin" /> : 'Accept tasks'}

@@ -81,7 +81,7 @@ export function JewelsGrid({ images, milestones }: { images: PublicImage[]; mile
                       </motion.div>
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/10" />
                     </div>
-                    <div className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/30 px-3 py-1 text-[10px] uppercase tracking-widest text-white/90">Locked</div>
+                    <div className="absolute right-3 top-3 rounded-full border border-border/60 bg-foreground/10 px-3 py-1 text-[10px] uppercase tracking-widest text-foreground/90">Locked</div>
                     <div className="p-4">
                       <h3 className="text-lg font-semibold">{current.name}</h3>
                       <p className="mt-1 text-xs text-muted-foreground">A glimpse of the jewel you can unlock by reaching its milestone. Keep shipping.</p>
@@ -89,7 +89,7 @@ export function JewelsGrid({ images, milestones }: { images: PublicImage[]; mile
                         <p className="mt-2 text-xs font-medium text-muted-foreground">Unlock at <span className="font-semibold text-foreground">{milestones[currentIndex] ?? milestones[milestones.length - 1]}</span> pts</p>
                       ) : null}
                       <div className="mt-3 text-right">
-                        <button onClick={() => setOpenSlug(null)} className="rounded-full border px-4 py-1.5 text-sm hover:bg-white/5">Close</button>
+                        <button onClick={() => setOpenSlug(null)} className="rounded-full border border-border/60 px-4 py-1.5 text-sm hover:bg-foreground/10">Close</button>
                       </div>
                     </div>
                   </div>

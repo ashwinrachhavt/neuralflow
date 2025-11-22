@@ -18,6 +18,9 @@ model User {
   createdAt     DateTime @default(now())
 
   boards              Board[]
+  // Multi-tenant relations
+  ownedTenants        Tenant[]
+  memberships         Membership[]
   flashcardDecks      FlashcardDeck[]
   flashcardReviews    FlashcardReview[]
   pomodoroSessions    PomodoroSession[]

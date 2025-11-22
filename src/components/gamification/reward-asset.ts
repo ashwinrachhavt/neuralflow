@@ -14,7 +14,7 @@ export type RewardAssetConfig = {
 
 // Map file basenames to display presets (cropping/positioning/scale)
 const FILE_ASSET_MAP: Record<string, Omit<RewardAssetConfig, 'src'>> = {
-  'quartz.png': { fit: 'cover', pos: 'center', scale: 1.05, bg: 'bg-white/80 dark:bg-white/10', ring: 'ring-rose-300/30' },
+  'quartz.png': { fit: 'cover', pos: 'center', scale: 1.05, bg: 'bg-card/80', ring: 'ring-rose-300/30' },
   'garnet.png': { fit: 'cover', pos: '50% 45%', scale: 1.08, ring: 'ring-red-300/30' },
   'topaz.png': { fit: 'cover', pos: 'center', scale: 1.06, ring: 'ring-amber-300/30' },
   'emerald.png': { fit: 'cover', pos: 'center', scale: 1.04, ring: 'ring-emerald-300/30' },
@@ -34,4 +34,3 @@ export function selectRewardAsset(input: { slug?: GemSlug; image?: string }): Re
   const preset = FILE_ASSET_MAP[name] ?? { fit: 'cover', pos: 'center', scale: 1.0, ring: 'ring-foreground/10' };
   return { src, ...preset };
 }
-

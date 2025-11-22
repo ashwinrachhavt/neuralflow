@@ -69,7 +69,7 @@ export function CardTiptapEditor({ initialContent, noteId, className }: CardTipt
     },
     editorProps: {
       attributes: {
-        class: "prose prose-slate max-w-none min-h-[320px] focus:outline-none",
+        class: "prose prose-slate dark:prose-invert max-w-none min-h-[320px] focus:outline-none",
       },
     },
     editable: !!noteId,
@@ -101,8 +101,8 @@ export function CardTiptapEditor({ initialContent, noteId, className }: CardTipt
   const items = buildToolbar(editor);
 
   return (
-    <div className={cn("rounded-xl border bg-white/70 shadow-sm", className)}>
-      <div className="flex flex-wrap gap-2 border-b bg-slate-50/80 p-3">
+    <div className={cn("rounded-xl border border-border/70 bg-card/70 shadow-sm", className)}>
+      <div className="flex flex-wrap gap-2 border-b border-border/60 bg-background/70 p-3">
         {items.map((item) => (
           <Button
             key={item.id}

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Wand2, ScatterChart } from "lucide-react";
+import { Check, MapPin, Plus, Wand2, ScatterChart } from "lucide-react";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -88,7 +88,7 @@ export function TodosPane() {
   return (
     <div className="flex w-full justify-center px-4 py-6">
       <div className="w-full max-w-5xl space-y-6">
-        <section className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-900/80 via-slate-950/80 to-slate-950/95 px-6 py-6 shadow-[0_35px_60px_rgba(15,23,42,0.85)] text-white">
+        <section className="rounded-[2rem] border border-border/20 bg-gradient-to-br from-slate-900/80 via-slate-950/80 to-slate-950/95 px-6 py-6 shadow-[0_35px_60px_rgba(15,23,42,0.85)] text-white">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1">
               <p className="text-[11px] uppercase tracking-[0.4em] text-muted-foreground/70">Todos dashboard</p>
@@ -98,7 +98,7 @@ export function TodosPane() {
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href="/visualize/embeddings"
-                className="rounded-full border border-white/30 px-5 py-2 text-[11px] uppercase tracking-[0.3em] text-white/80 transition hover:border-white/60 hover:text-white"
+                className="rounded-full border border-border/40 px-5 py-2 text-[11px] uppercase tracking-[0.3em] text-white/80 transition hover:border-border/60 hover:text-white"
               >
                 <span className="inline-flex items-center gap-1">
                   <ScatterChart className="size-3.5" /> Spatial
@@ -106,7 +106,7 @@ export function TodosPane() {
               </Link>
               <Button
                 variant="outline"
-                className="rounded-full border-white/40 bg-white/10 text-white shadow-lg hover:border-white/60"
+                className="rounded-full border-border/40 bg-foreground/10 text-white shadow-lg hover:border-border/60"
                 onClick={() => setAssistantOpen(true)}
               >
                 <Wand2 className="size-4" /> Generate with AI
@@ -114,19 +114,19 @@ export function TodosPane() {
             </div>
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+            <div className="rounded-2xl border border-border/20 bg-foreground/5 px-4 py-4">
               <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground/70">Active</p>
               <p className="text-3xl font-semibold">{totalTodos}</p>
               <p className="text-sm text-muted-foreground/80">Stay steady with {totalTodos ? 'your next actions' : 'a fresh plan'}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+            <div className="rounded-2xl border border-border/20 bg-foreground/5 px-4 py-4">
               <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground/70">Urgent</p>
               <p className="text-3xl font-semibold">{highPriorityCount}</p>
               <p className="text-sm text-muted-foreground/80">
                 {highPriorityCount ? `${highPriorityCount} high-priority task${highPriorityCount === 1 ? '' : 's'}` : 'No urgencies'}
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+            <div className="rounded-2xl border border-border/20 bg-foreground/5 px-4 py-4">
               <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground/70">Pomodoros</p>
               <p className="text-3xl font-semibold">{estimatedPomodoros}</p>
               <p className="text-sm text-muted-foreground/80">
@@ -135,7 +135,7 @@ export function TodosPane() {
             </div>
           </div>
         </section>
-        <Card className="rounded-[2rem] border border-white/10 bg-slate-950/80 text-white shadow-[0_25px_60px_rgba(2,6,23,0.6)]">
+        <Card className="rounded-[2rem] border border-border/20 bg-slate-950/80 text-white shadow-[0_25px_60px_rgba(2,6,23,0.6)]">
           <CardHeader className="px-6 pt-6 pb-1">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <div>
@@ -153,13 +153,13 @@ export function TodosPane() {
               {isLoading ? (
                 <div className="space-y-3 py-2">
                   {[0, 1, 2, 3].map((idx) => (
-                    <div key={idx} className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-inner">
+                    <div key={idx} className="rounded-3xl border border-border/20 bg-foreground/5 p-4 shadow-inner">
                       <Skeleton className="h-4 w-48" />
                     </div>
                   ))}
                 </div>
               ) : todos.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-white/20 bg-white/5 p-6 text-center text-sm text-muted-foreground/80">
+                <div className="rounded-3xl border border-dashed border-border/30 bg-foreground/5 p-6 text-center text-sm text-muted-foreground/80">
                   Your focus queue is empty—add a quick task to begin a new streak.
                 </div>
               ) : (
@@ -169,7 +169,7 @@ export function TodosPane() {
                       <motion.div
                         layoutId={`card-${t.id}`}
                         whileHover={{ scale: 1.01 }}
-                        className="group flex cursor-pointer items-center justify-between gap-4 rounded-[1.5rem] border border-white/5 bg-gradient-to-br from-white/5 to-transparent px-5 py-4 shadow-[0_20px_50px_rgba(2,6,23,0.55)] transition hover:border-white/30 hover:bg-white/10"
+                        className="group flex cursor-pointer items-center justify-between gap-4 rounded-[1.5rem] border border-border/20 bg-gradient-to-br from-foreground/5 to-transparent px-5 py-4 shadow-[0_20px_50px_rgba(2,6,23,0.55)] transition hover:border-border/40 hover:bg-foreground/10"
                         onClick={() => {
                           try {
                             router.push(`/todos/tasks/${t.id}`);
@@ -189,19 +189,25 @@ export function TodosPane() {
                               </span>
                             ) : null}
                             {typeof t.estimatedPomodoros === "number" ? (
-                              <span className="rounded-full border border-white/20 px-2 py-0.5 text-[12px] text-muted-foreground/70">
+                              <span className="rounded-full border border-border/30 px-2 py-0.5 text-[12px] text-muted-foreground/70">
                                 {t.estimatedPomodoros} pomodor{t.estimatedPomodoros === 1 ? "o" : "os"}
                               </span>
                             ) : null}
                             {t.tags?.slice(0, 2).map((tag) => (
-                              <span key={`${t.id}-${tag}`} className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[12px] text-muted-foreground">
+                              <span key={`${t.id}-${tag}`} className="rounded-full border border-border/30 bg-foreground/10 px-2 py-0.5 text-[12px] text-muted-foreground">
                                 {tag}
                               </span>
                             ))}
                           </div>
+                          {t.location ? (
+                            <div className="mt-1 flex items-center gap-1 text-[11px] uppercase tracking-wide text-emerald-200/90">
+                              <MapPin className="size-3" />
+                              <span className="text-[11px] font-semibold text-foreground/70">{t.location}</span>
+                            </div>
+                          ) : null}
                         </div>
                         <button
-                          className="grid h-10 w-10 place-items-center rounded-2xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
+                          className="grid h-10 w-10 place-items-center rounded-2xl border border-border/30 bg-foreground/10 text-white transition hover:bg-foreground/20"
                           title="Mark done"
                           onClick={async (e) => {
                             e.stopPropagation();
@@ -230,7 +236,7 @@ export function TodosPane() {
                 </ul>
               )}
             </div>
-            <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-gradient-to-r from-indigo-500/10 via-slate-900/70 to-slate-950/70 p-4 shadow-[0_10px_40px_rgba(15,23,42,0.35)] backdrop-blur">
+            <div className="mt-6 rounded-[1.5rem] border border-border/20 bg-gradient-to-r from-indigo-500/10 via-slate-900/70 to-slate-950/70 p-4 shadow-[0_10px_40px_rgba(15,23,42,0.35)] backdrop-blur">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Input
                   id="todos-quick-add-input"

@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
   const tasks = await prisma.task.findMany({
     where,
-    orderBy: { updatedAt: 'desc' },
+    orderBy: { updatedAt: "desc" },
     take: limit,
     select: {
       id: true,
@@ -33,9 +33,32 @@ export async function GET(req: Request) {
       aiPlanned: true,
       createdAt: true,
       updatedAt: true,
+      calendarEvents: {
+        select: {
+          location: true,
+          startAt: true,
+        },
+        orderBy: { startAt: "asc" },
+        take: 1,
+      },
     },
   });
 
-  return NextResponse.json({ tasks });
+  return NextResponse.json({
+    tasks: tasks.map((task) => ({
+      id: task.id,
+      boardId: task.boardId,
+      columnId: task.columnId,
+      title: task.title,
+      descriptionMarkdown: task.descriptionMarkdown,
+      priority: task.priority,
+      status: task.status,
+      estimatedPomodoros: task.estimatedPomodoros,
+      tags: task.tags,
+      aiPlanned: task.aiPlanned,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+      location: task.calendarEvents[0]?.location ?? null,
+    })),
+  });
 }
-

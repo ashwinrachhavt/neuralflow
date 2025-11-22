@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Clock, Plus } from "lucide-react";
+import { Clock, MapPin, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,9 +54,22 @@ export function TodosMinimal() {
           <section>
             <h2 className="mb-2 text-sm font-semibold text-muted-foreground">AI Planned</h2>
             <ul className="divide-y divide-border/50">
-              {isLoading ? null : aiPlanned.map(t => (
-                <li key={t.id} className="py-0.5"><TodoRow id={t.id} title={t.title} tags={t.tags ?? []} priority={t.priority ?? 'MEDIUM'} minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined} onDone={async () => { await markDone.mutateAsync(t.id); await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] }); }} /></li>
-              ))}
+            {isLoading ? null : aiPlanned.map((t) => (
+              <li key={t.id} className="py-0.5">
+                <TodoRow
+                  id={t.id}
+                  title={t.title}
+                  tags={t.tags ?? []}
+                  priority={t.priority ?? "MEDIUM"}
+                  minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined}
+                  location={t.location ?? undefined}
+                  onDone={async () => {
+                    await markDone.mutateAsync(t.id);
+                    await qc.invalidateQueries({ queryKey: ["my-todos","TODO"] });
+                  }}
+                />
+              </li>
+            ))}
             </ul>
           </section>
         ) : null}
@@ -64,9 +77,22 @@ export function TodosMinimal() {
         <section className={aiPlanned.length > 0 ? 'mt-4' : ''}>
           {aiPlanned.length > 0 ? (<h2 className="mb-2 text-sm font-semibold text-muted-foreground">Upcoming</h2>) : null}
           <ul className="divide-y divide-border/50">
-            {isLoading ? null : upcoming.map(t => (
-              <li key={t.id} className="py-0.5"><TodoRow id={t.id} title={t.title} tags={t.tags ?? []} priority={t.priority ?? 'MEDIUM'} minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined} onDone={async () => { await markDone.mutateAsync(t.id); await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] }); }} /></li>
-            ))}
+          {isLoading ? null : upcoming.map((t) => (
+            <li key={t.id} className="py-0.5">
+              <TodoRow
+                id={t.id}
+                title={t.title}
+                tags={t.tags ?? []}
+                priority={t.priority ?? "MEDIUM"}
+                minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined}
+                location={t.location ?? undefined}
+                onDone={async () => {
+                  await markDone.mutateAsync(t.id);
+                  await qc.invalidateQueries({ queryKey: ["my-todos","TODO"] });
+                }}
+              />
+            </li>
+          ))}
           </ul>
         </section>
       </div>
@@ -74,7 +100,23 @@ export function TodosMinimal() {
   );
 }
 
-function TodoRow({ id, title, tags, priority, minutes, onDone }: { id: string; title: string; tags: string[]; priority: 'LOW'|'MEDIUM'|'HIGH'; minutes?: number; onDone: () => void }) {
+function TodoRow({
+  id,
+  title,
+  tags,
+  priority,
+  minutes,
+  location,
+  onDone,
+}: {
+  id: string;
+  title: string;
+  tags: string[];
+  priority: "LOW" | "MEDIUM" | "HIGH";
+  minutes?: number;
+  location?: string | null;
+  onDone: () => void;
+}) {
   const type = detectType(tags);
   const priorityStr = priority === 'HIGH' ? 'P1' : priority === 'MEDIUM' ? 'P2' : 'P3';
   const priorityColor = priority === 'HIGH' ? 'bg-red-500' : priority === 'MEDIUM' ? 'bg-yellow-400' : 'bg-blue-500';
@@ -85,12 +127,22 @@ function TodoRow({ id, title, tags, priority, minutes, onDone }: { id: string; t
         <input type="checkbox" className="h-4 w-4 rounded border-border/70 bg-transparent accent-emerald-600" onChange={onDone} />
         <span className="truncate text-sm">{title}</span>
       </label>
-      <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
+      <div className="flex shrink-0 flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <span>{type}</span>
-        {typeof minutes === 'number' ? (
-          <span className="inline-flex items-center gap-1"><Clock className="size-3.5" /> {minutes}m</span>
+        {typeof minutes === "number" ? (
+          <span className="inline-flex items-center gap-1">
+            <Clock className="size-3.5" /> {minutes}m
+          </span>
         ) : null}
-        <span className="inline-flex items-center gap-1"><span className={cn('size-2 rounded-full', priorityColor)} /> {priorityStr}</span>
+        <span className="inline-flex items-center gap-1">
+          <span className={cn("size-2 rounded-full", priorityColor)} /> {priorityStr}
+        </span>
+        {location ? (
+          <span className="inline-flex items-center gap-1">
+            <MapPin className="size-3" />
+            <span className="max-w-[90px] truncate">{location}</span>
+          </span>
+        ) : null}
       </div>
     </div>
   );

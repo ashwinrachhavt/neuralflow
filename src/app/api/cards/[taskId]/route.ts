@@ -17,6 +17,14 @@ export async function GET(_req: NextRequest, context: RouteContext) {
       note: true,
       project: true,
       board: { select: { columns: { select: { id: true, name: true } } } },
+      calendarEvents: {
+        select: {
+          location: true,
+          startAt: true,
+        },
+        orderBy: { startAt: "asc" },
+        take: 1,
+      },
     },
   });
 
@@ -44,6 +52,7 @@ export async function GET(_req: NextRequest, context: RouteContext) {
       aiNextAction: (task as any).aiNextAction ?? null,
       aiState: (task as any).aiState ?? null,
       aiConfidence: (task as any).aiConfidence ?? null,
+      location: task.calendarEvents?.[0]?.location ?? null,
       suggestedColumn: (task as any).aiSuggestedColumnId
         ? (() => {
             const c = task.board?.columns?.find((x) => x.id === (task as any).aiSuggestedColumnId);

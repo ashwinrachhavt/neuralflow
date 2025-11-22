@@ -26,6 +26,7 @@ export type CardDetail = {
     column?: { id: string; title: string } | null;
     tags?: string[];
     project?: { id: string; title: string } | null;
+    location?: string | null;
     aiSuggestedColumnId?: string | null;
     aiSuggestedPriority?: string | null;
     aiSuggestedEstimateMin?: number | null;
@@ -174,7 +175,18 @@ export function useDefaultBoardId() {
   return useQuery<{ id: string; title: string }>({ queryKey: ['boards', 'default'], queryFn: () => getJSON('/api/boards/default'), staleTime: 5000 });
 }
 // All-user todos (across boards)
-export type MyTodo = { id: string; title: string; descriptionMarkdown: string | null; boardId: string; columnId: string; status: string; priority?: 'LOW'|'MEDIUM'|'HIGH'|null; estimatedPomodoros?: number | null; tags?: string[] | null };
+export type MyTodo = {
+  id: string;
+  title: string;
+  descriptionMarkdown: string | null;
+  boardId: string;
+  columnId: string;
+  status: string;
+  priority?: 'LOW'|'MEDIUM'|'HIGH'|null;
+  estimatedPomodoros?: number | null;
+  tags?: string[] | null;
+  location?: string | null;
+};
 export function useMyTodos(status: 'TODO' | 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED' = 'TODO') {
   return useQuery<{ tasks: MyTodo[] }>({ queryKey: ['my-todos', status], queryFn: () => getJSON(`/api/tasks/my?status=${status}`), staleTime: 5000 });
 }

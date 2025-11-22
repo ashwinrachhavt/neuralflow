@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, MapPin } from "lucide-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
@@ -118,6 +118,12 @@ export function TodoList() {
                         <p className="mt-2 text-xs text-muted-foreground">
                           {todo.descriptionMarkdown}
                         </p>
+                      ) : null}
+                      {todo.location ? (
+                        <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <MapPin className="size-3" />
+                          <span className="truncate">{todo.location}</span>
+                        </div>
                       ) : null}
                     </div>
                     <div className="flex items-center gap-2">

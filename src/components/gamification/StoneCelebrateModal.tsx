@@ -43,7 +43,7 @@ export function StoneCelebrateModal({ open, onClose, stone, bagSelector = '#jewe
         </Transition.Child>
         <div className="fixed inset-0 grid place-items-center p-6">
           <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-            <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border bg-white p-6 text-center shadow-2xl dark:border-white/10 dark:bg-[#1b1b28]">
+            <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-border/60 bg-card p-6 text-center shadow-2xl">
               {/* particle ring */}
               <div className="pointer-events-none absolute inset-0">
                 {particles.map((i) => (
@@ -71,7 +71,7 @@ export function StoneCelebrateModal({ open, onClose, stone, bagSelector = '#jewe
               </motion.h3>
               {stone?.rarity ? <p className="text-xs text-muted-foreground">Rarity: {stone.rarity}</p> : null}
               <div className="mt-4">
-                <button onClick={handleCloseWithFly} className="rounded-full border px-4 py-2 text-sm hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5">Nice!</button>
+                <button onClick={handleCloseWithFly} className="rounded-full border border-border/60 px-4 py-2 text-sm hover:bg-foreground/10">Nice!</button>
               </div>
             </div>
           </Transition.Child>
