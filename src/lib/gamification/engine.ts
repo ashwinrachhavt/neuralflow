@@ -230,7 +230,15 @@ export const gamificationEngine = {
     if (tags.some((t) => t.toLowerCase().includes("learn"))) await addShards(userId, "emerald", 1);
     if (task.priority === "HIGH") await addShards(userId, "ruby", 1);
 
-    // Quartz and Ruby award checks
+    // Ensure a delightful first unlock: if user has no stones yet, award Quartz immediately
+    const ownedCount = await prisma.userStone.count({ where: { userId } });
+    const awards: string[] = [];
+    if (ownedCount === 0) {
+      await awardStone(userId, "quartz", "FIRST_TASK", taskId);
+      awards.push("quartz");
+    }
+
+    // Rule-based award checks (task-completed)
     const ctx: RuleCtx = {
       userId,
       now,
@@ -242,7 +250,6 @@ export const gamificationEngine = {
         tags,
       },
     };
-    const awards: string[] = [];
     for (const rule of RULES.filter((r) => r.trigger === "TASK_COMPLETED")) {
       if (await rule.shouldAward(ctx)) {
         await awardStone(userId, rule.slug, "RULE", taskId);

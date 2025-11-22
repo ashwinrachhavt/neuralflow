@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserOr401, readJson } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDefaultBoard } from "@/lib/board";
+import { TaskType } from "@prisma/client";
 
 type TaskDTO = {
   title: string;
@@ -9,19 +10,35 @@ type TaskDTO = {
   priority?: "LOW" | "MEDIUM" | "HIGH";
   tags?: string[];
   estimatedPomodoros?: number | null;
+  kind?: 'DEEP' | 'SHALLOW';
+  depthScore?: number;
 };
 
 export async function POST(req: Request) {
   const user = await getUserOr401();
   if (!(user as any).id) return user as unknown as NextResponse;
 
-  const body = await readJson<{ tasks?: TaskDTO[] }>(req);
+  const body = await readJson<{ tasks?: TaskDTO[]; boardId?: string }>(req);
   const tasks = (body?.tasks ?? []) as TaskDTO[];
   if (!Array.isArray(tasks) || tasks.length === 0) {
     return NextResponse.json({ created: 0 });
   }
 
-  const board = await getOrCreateDefaultBoard((user as any).id);
+  // If a boardId is provided and belongs to this user, use it; otherwise fallback to default board
+  let board = null as unknown as Awaited<ReturnType<typeof getOrCreateDefaultBoard>>;
+  if (body?.boardId) {
+    // Find board with columns for target user
+    const b = await prisma.board.findFirst({
+      where: { id: body.boardId, userId: (user as any).id },
+      include: { columns: { orderBy: { position: 'asc' } } },
+    });
+    if (b) {
+      board = b as any;
+    }
+  }
+  if (!board) {
+    board = await getOrCreateDefaultBoard((user as any).id);
+  }
   const todoColumn = board.columns.find((c) => c.name.toLowerCase().includes("todo")) ?? board.columns[0];
 
   const data = tasks.map((t) => ({
@@ -37,6 +54,7 @@ export async function POST(req: Request) {
     aiPlanned: true,
     fromBrainDump: true,
     source: "orchestrator",
+    type: t.kind === 'DEEP' ? TaskType.DEEP_WORK : t.kind === 'SHALLOW' ? TaskType.SHALLOW_WORK : undefined,
   }));
 
   const result = await prisma.task.createMany({ data });

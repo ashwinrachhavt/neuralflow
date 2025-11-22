@@ -1,836 +1,184 @@
+# Dao – Technical Design Specification (MVP)
 
+This document reflects the current implementation in the repository and serves as the engineering source of truth for the MVP.
 
-# Dao – AI Layer v1
+## 0) Metadata
 
-*Technical Design Specification*
+- Owner: Ashwin Rachha
+- Product: Dao (flow-first productivity workspace)
+- Stack:
+  - Frontend: Next.js App Router (TypeScript), ShadCN UI, Tailwind, Clerk
+  - Backend: Next.js API routes (`app/api/**`) on Edge/Node runtimes
+  - AI: Vercel AI SDK + OpenAI (gpt-4o-mini / gpt-4.1-mini / gpt-4.1)
+  - DB: Postgres + Prisma, pgvector extension for embeddings
+  - Analytics: Vercel Analytics, optional Plausible
+- Scope (MVP):
+  - Todos (quick add, minimal list)
+  - Kanban board (columns, cards)
+  - Pomodoro focus card
+  - AI: Plan (streaming), Brain Dump → Todos, task micro-actions (classify, enrich, suggest)
+  - Gamification: stones, shards, celebrations
+  - Seed preview (Projects/Docs/Tasks), embeddings visualization (basic)
 
-## 0. Metadata
-
-* **Owner:** Ashwin Rachha
-* **Repo(s):** `dao-web` (Next.js App Router)
-* **Stack:**
-
-  * Frontend: Next.js App Router (TS), ShadCN UI, Tailwind, Clerk
-  * Backend: Next.js API routes (`app/api/**`), Edge/Node runtimes
-  * AI: Vercel AI SDK + OpenAI (gpt-4.1 / 4.1-mini / 4o)([Vercel][1])
-  * DB: Postgres + Prisma ORM, pgvector extension for embeddings([Supabase][2])
-* **Scope (this spec):**
-
-  * Phase 1 fully, plus scaffolding for later phases
-
-    * A1 – AI Flow Planner
-    * A2 – Brain Dump → Clean Todos
-    * Shared Task model powering To-Do & Kanban
-    * Event logging + basic embedding pipeline
-  * Light stubs for: Soft suggestions, Reflection, Performance Agent
+Out of scope (present as stubs or later): Notion sync, weekly performance agent, full calendar autoplanning.
 
 ---
 
-## 1. High-level architecture
+## 1) Architecture
 
-### 1.1 Component diagram (conceptual)
+### 1.1 Components (conceptual)
 
 ```text
 [Browser (Dao UI)]
-  |  (Clerk session cookie, fetch)
+  |  Clerk session
   v
 [Next.js App Router]
-  - app/(dashboard)/todo
-  - app/(dashboard)/kanban
-  - app/(dashboard)/pomodoro
-  - app/(dashboard)/performance
-  - app/api/ai/*
-  - app/api/tasks/*
-  - app/api/events/*
-  - app/api/search/*
-      | (Prisma client)
+  - (workspace)/todos
+  - (workspace)/pomodoro
+  - boards/[boardId]
+  - calendar
+  - debug/dao, debug/seed-preview
+  - api/** (REST endpoints)
+      | Prisma client
       v
-    [Postgres + pgvector]
-      - users (via Clerk ID)
-      - tasks
-      - pomodoro_sessions
-      - user_eval_profiles
-      - weekly_eval_snapshots
-      - gems
-      - task_embeddings
+  [Postgres + pgvector]
+    users, boards, columns, tasks, notes,
+    pomodoro_sessions, embeddings,
+    gamification (stones, achievements, daily snapshots),
+    agent_runs + ai_events
 
-[AI Service Layer]
-  - LLMClient (OpenAI/Vercel AI SDK)
-  - PlannerPipeline
-  - BrainDumpPipeline
-  - SuggestionsPipeline
-  - ReflectionPipeline
-  - PerformanceAgentPipeline
+[AI Layer]
+  - streamObject / generateText (Vercel AI SDK)
+  - Endpoints: /api/ai/plan, /api/ai/todo-agent,
+               /api/ai/cards/* (classify|enrich|suggest),
+               /api/ai/notes/* (summary|quiz)
 ```
 
-### 1.2 Request flow (AI Flow Planner example)
+### 1.2 Example request flow (Plan)
 
-1. User opens **“Plan my day”** dialog (client component).
-2. Types free-form description → clicks *“Generate plan”*.
-3. `POST /api/ai/flow-planner` with description + optional config.
-4. Route handler:
-
-   * Validates Clerk auth.
-   * Calls `PlannerPipeline.planDay()` -> uses Vercel AI SDK `streamObject` with schema to generate tasks.([Vercel][1])
-   * Streams tasks back to client incrementally.
-5. On user confirm:
-
-   * Client calls `POST /api/tasks/bulk-create` with selected tasks.
-   * Server persists tasks (`Task` entries), possibly also pre-creates Pomodoro schedule blocks.
-6. UI updates To-Do / Kanban from shared Task model.
+1) Client calls `POST /api/ai/plan` with `prompt` (free text).
+2) Server constructs a system message from user context and streams a typed `PlanSchema` back (`tasks[]` with kind/priority/estimate).
+3) Client renders streaming results; user optionally accepts tasks.
+4) Tasks are created into the default board/column.
 
 ---
 
-## 2. Tech stack details
+## 2) Stack details
 
 ### 2.1 Next.js & App Router
 
-* Use **App Router** (`app/`) with:
+- Server Components by default; Client Components for interaction/streaming UIs.
+- AI endpoints in `app/api/ai/*/route.ts` (mostly POST, streaming where relevant).
+- Non‑AI CRUD in `app/api/*`.
 
-  * Server Components by default.
-  * Client Components for interactive pieces (dialogs, streaming UI).
-* AI endpoints in `app/api/ai/*/route.ts` (POST only).
-* Non-AI data CRUD (tasks, sessions, gems) in `app/api/*`.
+### 2.2 Auth
 
-### 2.2 Auth (Clerk)
+- Clerk (`@clerk/nextjs`) guards app surfaces; server routes derive `userId` and scope queries.
 
-* Clerk integrated via `@clerk/nextjs`:
+### 2.3 Database
 
-  * `auth()` in server routes to get `userId`.
-  * Middleware protected paths (e.g., `/app/**`) via `clerkMiddleware` and `createRouteMatcher` for protected routes.([Contentful][3])
-* DB `User` records map to `clerkUserId` (string).
+- Postgres + Prisma; pgvector enabled for embeddings.
+- Key models (high‑level):
+  - User, Board, Column, Task, Note
+  - PomodoroSession, FocusSession, CalendarEvent
+  - Embedding
+  - Gamification: StoneDefinition, UserStone, UserStoneProgress, AchievementDefinition, UserAchievement, UserGamificationProfile, UserDailySnapshot
+  - AI logging: AgentRun, AIEvent, AgentOutput
+  - Projects/Docs: Project, Doc
 
-### 2.3 DB & ORM
+### 2.4 AI SDK
 
-* **Postgres** with **Prisma**:
-
-  * `DATABASE_URL` managed via environment.
-* **pgvector** extension enabled for semantic search & recall.([Supabase][2])
-* Migration & seeding via `prisma migrate` / `prisma db seed`.
-
-### 2.4 Vercel AI SDK + OpenAI
-
-* Use **Vercel AI SDK** (latest) for:
-
-  * Streaming text (`streamText`).
-  * Structured outputs (`streamObject` with JSON schema).([Vercel][1])
-* Provider: OpenAI
-
-  * Default fast: `gpt-4.1-mini` (planner, brain dump, suggestions).
-  * High-value: `gpt-4.1` or `gpt-4o` for weekly Performance Reviews.
+- Vercel AI SDK:
+- `streamObject` for typed streaming plans (`/api/ai/plan`)
+- `generateText` for non‑streamed transformations (todo agent, enrich/classify/suggest)
+- Provider: OpenAI. Default fast models: `gpt-4o-mini` / `gpt-4.1-mini`.
 
 ---
 
-## 3. Data model
+## 3) User scenarios (implemented in MVP)
 
-Prisma schema snippets focused on new AI-related models.
+1) Brain dump → Structured todos
+   - POST `/api/ai/todo-agent` with `{ brainDumpText }` returns tasks (title, priority, tags, estimatedPomodoros).
+   - Client can insert them into the default board.
 
-### 3.1 User
+2) Plan the day (streaming)
+   - POST `/api/ai/plan` with `{ prompt }` streams a typed plan: tasks with `kind` (DEEP/SHALLOW), `estimateMinutes`, `priority`.
 
-You may already have a `User` table; extend minimally for eval profile:
+3) Minimal Todos + Quick Add
+   - GET `/api/tasks/my?status=TODO` and POST `/api/tasks/quick` power `TodosMinimal`.
 
-```prisma
-model User {
-  id             String   @id @default(cuid())
-  clerkUserId    String   @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+4) Pomodoro focus
+   - `PomodoroCard` timer with keyboard shortcuts; auto‑move to In Progress on start when possible.
+   - Completion and streaks feed gamification counters.
 
-  // Preferences
-  energyProfile  String?  // JSON of morning/evening preference etc.
-  goals          String?  // Short free-form goals from onboarding
-
-  evalProfile    UserEvalProfile?
-  tasks          Task[]
-  pomodoros      PomodoroSession[]
-  gems           Gem[]
-}
-```
-
-### 3.2 Task (core shared model)
-
-```prisma
-enum TaskKind {
-  DEEP
-  SHALLOW
-}
-
-enum TaskPriority {
-  LOW
-  MEDIUM
-  HIGH
-}
-
-enum TaskStatus {
-  BACKLOG
-  TODO
-  IN_PROGRESS
-  DONE
-  ARCHIVED
-}
-
-model Task {
-  id              String        @id @default(cuid())
-  userId          String
-  user            User          @relation(fields: [userId], references: [id])
-
-  title           String
-  description     String?
-  estimateMinutes Int?          // From AI planner or user
-  kind            TaskKind?     // deep/shallow
-  priority        TaskPriority? // high/med/low
-  status          TaskStatus    @default(BACKLOG)
-
-  // planning context
-  plannedForDate  DateTime?     // date-level (not time)
-  isAiPlanned     Boolean       @default(false)
-  fromBrainDump   Boolean       @default(false)
-
-  // timestamps
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  completedAt     DateTime?
-
-  // AI-related
-  embedding       Float[]?      @db.Vector(1536) // or 1024 depending on model
-}
-```
-
-### 3.3 TaskList / Sections (for Brain Dump lists)
-
-```prisma
-model TaskList {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-
-  label     String   // e.g., "Job Search", "Learning", "Admin"
-  createdAt DateTime @default(now())
-
-  tasks     Task[]   // optional, if we want list grouping
-}
-```
-
-> Implementation note: for v1, grouping can be handled in the client without a persistent `TaskList`. But this model is included for future grouping/filters.
-
-### 3.4 PomodoroSession (for Flow Coach later)
-
-```prisma
-enum PomodoroType {
-  FOCUS
-  BREAK
-}
-
-enum PomodoroStatus {
-  COMPLETED
-  ABORTED
-  SKIPPED
-  IN_PROGRESS
-}
-
-model PomodoroSession {
-  id          String          @id @default(cuid())
-  userId      String
-  user        User            @relation(fields: [userId], references: [id])
-
-  taskId      String?
-  task        Task?           @relation(fields: [taskId], references: [id])
-
-  type        PomodoroType
-  plannedMinutes Int
-  actualMinutes  Int?
-  status      PomodoroStatus
-  startedAt   DateTime?
-  endedAt     DateTime?
-
-  createdAt   DateTime        @default(now())
-}
-```
-
-### 3.5 Event logging (for snapshots & Performance Agent)
-
-```prisma
-enum EventType {
-  TASK_CREATED
-  TASK_COMPLETED
-  TASK_UPDATED
-  POMODORO_STARTED
-  POMODORO_COMPLETED
-  POMODORO_ABORTED
-  AI_PLANNER_USED
-  BRAIN_DUMP_USED
-  REFLECTION_RUN
-}
-
-model UserEvent {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-
-  type      EventType
-  payload   Json?
-  createdAt DateTime  @default(now())
-
-  // For weekly snapshot aggregation
-  weekOf    DateTime  // Monday 00:00 for grouping
-}
-```
-
-### 3.6 Eval profiles & snapshots
-
-```prisma
-model UserEvalProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
-
-  profileJson Json     // UserEvalProfile JSON from LLM
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model WeeklyEvalSnapshot {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-
-  weekOf      DateTime // Monday 00:00
-  statsJson   Json     // Pre-aggregated stats used by Performance Agent
-  createdAt   DateTime @default(now())
-
-  @@unique([userId, weekOf])
-}
-```
-
-### 3.7 Gem system
-
-```prisma
-model Gem {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-
-  slug          String   // e.g., "obsidian-focus"
-  imageUrl      String
-  title         String
-  oneLineLore   String
-  earnedAt      DateTime @default(now())
-  relatedTaskIds String[] // stored as string array
-}
-```
+5) Gamification
+   - Deterministic rules award shards/stones on task completion and pomodoros (see `src/lib/gamification/engine.ts`).
+   - UI surfaces: Bag/Jewels and lightweight celebrate modals.
 
 ---
 
-## 4. Backend modules & APIs
+## 4) AI surface details
 
-### 4.1 Common infrastructure
+### 4.1 Plan (streaming)
 
-#### 4.1.1 `lib/auth.ts`
+- Endpoint: `POST /api/ai/plan`
+- Schema: `{ rationale: string, tasks: [{ title, description?, estimateMinutes (5–120), priority (HIGH|MEDIUM|LOW), kind (DEEP|SHALLOW) }] }`
+- Model: `gpt-4o-mini`
+- Behavior: streams a valid JSON object via Vercel AI SDK; client renders incrementally.
 
-* Helper to fetch current user:
+### 4.2 Brain Dump → Todos
 
-```ts
-import { auth } from "@clerk/nextjs/server";
-import { prisma } from "./prisma";
+- Endpoint: `POST /api/ai/todo-agent`
+- Input: `{ brainDumpText?: string; quickTodoText?: string }`
+- Output: `{ tasks: [{ title, description?, estimatePomodoros?, priority, tags[] }], rationale? }`
+- Failure: robust JSON extraction with fallback to empty tasks to avoid breaking flows.
 
-export async function getCurrentUserOrThrow() {
-  const { userId: clerkUserId } = auth();
-  if (!clerkUserId) throw new Error("UNAUTHENTICATED");
+### 4.3 Card micro‑actions (task‑scoped)
 
-  let user = await prisma.user.findUnique({ where: { clerkUserId } });
-  if (!user) {
-    user = await prisma.user.create({ data: { clerkUserId } });
-  }
-  return user;
-}
-```
+- Classify: `POST /api/ai/cards/[taskId]/classify`
+  - Suggest column/priority/estimate, update `aiState=CLASSIFIED`, ensure embeddings.
+- Enrich: `POST /api/ai/cards/[taskId]/enrich`
+  - Produce improved description + suggested subtasks; derive minutes/pomodoros; update `aiState=ENRICHED`.
+- Suggest next action: `POST /api/ai/cards/[taskId]/suggest`
+  - Provide a concrete next step and optionally a column move; update `aiState=SUGGESTED`.
 
-#### 4.1.2 `lib/aiClient.ts`
+### 4.4 Notes (learning helpers)
 
-* Centralized AI client + model selection:
-
-```ts
-import { createClient } from "ai";
-import OpenAI from "openai";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-export const ai = createClient({
-  apiKey: process.env.OPENAI_API_KEY!,
-  baseURL: "https://api.openai.com/v1",
-});
-
-export const MODELS = {
-  plannerFast: "gpt-4.1-mini",
-  thinker: "gpt-4.1",
-  reflection: "gpt-4.1-mini",
-};
-```
-
-#### 4.1.3 `lib/events.ts`
-
-* Basic user event logging:
-
-```ts
-export async function logEvent(userId: string, type: EventType, payload?: any) {
-  const now = new Date();
-  const weekOf = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-  await prisma.userEvent.create({
-    data: {
-      userId,
-      type,
-      payload,
-      weekOf,
-    },
-  });
-}
-```
+- Summary: `POST /api/ai/notes/[noteId]/summary` (stubbed summarizer for now).
+- Quiz: `POST /api/ai/notes/[noteId]/quiz` (stubbed; intended to create deck/cards and a quiz).
 
 ---
 
-## 5. Feature modules – Phase 1 in depth
+## 5) Data model (selected details)
 
-### 5.1 A1 – AI Flow Planner
+- Task: status, priority, estimatedPomodoros, tags, AI fields (`aiState`, `aiSuggested*`, `aiSubtasks`, `aiNextAction`, `aiConfidence`).
+- Note: rendered from a task; contentMarkdown; ties to embeddings/flashcards/quizzes.
+- Gamification: deterministic rules award shards/stones; lore via LLM optional.
+- Projects/Docs: organize tasks + notes; Notion URL is an optional reference.
 
-#### 5.1.1 API: `POST /api/ai/flow-planner`
+See `prisma/schema.prisma` for full definitions.
 
-**Purpose:** Transform natural-language description of the day into structured tasks.
+## 6) Observability & Analytics
 
-* **Request body**
+- Agent logging: `AgentRun`, `AIEvent`, `AgentOutput` via `src/server/db/agentRuns.ts`.
+- Product analytics: `useProductAnalytics()` mirrors to Vercel Analytics and Plausible (if enabled).
 
-```ts
-type FlowPlannerRequest = {
-  description: string; // free text
-  maxTasks?: number;   // default 8
-  workdayMinutes?: number; // optional, e.g., 360
-};
-```
+## 7) Performance & Accessibility
 
-* **LLM schema**
+- Interaction budgets: sub‑100ms feels instant; stream or skeleton beyond that.
+- Keyboard‑first flows; predictable focus order; ARIA labels; avoid layout shift while streaming.
 
-```ts
-type PlannedTask = {
-  title: string;
-  description?: string;
-  estimateMinutes: number; // 20–90
-  kind: "deep" | "shallow";
-  priority: "high" | "medium" | "low";
-};
+## 8) Seeding & Debug
 
-type FlowPlannerResponse = {
-  tasks: PlannedTask[];
-  rationale: string; // summarizing how it allocated time
-};
-```
+- Seed data: `npx prisma db seed` loads a default user/tenant, board, columns, projects, docs, tasks.
+- Debug UIs:
+  - `/debug/seed-preview` shows Projects/Docs/Tasks map.
+  - `/debug/dao` inspects AI orchestrations.
 
-* **Route handler sketch**
+## 9) Future work (non‑blocking)
 
-```ts
-// app/api/ai/flow-planner/route.ts
-import { streamObject } from "ai"; // vercel ai sdk
-import { MODELS, ai } from "@/lib/aiClient";
-import { getCurrentUserOrThrow } from "@/lib/auth";
-import { NextResponse } from "next/server";
-
-export async function POST(req: Request) {
-  const user = await getCurrentUserOrThrow();
-  const body = await req.json() as FlowPlannerRequest;
-
-  // log event (async, fire-and-forget)
-  logEvent(user.id, "AI_PLANNER_USED", { description: body.description });
-
-  const result = await streamObject({
-    model: ai.openai(MODELS.plannerFast),
-    schema: {
-      type: "object",
-      properties: {
-        tasks: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              title: { type: "string" },
-              description: { type: "string" },
-              estimateMinutes: { type: "number" },
-              kind: { type: "string", enum: ["deep", "shallow"] },
-              priority: { type: "string", enum: ["high", "medium", "low"] },
-            },
-            required: ["title", "estimateMinutes", "kind", "priority"],
-          },
-        },
-        rationale: { type: "string" },
-      },
-      required: ["tasks", "rationale"],
-    },
-    prompt: buildFlowPlannerPrompt(body, user),
-  });
-
-  return result.toTextStreamResponse(); // streamed to client
-}
-```
-
-> Uses Vercel AI’s `streamObject` pattern for streaming structured JSON.([Vercel][1])
-
-* **Prompt strategy:**
-
-  * Inject:
-
-    * User goals (if exist from `User.goals`).
-    * Workday length and preferences (morning/afternoon deep work).
-  * Strong constraints:
-
-    * 3–10 tasks.
-    * Estimates 20–90 minutes.
-    * Rough balance of deep vs shallow.
-
-#### 5.1.2 Client integration
-
-* Component: `<FlowPlannerDialog />`
-
-  * Uses `useState` for input description.
-  * Calls `useObject`/`useChat` from Vercel AI SDK (client) to stream tasks.
-  * Displays tasks incrementally in list with:
-
-    * Checkbox “include” toggle.
-    * Editable title/estimate before committing.
-  * “Add to day” button → `POST /api/tasks/bulk-create`.
-
-#### 5.1.3 `POST /api/tasks/bulk-create`
-
-* **Request body**
-
-```ts
-type BulkCreateTasksRequest = {
-  tasks: PlannedTask[];
-  plannedForDate?: string; // ISO date
-};
-```
-
-* **Server behavior**
-
-  * `getCurrentUserOrThrow`.
-  * Create tasks with `isAiPlanned = true`, `status = TODO` or `BACKLOG` depending on heuristics.
-  * Optionally infer `plannedForDate` = today when omitted.
-
-* **Response**
-
-```ts
-type BulkCreateTasksResponse = {
-  tasks: Task[]; // sanitized (no internal fields)
-};
-```
+- Notion sync (command center → projects/docs/tasks)
+- Weekly performance agent with trend insights
+- Calendar integration and auto‑blocking for deep work
 
 ---
-
-### 5.2 A2 – Brain Dump → Clean Todos
-
-#### 5.2.1 API: `POST /api/ai/brain-dump`
-
-**Purpose:** Turn messy brain dump text into labeled lists & tasks.
-
-* **Request body**
-
-```ts
-type BrainDumpRequest = {
-  text: string;
-  maxLists?: number; // default 4
-};
-```
-
-* **LLM schema**
-
-```ts
-type BrainDumpResponse = {
-  lists: {
-    label: string; // e.g., "Job Search", "Learning"
-    tasks: {
-      title: string;
-      description?: string;
-    }[];
-  }[];
-};
-```
-
-* **Route handler sketch**
-
-```ts
-// app/api/ai/brain-dump/route.ts
-export async function POST(req: Request) {
-  const user = await getCurrentUserOrThrow();
-  const body = await req.json() as BrainDumpRequest;
-
-  logEvent(user.id, "BRAIN_DUMP_USED", { textLength: body.text.length });
-
-  const result = await streamObject({
-    model: ai.openai(MODELS.plannerFast),
-    schema: /* BrainDumpResponse schema */,
-    prompt: buildBrainDumpPrompt(body, user),
-  });
-
-  return result.toTextStreamResponse();
-}
-```
-
-#### 5.2.2 Client integration
-
-* UI: “Brain Dump” textarea under Quick Add.
-
-  * On submit → show *“Organize with AI”* button.
-  * Call `/api/ai/brain-dump`, stream sections and tasks.
-* User can:
-
-  * Toggle which lists to create.
-  * Edit titles quickly.
-* “Add selected” → `POST /api/tasks/bulk-create-from-brain-dump`.
-
-#### 5.2.3 `POST /api/tasks/bulk-create-from-brain-dump`
-
-* **Request body**
-
-```ts
-type BrainDumpCreateRequest = {
-  lists: {
-    label: string;
-    tasks: { title: string; description?: string }[];
-  }[];
-};
-```
-
-* **Server behavior**
-
-  * For v1: just create Tasks with `fromBrainDump = true`.
-  * Optionally store `label` as tag in description or future `TaskList`.
-
----
-
-## 6. Event logging & metrics pipeline
-
-### 6.1 Event sources
-
-* Task actions:
-
-  * Created, completed, updated, status changed.
-* AI usage:
-
-  * Planner used, Brain Dump used, Reflection run.
-* Pomodoro events:
-
-  * Start, complete, abort.
-
-Each relevant API route should call `logEvent(user.id, type, payload)`.
-
-### 6.2 Snapshot builder (for Performance Agent later)
-
-* **Cron / scheduled job** (later; for now can be a manual route):
-
-  * `POST /api/internal/build-weekly-snapshot?weekOf=YYYY-MM-DD`.
-* Process:
-
-  1. Group `UserEvent` rows by `userId, weekOf`.
-  2. For each user-week:
-
-     * Compute:
-
-       * Days with ≥ 1 task completed.
-       * Tasks completed count.
-       * Deep vs shallow distribution.
-       * # of AI Planner invocations.
-       * Pomodoro stats.
-     * Store in `WeeklyEvalSnapshot.statsJson`.
-
----
-
-## 7. Semantic embeddings (scaffolding)
-
-### 7.1 Embedding generation
-
-* When tasks are:
-
-  * Created, or
-  * Description is updated and length > N characters.
-* Enqueue background job (for now, just fire-and-forget call) to:
-
-  * Generate embedding via OpenAI embedding model (e.g., `text-embedding-3-small`).
-  * Upsert embedding into `Task.embedding`.
-
-Using pgvector is a common pattern in Postgres/Prisma for semantic search and RAG-style features.([Supabase][2])
-
-### 7.2 Search API (stub): `GET /api/search`
-
-* Params: `q: string`
-* Steps:
-
-  1. Compute query embedding.
-  2. `SELECT` tasks with `ORDER BY embedding <-> query_embedding LIMIT 10`.
-  3. Return tasks; in Phase 4, we’ll add LLM summarization.
-
----
-
-## 8. Frontend architecture
-
-### 8.1 State management
-
-* **TanStack Query** for server state (tasks, sessions, profile).
-* **Zustand** (or similar) for transient UI state (dialogs, modals, streaming responses).
-
-### 8.2 Shared components
-
-* `<TaskCard />`
-
-  * Renders title, estimate, badges (`deep/shallow`, `priority`, AI-tag).
-  * Reused in To-Do, Kanban, Planner preview.
-* `<AiSuggestionChip />` (for later A3)
-
-  * Icon + tooltip + click action (e.g., “Draft email”, “Break down”).
-
-### 8.3 Pages
-
-* `/app/todo`
-
-  * List of today’s tasks (filter `Task.plannedForDate === today`).
-  * Brain Dump panel.
-  * “Flow Planner” button (dialog).
-* `/app/kanban`
-
-  * Columns from `TaskStatus`.
-  * Drag-and-drop updates `status`.
-* `/app/pomodoro`
-
-  * Simple timer controlling `PomodoroSession` creation.
-* `/app/performance`
-
-  * For later: shows Performance Agent summaries.
-
----
-
-## 9. LLM prompt guidelines
-
-### 9.1 Shared principles
-
-* **Few-shot examples** tuned to:
-
-  * Use bullet-point, terse style.
-  * Respect schema constraints strictly.
-* Ask the model to **avoid over-optimistic scheduling**.
-* Encourage **skill/focus** orientation:
-
-  * E.g., “If the user mentions ‘system design practice’, mark as `kind: "deep"`.”
-
-### 9.2 Flow Planner prompt (outline)
-
-1. System: “You are a planning assistant for Dao, a flow-first productivity app. You help users break a day of work into tasks with realistic time estimates.”
-2. Context:
-
-   * User goals & energy profile if known.
-3. User message:
-
-   * Raw `description`.
-   * Workday minutes, desired number of tasks.
-4. Instructions:
-
-   * Generate `tasks` only, conforming to JSON schema.
-   * At least 1 deep-work task when possible.
-   * Don’t exceed workdayMinutes by more than 20%.
-
-### 9.3 Brain Dump prompt (outline)
-
-1. System: “You are a helpful organizer that turns messy text into labeled task lists.”
-2. User: raw brain dump text.
-3. Instructions:
-
-   * Identify 2–4 logical categories.
-   * Under each, extract concise tasks.
-   * No due dates, no prioritization in this phase.
-
----
-
-## 10. Security, privacy, performance
-
-### 10.1 Security
-
-* All API routes:
-
-  * Require auth via `getCurrentUserOrThrow`.
-  * Reject unauthenticated with 401.
-* No cross-user access:
-
-  * Every `WHERE` clause uses `userId`.
-* Environment secrets:
-
-  * `OPENAI_API_KEY`, `DATABASE_URL`, `CLERK_SECRET_KEY`, etc., set via environment and not exposed to client.([Microsoft Learn][4])
-
-### 10.2 Privacy
-
-* Store only necessary user text:
-
-  * Task titles/descriptions, brain dump text can be persisted as tasks only if user confirms.
-  * Raw brain dump text itself may be discarded after LLM call (or anonymized).
-* Clear privacy page: what’s logged & how it’s used (later product work).
-
-### 10.3 Performance and cost
-
-* Use **fast model** (`gpt-4.1-mini`) for frequent operations (Flow Planner, Brain Dump).
-* Use rate limits per user:
-
-  * e.g., 30 Planner calls/day.
-* Simple caching:
-
-  * If same `description` and same date, allow quick reuse (optional).
-
----
-
-## 11. Observability
-
-* Logging:
-
-  * On server, add lightweight structured logs for AI routes: `userId`, `feature`, `latency`, `tokens`.
-* Metrics:
-
-  * Weekly export from DB (or use a simple dashboard) for:
-
-    * Number of AI planner calls.
-    * Average tasks generated vs accepted.
-* Error handling:
-
-  * Wrap AI calls in try/catch; return user-friendly message like:
-
-    * “Dao’s AI is having trouble right now. Try again in a minute or plan manually.”
-
----
-
-## 12. Phased delivery (engineering-focused)
-
-### Phase 1 (2–3 weeks)
-
-* Implement:
-
-  * Prisma schema (User, Task, UserEvent, PomodoroSession minimal).
-  * `FlowPlanner`: `/api/ai/flow-planner` + client dialog.
-  * `BrainDump`: `/api/ai/brain-dump` + UI.
-  * `bulk-create` task endpoints.
-  * Event logging (`UserEvent`).
-* QA:
-
-  * End-to-end: create plan → tasks appear in To-Do/Kanban.
-  * Load test: 10–20 concurrent planner calls.
-
-### Phase 2 (later)
-
-* Add:
-
-  * Soft suggestions for todos.
-  * End-of-day reflection.
-  * Simple Pomodoro logging + “Review my focus”.
-
-### Phase 3+
-
-* Implement Performance Agent:
-
-  * Profile builder, snapshot builder, review generator.
-* Add Gem triggers + lore.
-
-
-[1]: https://vercel.com/templates/next.js/ai-sdk-no-schema?utm_source=chatgpt.com "No Schema Output Mode with Vercel AI SDK"
-[2]: https://supabase.com/docs/guides/database/extensions/pgvector?utm_source=chatgpt.com "pgvector: Embeddings and vector similarity"
-[3]: https://www.contentful.com/blog/clerk-authentication/?utm_source=chatgpt.com "Clerk auth: What it is and how to add it to your Next.js project"
-[4]: https://learn.microsoft.com/en-us/answers/questions/2278478/deploy-nextjs-app-with-clerk-authentication-on-azu?utm_source=chatgpt.com "Deploy Nextjs app with Clerk Authentication on Azure ..."

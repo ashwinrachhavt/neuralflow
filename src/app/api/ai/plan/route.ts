@@ -2,7 +2,8 @@ import { streamObject } from "ai";
 import { z } from "zod";
 import { openai } from "@/lib/ai/client";
 import { getAgentContext } from "@/lib/ai/context";
-import { getCurrentUserOrThrow } from "@/lib/auth";
+import { getUserOr401 } from "@/lib/api-helpers";
+import { NextResponse } from "next/server";
 
 const PlanSchema = z.object({
   rationale: z.string().describe("A one-sentence motivation for this schedule based on user energy."),
@@ -20,9 +21,11 @@ const PlanSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const user = await getCurrentUserOrThrow();
-  const { prompt = "" } = (await req.json()) as { prompt?: string };
-  const context = await getAgentContext(user.id);
+  const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
+  const body = (await req.json().catch(() => ({}))) as { prompt?: string };
+  const prompt = body?.prompt ?? "";
+  const context = await getAgentContext((user as any).id);
 
   const systemMessage = [
     "You are an elite productivity architect.",
@@ -38,10 +41,15 @@ export async function POST(req: Request) {
     "Group 'DEEP' work during high-energy periods.",
   ].join("\n");
 
-  return streamObject({
-    model: openai("gpt-4o-mini"),
-    schema: PlanSchema,
-    system: systemMessage,
-    prompt,
-  }).toTextStreamResponse();
+  try {
+    return streamObject({
+      model: openai("gpt-4o-mini"),
+      schema: PlanSchema,
+      system: systemMessage,
+      prompt,
+    }).toTextStreamResponse();
+  } catch (e: any) {
+    console.error("Planner stream error:", e?.message ?? e);
+    return NextResponse.json({ message: "Planner error" }, { status: 500 });
+  }
 }

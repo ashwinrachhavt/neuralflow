@@ -6,8 +6,8 @@ import { SectionHeader } from '@/components/section-header';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 
 export const metadata = {
-  title: 'Dashboard',
-  description: 'Overview of your tasks and shortcuts',
+  title: 'Today',
+  description: 'Daily execution view for your flow',
 };
 
 export default function DashboardPage() {

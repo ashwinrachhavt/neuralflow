@@ -27,6 +27,8 @@ export async function POST(req: Request) {
     priority: t.priority ?? 'MEDIUM',
     estimatePomodoros: t.estimatedPomodoros ?? null,
     tags: t.tags ?? [],
+    kind: t.kind ?? undefined,
+    depthScore: typeof t.depthScore === 'number' ? t.depthScore : undefined,
   }));
 
   const stream = new ReadableStream<Uint8Array>({
@@ -53,4 +55,3 @@ export async function POST(req: Request) {
     },
   });
 }
-

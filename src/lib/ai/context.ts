@@ -7,7 +7,8 @@ export async function getAgentContext(userId: string) {
 
   const activeTasks = await prisma.task.findMany({
     where: {
-      userId,
+      // Tasks do not have a direct userId; join via the board owner
+      board: { userId },
       status: { in: ["TODO", "IN_PROGRESS"] },
     },
     select: {

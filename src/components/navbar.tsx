@@ -15,7 +15,7 @@ import { Container } from "@/components/layout/container";
 import { ModeToggle } from "@/components/mode-toggle";
 
 const navLinks = [
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard", label: "Today" },
   { href: "/boards", label: "Board" },
   { href: "/todos", label: "Todos" },
   { href: "/pomodoro", label: "Focus" },
@@ -40,6 +40,7 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch
                   className={cn(
                     "rounded-full px-4 py-2 transition-colors",
                     isActive

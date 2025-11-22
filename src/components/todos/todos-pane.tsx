@@ -15,7 +15,7 @@ import { useDeleteCard, useMarkDone, useMyTodos } from "@/hooks/api";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { MyTodo } from "@/hooks/api";
 import { CardSheet } from "@/components/cards/CardSheet";
-import { AssistantDock } from "@/components/assistant/AssistantDock";
+import { PlannerDock } from "@/components/ai/PlannerDock";
 import { StoneCelebrateModal } from "@/components/gamification/StoneCelebrateModal";
 import { GEM_ICON_PATHS, GEM_META } from "@/lib/gamification/catalog";
 
@@ -31,7 +31,7 @@ export function TodosPane() {
   const { data, isLoading } = useMyTodos('TODO');
   const todos = useMemo(() => data?.tasks ?? [], [data?.tasks]);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
-  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [plannerOpen, setPlannerOpen] = useState(false);
   const [celebrate, setCelebrate] = useState<null | { name: string; image?: string; rarity?: string }>(null);
   const [title, setTitle] = useState("");
 
@@ -77,7 +77,7 @@ export function TodosPane() {
       const typing = !!target?.closest('input, textarea, [contenteditable="true"], select');
       if (!typing && e.key.toLowerCase() === 'a' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
-        setAssistantOpen(true);
+        setPlannerOpen(true);
       }
     };
     window.addEventListener('focus-todos-quick-add', handleFocusQuickAdd as EventListener);
@@ -124,7 +124,7 @@ export function TodosPane() {
               <Button
                 variant="outline"
                 className="rounded-full border-border/40 bg-foreground/10 text-white shadow-lg hover:border-border/60"
-                onClick={() => setAssistantOpen(true)}
+                onClick={() => setPlannerOpen(true)}
               >
                 <Wand2 className="size-4" /> Generate with AI
               </Button>
@@ -362,7 +362,7 @@ export function TodosPane() {
         <CardSheet taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} onOpenFull={(id) => (window.location.href = `/tasks/${id}`)} />
       ) : null}
       <StoneCelebrateModal open={!!celebrate} onClose={() => setCelebrate(null)} stone={celebrate} />
-      <AssistantDock open={assistantOpen} onClose={() => setAssistantOpen(false)} />
+      <PlannerDock open={plannerOpen} onClose={() => setPlannerOpen(false)} />
     </div>
   );
 }

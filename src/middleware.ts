@@ -8,6 +8,9 @@ export default clerkMiddleware(
     const { userId } = await auth();
     const { pathname } = new URL(req.url);
 
+    const devBypass =
+      process.env.NODE_ENV !== "production" && process.env.DEV_AUTH_BYPASS === "1";
+
     // Keep landing and auth pages fully public; no redirects here
     const publicMatchers = [
       "/",
@@ -19,6 +22,11 @@ export default clerkMiddleware(
       "/sitemap.xml",
       "/.well-known",
     ];
+
+    // Allow AI/DAO APIs during local dev if bypass is enabled
+    if (devBypass) {
+      publicMatchers.push("/api/ai", "/api/dao");
+    }
 
     const isExplicitPublic = publicMatchers.some((p) =>
       pathname === p || pathname.startsWith(`${p}/`)
@@ -44,9 +52,9 @@ export const config = {
     "/dashboard/:path*",
     "/boards/:path*",
     "/todos/:path*",
-    "/assistant/:path*",
     "/profile/:path*",
     "/pomodoro/:path*",
+    "/gamify/:path*",
     "/(api|trpc)(.*)",
   ],
 };

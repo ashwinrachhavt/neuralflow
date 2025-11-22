@@ -16,15 +16,35 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed.ts"
+    "prisma:seed": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed.ts",
+    "seed:ashwin": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed-ashwin.ts"
   },
   "prisma": {
     "seed": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed.ts"
+  },
+  "pnpm": {
+    "overrides": {
+      "@tiptap/core": "3.11.0",
+      "@tiptap/react": "3.11.0",
+      "@tiptap/suggestion": "3.11.0",
+      "@tiptap/extension-list": "3.11.0",
+      "@tiptap/extension-task-list": "3.11.0",
+      "@tiptap/extension-task-item": "3.11.0"
+    },
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "sharp",
+      "@clerk/shared",
+      "unrs-resolver"
+    ]
   },
   "dependencies": {
     "3d-force-graph": "^1.79.0",
     "@ai-sdk/openai": "^2.0.8",
     "@ai-sdk/react": "^2.0.93",
+    "@ai-sdk/rsc": "^1.0.99",
     "@clerk/nextjs": "^6.34.4",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -40,9 +60,11 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@tanstack/react-query": "^5.62.7",
+    "@tiptap/core": "^3.11.0",
     "@tiptap/extension-bubble-menu": "^3.11.0",
     "@tiptap/extension-character-count": "^3.11.0",
     "@tiptap/extension-code-block": "^3.11.0",
@@ -66,9 +88,10 @@
     "@tiptap/extension-underline": "^3.11.0",
     "@tiptap/react": "^3.11.0",
     "@tiptap/starter-kit": "^3.11.0",
+    "@tiptap/suggestion": "^3.11.0",
     "@vercel/analytics": "^1.5.0",
     "@xyflow/react": "^12.9.3",
-    "ai": "^5.0.93",
+    "ai": "^5.0.98",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -87,6 +110,7 @@
     "sonner": "^2.0.7",
     "streamdown": "^1.5.1",
     "tailwind-merge": "^3.3.1",
+    "tippy.js": "^6.3.7",
     "tokenlens": "^1.3.1",
     "use-stick-to-bottom": "^1.1.1",
     "zod": "^4.1.12"

@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getUserOr401, readJson } from "@/lib/api-helpers";
 import { gamificationEngine } from "@/lib/gamification/engine";
 
 export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
-  const { slug } = await req.json();
-  if (!slug || typeof slug !== "string") return new NextResponse("Bad Request", { status: 400 });
-  const res = await gamificationEngine.claim(userId, slug as any);
-  if (!res.ok) return NextResponse.json(res, { status: 400 });
-  return NextResponse.json({ ok: true });
+  const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
+  const { slug } = (await readJson<{ slug: any }>(req)) ?? {};
+  if (!slug || typeof slug !== "string") {
+    return NextResponse.json({ message: "slug required" }, { status: 400 });
+  }
+  const result = await gamificationEngine.claim((user as any).id, slug as any);
+  if ((result as any).ok) return NextResponse.json(result);
+  return NextResponse.json(result, { status: 400 });
 }
+

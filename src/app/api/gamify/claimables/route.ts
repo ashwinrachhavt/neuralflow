@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getUserOr401 } from "@/lib/api-helpers";
 import { gamificationEngine } from "@/lib/gamification/engine";
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
-  const list = await gamificationEngine.getClaimables(userId);
-  return NextResponse.json({ claimables: list });
+  const user = await getUserOr401();
+  if (!(user as any).id) return user as unknown as NextResponse;
+  const claimables = await gamificationEngine.getClaimables((user as any).id);
+  return NextResponse.json({ claimables });
 }
+

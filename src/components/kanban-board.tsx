@@ -164,7 +164,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
     mutationFn: async (taskId: string) => {
       const res = await fetch(`/api/ai/cards/${taskId}/classify`, { method: "POST" });
       if (!res.ok) throw new Error("Unable to classify task");
-      return (await res.json()) as { suggestedColumnId: string; suggestedPriority: 'LOW'|'MEDIUM'|'HIGH'; suggestedEstimateMin: number; confidence: number };
+      return (await res.json()) as { suggestedColumnId: string; suggestedPriority: 'LOW' | 'MEDIUM' | 'HIGH'; suggestedEstimateMin: number; confidence: number };
     },
     onSuccess: async (data) => {
       toast.success(`AI classified • ${Math.round((data.confidence ?? 0) * 100)}% confidence`, { description: `${data.suggestedPriority} • ≈ ${data.suggestedEstimateMin} min` });
@@ -264,16 +264,16 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap gap-4">
+        <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4">
           {isLoading ? (
             <>
-              {[0,1,2].map(i => (
+              {[0, 1, 2].map(i => (
                 <Card key={i} className="flex w-full max-w-xs flex-1 flex-col bg-card/60 backdrop-blur-md">
                   <CardHeader>
                     <Skeleton className="h-5 w-32" />
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {[0,1,2].map(j => (
+                    {[0, 1, 2].map(j => (
                       <div key={j} className="rounded-xl border border-border bg-background/90 p-4">
                         <Skeleton className="h-4 w-40" />
                         <div className="mt-2 space-y-2">
@@ -358,6 +358,8 @@ type KanbanColumnProps = {
 
 function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId, onApplyMove }: KanbanColumnProps) {
   const [newOpen, setNewOpen] = useState(false);
+  const isInProgress = (column.title ?? '').trim().toLowerCase() === 'in progress';
+  const wipCount = column.taskIds.length;
   return (
     <Card className="flex w-full max-w-xs flex-1 flex-col bg-card/60 backdrop-blur-md">
       <CardHeader className="py-3">
@@ -371,6 +373,11 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
                 {column.description}
               </CardDescription>
             ) : null}
+            {isInProgress && wipCount > 3 ? (
+              <div className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">
+                You have {wipCount} tasks in progress. Consider finishing one before starting another.
+              </div>
+            ) : null}
           </div>
           <Button variant="ghost" size="icon" className="size-8" onClick={() => setNewOpen(true)}>
             <Plus className="size-4" />
@@ -380,7 +387,7 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
       <CardContent className="pt-2">
         <ColumnSortableArea columnId={column.id} taskIds={column.taskIds}>
           {column.taskIds.length === 0 ? (
-            <EmptyColumnHint />
+            <EmptyColumnHint columnTitle={column.title} />
           ) : (
             column.taskIds.map(taskId => (
               <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} onClassify={onClassify} onSuggest={onSuggest} onAutoMove={onAutoMove} onOpen={onOpen} openTaskId={openTaskId} onApplyMove={onApplyMove} />
@@ -529,10 +536,13 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
   );
 }
 
-function EmptyColumnHint() {
+function EmptyColumnHint({ columnTitle }: { columnTitle?: string }) {
+  const isBacklog = (columnTitle ?? '').trim().toLowerCase() === 'backlog';
   return (
     <div className="rounded-lg border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground">
-      No tasks yet. Drop tasks here.
+      {isBacklog
+        ? 'Dump every idea here: job prep, reading, errands. Drag into To Do when you\'re ready to work on it.'
+        : 'No tasks yet. Drop tasks here.'}
     </div>
   );
 }

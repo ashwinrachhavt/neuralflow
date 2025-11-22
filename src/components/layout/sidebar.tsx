@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, LayoutGrid, Sparkles } from "lucide-react";
+import { LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Keep sidebar focused on secondary/contextual navigation.
+// Primary app navigation lives in the top navbar.
 const links = [
-  { href: "/dashboard", label: "Today", icon: CalendarDays },
   { href: "/boards", label: "Board", icon: LayoutGrid },
-  { href: "/assistant", label: "Assistant", icon: Sparkles },
 ];
 
 export function Sidebar() {
