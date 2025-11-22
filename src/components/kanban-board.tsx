@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/queryClient";
 import { CardSheet } from "@/components/cards/CardSheet";
 import { NewCardModal } from "@/components/cards/NewCardModal";
+import { useGamification } from "@/components/gamification/GamificationOverlay";
 
 function ActionButton({
   title,
@@ -93,6 +94,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { data, isLoading } = useBoard(boardId);
+  const { triggerAction } = useGamification();
 
   const [board, setBoard] = useState<BoardState>(INITIAL_BOARD);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null); // fallback when routing not available
@@ -258,6 +260,14 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
 
     if (destinationColumnId !== sourceColumnId) {
       moveMutation.mutate({ taskId: activeTaskId, columnId: destinationColumnId });
+
+      // Trigger gamification if moved to Done
+      const destColumn = board.columns[destinationColumnId];
+      console.log("Moved to column:", destColumn?.title); // DEBUG
+      if (destColumn && destColumn.title.toLowerCase() === "done") {
+        console.log("Triggering TASK_COMPLETE for:", activeTaskId); // DEBUG
+        triggerAction("TASK_COMPLETE", activeTaskId);
+      }
     }
   };
 

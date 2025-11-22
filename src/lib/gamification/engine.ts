@@ -65,7 +65,7 @@ async function awardStone(userId: string, slug: GemSlug, source: string, sourceI
   let lore: string | undefined;
   if (withLore) {
     // Minimal summary: pick from daily snapshot
-    const today = new Date(); today.setUTCHours(0,0,0,0);
+    const today = new Date(); today.setUTCHours(0, 0, 0, 0);
     const daily = await prisma.userDailySnapshot.findUnique({ where: { userId_date: { userId, date: today } } });
     const summary = daily ? JSON.stringify(daily) : "";
     lore = await generateLore(slug, summary);
@@ -95,85 +95,74 @@ async function addShards(userId: string, slug: GemSlug, shards = 1) {
 }
 
 export const RULES: Rule[] = [
-  // Quartz – first 3 task day
+  // Quartz – First Task Ever
   {
     slug: "quartz",
     trigger: "TASK_COMPLETED",
     async shouldAward(ctx) {
       if (await hasStone(ctx.userId, "quartz")) return false;
-      const today = new Date(ctx.now); today.setUTCHours(0,0,0,0);
-      const daily = await prisma.userDailySnapshot.findUnique({ where: { userId_date: { userId: ctx.userId, date: today } } });
-      return (daily?.tasksCompleted ?? 0) >= 3;
+      const profile = await prisma.userGamificationProfile.findUnique({ where: { userId: ctx.userId } });
+      return (profile?.totalTasksCompleted ?? 0) >= 1;
     },
   },
-  // Topaz – 5-day streak
+  // Garnet – 5 Tasks (Getting started)
+  {
+    slug: "garnet",
+    trigger: "TASK_COMPLETED",
+    async shouldAward(ctx) {
+      if (await hasStone(ctx.userId, "garnet")) return false;
+      const profile = await prisma.userGamificationProfile.findUnique({ where: { userId: ctx.userId } });
+      return (profile?.totalTasksCompleted ?? 0) >= 5;
+    },
+  },
+  // Topaz – 10 Tasks (Consistency)
   {
     slug: "topaz",
-    trigger: "END_OF_DAY",
+    trigger: "TASK_COMPLETED",
     async shouldAward(ctx) {
       if (await hasStone(ctx.userId, "topaz")) return false;
       const profile = await prisma.userGamificationProfile.findUnique({ where: { userId: ctx.userId } });
-      return (profile?.currentDailyStreak ?? 0) >= 5;
+      return (profile?.totalTasksCompleted ?? 0) >= 10;
     },
   },
-  // Emerald – learning day (flashcards + quiz)
+  // Emerald – 25 Tasks (Learning/Growth)
   {
     slug: "emerald",
-    trigger: "END_OF_DAY",
+    trigger: "TASK_COMPLETED",
     async shouldAward(ctx) {
       if (await hasStone(ctx.userId, "emerald")) return false;
-      const daily = ctx.daily ?? (await prisma.userDailySnapshot.findFirst({ where: { userId: ctx.userId }, orderBy: { date: "desc" } }));
-      return (daily?.flashcardsReviewed ?? 0) > 0 && (daily?.quizAttempts ?? 0) > 0 && (daily?.avgQuizScore ?? 0) >= 70;
+      const profile = await prisma.userGamificationProfile.findUnique({ where: { userId: ctx.userId } });
+      return (profile?.totalTasksCompleted ?? 0) >= 25;
     },
   },
-  // Sapphire – 6 deep work pomodoros in 7 days
+  // Sapphire – 50 Tasks (Deep Focus)
   {
     slug: "sapphire",
-    trigger: "END_OF_DAY",
+    trigger: "TASK_COMPLETED",
     async shouldAward(ctx) {
       if (await hasStone(ctx.userId, "sapphire")) return false;
-      const end = new Date(ctx.now); end.setUTCHours(0,0,0,0);
-      const start = new Date(end); start.setUTCDate(end.getUTCDate() - 6);
-      const days = await prisma.userDailySnapshot.findMany({ where: { userId: ctx.userId, date: { gte: start, lte: end } } });
-      const totalDeep = days.reduce((a, d) => a + (d.deepWorkPomodoros ?? 0), 0);
-      return totalDeep >= 6;
+      const profile = await prisma.userGamificationProfile.findUnique({ where: { userId: ctx.userId } });
+      return (profile?.totalTasksCompleted ?? 0) >= 50;
     },
   },
-  // Garnet – reflections 3 days in a row
-  {
-    slug: "garnet",
-    trigger: "END_OF_DAY",
-    async shouldAward(ctx) {
-      if (await hasStone(ctx.userId, "garnet")) return false;
-      const end = new Date(ctx.now); end.setUTCHours(0,0,0,0);
-      for (let i = 0; i < 3; i++) {
-        const day = new Date(end); day.setUTCDate(end.getUTCDate() - i);
-        const snap = await prisma.userDailySnapshot.findUnique({ where: { userId_date: { userId: ctx.userId, date: day } } });
-        if ((snap?.reflectionsWritten ?? 0) === 0) return false;
-      }
-      return true;
-    },
-  },
-  // Ruby – hard task shipped
+  // Ruby – 100 Tasks (Mastery)
   {
     slug: "ruby",
     trigger: "TASK_COMPLETED",
     async shouldAward(ctx) {
-      if (!ctx.task) return false;
       if (await hasStone(ctx.userId, "ruby")) return false;
-      const { priority, estimatedPomodoros, createdAt } = ctx.task;
-      const ageDays = Math.floor((ctx.now.getTime() - createdAt.getTime()) / 86400000);
-      return priority === "HIGH" && (estimatedPomodoros ?? 0) >= 3 && ageDays >= 3;
+      const profile = await prisma.userGamificationProfile.findUnique({ where: { userId: ctx.userId } });
+      return (profile?.totalTasksCompleted ?? 0) >= 100;
     },
   },
-  // Diamond – mastery thresholds
+  // Diamond – 500 Tasks (Legendary)
   {
     slug: "diamond",
-    trigger: "END_OF_DAY",
+    trigger: "TASK_COMPLETED",
     async shouldAward(ctx) {
       if (await hasStone(ctx.userId, "diamond")) return false;
       const profile = await prisma.userGamificationProfile.findUnique({ where: { userId: ctx.userId } });
-      return (profile?.totalDeepWorkBlocks ?? 0) >= 100 && (profile?.longestDailyStreak ?? 0) >= 28;
+      return (profile?.totalTasksCompleted ?? 0) >= 500;
     },
   },
 ];
@@ -187,7 +176,7 @@ export const gamificationEngine = {
     if (!task) return { shards: [], awards: [] as string[] };
 
     // Update daily snapshot and profile XP/counters
-    const day = new Date(now); day.setUTCHours(0,0,0,0);
+    const day = new Date(now); day.setUTCHours(0, 0, 0, 0);
     const isDeep = (task.tags ?? []).some((t) => t.toLowerCase().includes("deep"));
     const isLearning = (task.tags ?? []).some((t) => t.toLowerCase().includes("learn"));
     await prisma.$transaction([
@@ -268,7 +257,7 @@ export const gamificationEngine = {
     if ((session.reflectionMarkdown ?? "").trim().length > 0) await addShards(userId, "garnet", 1);
 
     const now = new Date();
-    const day = new Date(session.startTime); day.setUTCHours(0,0,0,0);
+    const day = new Date(session.startTime); day.setUTCHours(0, 0, 0, 0);
     const isDeep = tags.some((t) => t.toLowerCase().includes("deep"));
     await prisma.$transaction([
       prisma.userDailySnapshot.upsert({
@@ -310,7 +299,7 @@ export const gamificationEngine = {
 
   async onEndOfDay(userId: string, date: Date = new Date()) {
     const now = date;
-    const day = new Date(now); day.setUTCHours(0,0,0,0);
+    const day = new Date(now); day.setUTCHours(0, 0, 0, 0);
     const daily = await prisma.userDailySnapshot.findUnique({ where: { userId_date: { userId, date: day } } });
     // Update streaks: if active today, increment streak; else reset
     const hadActivity = (daily?.tasksCompleted ?? 0) > 0 || (daily?.pomodoroCount ?? 0) > 0 || (daily?.flashcardsReviewed ?? 0) > 0 || (daily?.quizAttempts ?? 0) > 0;

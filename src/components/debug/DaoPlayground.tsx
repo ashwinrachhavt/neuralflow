@@ -21,6 +21,10 @@ type Task = {
 
 import { useUser } from "@clerk/nextjs";
 
+import { GemRewardPopup } from "../gamification/GemRewardPopup";
+import { GemBag } from "../gamification/GemBag";
+import { GemSlug } from "@/lib/gamification/catalog";
+
 export function DaoPlayground() {
   const { user } = useUser();
   const [activeTab, setActiveTab] = useState("todo");
@@ -38,15 +42,30 @@ export function DaoPlayground() {
 
   // Gamify Agent State
   const [gamifyAction, setGamifyAction] = useState("TASK_COMPLETE");
-  const [gamifyDetails, setGamifyDetails] = useState('{"taskId": "123", "difficulty": "HARD"}');
+  const [gamifyDetails, setGamifyDetails] = useState("");
   const [gamifyResult, setGamifyResult] = useState<any>(null);
   const [gamifyLoading, setGamifyLoading] = useState(false);
+  const [recentTasks, setRecentTasks] = useState<any[]>([]);
+
+  // Reward Popup State
+  const [rewardSlug, setRewardSlug] = useState<GemSlug | null>(null);
+  const [rewardFlavor, setRewardFlavor] = useState<string>("");
 
   // Reporter Agent State
   const [reportStart, setReportStart] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [reportEnd, setReportEnd] = useState(new Date().toISOString().split('T')[0]);
   const [reportResult, setReportResult] = useState<any>(null);
   const [reportLoading, setReportLoading] = useState(false);
+
+  const fetchRecentTasks = async () => {
+    try {
+      const res = await fetch("/api/tasks/my?limit=5");
+      const data = await res.json();
+      if (res.ok) setRecentTasks(data.tasks);
+    } catch (e) {
+      console.error("Failed to fetch tasks", e);
+    }
+  };
 
   const runTodoAgent = async () => {
     if (!dump.trim()) return toast.error("Please enter a brain dump");
@@ -90,6 +109,7 @@ export function DaoPlayground() {
   const runGamifyAgent = async () => {
     if (!user?.id) return toast.error("You must be logged in");
     setGamifyLoading(true);
+    setRewardSlug(null); // Reset previous reward
     try {
       const payload: any = {
         userId: user.id,
@@ -110,7 +130,16 @@ export function DaoPlayground() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
       setGamifyResult(data);
-      toast.success("Gamification applied!");
+
+      // Trigger Popup if awards exist
+      const awards = data.context?.gamifyResult?.awards || [];
+      if (awards.length > 0) {
+        setRewardSlug(awards[0] as GemSlug);
+        setRewardFlavor(data.context?.gamifyResult?.flavorText || "");
+      } else {
+        toast.success("Action recorded (no new gems this time)");
+      }
+
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -140,18 +169,25 @@ export function DaoPlayground() {
 
   return (
     <div className="space-y-8">
+      <GemRewardPopup
+        slug={rewardSlug}
+        flavorText={rewardFlavor}
+        onClose={() => setRewardSlug(null)}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">AI Debug Console</h2>
           <p className="text-muted-foreground">Test and validate individual AI agents in isolation.</p>
         </div>
+        <GemBag />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
           <TabsTrigger value="todo">Todo Agent</TabsTrigger>
           <TabsTrigger value="enricher">Enricher</TabsTrigger>
-          <TabsTrigger value="gamify">Gamify</TabsTrigger>
+          <TabsTrigger value="gamify" onClick={fetchRecentTasks}>Gamify</TabsTrigger>
           <TabsTrigger value="reporter">Reporter</TabsTrigger>
         </TabsList>
 
@@ -259,10 +295,39 @@ export function DaoPlayground() {
                   />
                 </div>
               </div>
-              <Button onClick={runGamifyAgent} disabled={gamifyLoading}>
-                {gamifyLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Simulate Action
-              </Button>
+
+              {recentTasks.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">Recent Tasks (Click to Select)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {recentTasks.map(task => (
+                      <button
+                        key={task.id}
+                        onClick={() => {
+                          setGamifyAction("TASK_COMPLETE");
+                          setGamifyDetails(task.id);
+                        }}
+                        className="text-xs border rounded px-2 py-1 hover:bg-secondary transition-colors text-left max-w-[200px] truncate"
+                      >
+                        {task.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button onClick={runGamifyAgent} disabled={gamifyLoading}>
+                  {gamifyLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Simulate Action
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  setRewardSlug("quartz");
+                  setRewardFlavor("Debug: Forced reward popup test.");
+                }}>
+                  Force Reward UI
+                </Button>
+              </div>
 
               {gamifyResult && (
                 <div className="mt-4 space-y-4">
