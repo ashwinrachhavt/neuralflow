@@ -146,6 +146,61 @@ model Task {
   @@index([docId])
 }
 
+model WorkflowTemplate {
+  id               String              @id @default(cuid())
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+  title            String
+  summary          String?
+  source           String?             @default("detected")
+  contextTags      String[]            @default([])
+  triggerExamples  String[]            @default([])
+  confidence       Float?
+  lastDetectionRaw Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  stages      WorkflowStage[]
+  simulations WorkflowSimulation[]
+
+  @@index([userId])
+}
+
+model WorkflowStage {
+  id                     String            @id @default(cuid())
+  template               WorkflowTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId             String
+  title                  String
+  summary                String?
+  expectedDurationMinutes Int?
+  artifacts              String[]          @default([])
+  keywords               String[]          @default([])
+  dependencies           String[]          @default([])
+  position               Int
+
+  @@index([templateId])
+}
+
+model WorkflowSimulation {
+  id             String            @id @default(cuid())
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  template       WorkflowTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  templateId     String?
+  goal           String
+  targetDate     DateTime?
+  hoursPerDay    Int?
+  totalMinutes   Int?
+  schedule       Json?
+  insights       Json?
+  suggestedTasks Json?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([templateId])
+}
+
 model Note {
   id              String   @id @default(cuid())
   task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)

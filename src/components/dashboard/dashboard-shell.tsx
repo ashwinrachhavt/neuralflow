@@ -7,6 +7,7 @@ import { RightRail } from "@/components/layout/right-rail";
 import { MiniCalendar } from "@/components/mini-calendar";
 import { QuickFilters, type FilterState } from "@/components/quick-filters";
 import { TodayMain } from "@/components/dashboard/today";
+import { WorkflowMentorCard } from "@/components/workflows/workflow-mentor-card";
 
 export function DashboardShell() {
   const [filters, setFilters] = React.useState<FilterState>({ type: "all", priority: "all" });
@@ -15,6 +16,7 @@ export function DashboardShell() {
       sidebar={<Sidebar />}
       rightRail={
         <RightRail>
+          <WorkflowMentorCard />
           <MiniCalendar />
           <QuickFilters value={filters} onChange={setFilters} />
         </RightRail>
