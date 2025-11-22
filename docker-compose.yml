@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  db:
+    image: ankane/pgvector:latest
+    container_name: neuralflow-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: neuralflow
+      POSTGRES_USER: neuralflow
+      POSTGRES_PASSWORD: neuralflow
+    volumes:
+      - neuralflow-db-data:/var/lib/postgresql/data
+
+volumes:
+  neuralflow-db-data:
+    driver: local
