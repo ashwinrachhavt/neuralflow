@@ -1,11 +1,16 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "installCommand": "cd neuralflow && npm ci --no-audit --no-fund",
-  "buildCommand": "cd neuralflow && npm run build",
-  "devCommand": "cd neuralflow && npm run dev",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run build",
+  "devCommand": "pnpm run dev",
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "preview": true
+    }
   }
 }
-

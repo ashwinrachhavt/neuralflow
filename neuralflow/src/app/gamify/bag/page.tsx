@@ -13,7 +13,7 @@ export default function BagPage() {
 
   return (
     <PageShell>
-      <SectionHeader title="Jewels" description={`${ownedCount}/${items.length} gemstones collected`} />
+      <SectionHeader title="Rewards" description={`${ownedCount}/${items.length} gemstones collected`} />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((it) => (
           <div key={it.id} className="group rounded-2xl border border-border/60 bg-card/80 p-4 shadow-sm">
