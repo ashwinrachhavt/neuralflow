@@ -367,6 +367,74 @@ async function seedAshwinProfileAndTenant() {
       estimatedPomodoros: 2,
     },
   });
+
+  await prisma.task.upsert({
+    where: { id: "task_nf_perf_plan" },
+    update: {},
+    create: {
+      id: "task_nf_perf_plan",
+      boardId: board.id,
+      columnId: "col_nf_backlog",
+      title: "Document the Neural Flow performance plan",
+      descriptionMarkdown:
+        "Capture the Notion notes on transitions, skeleton screens, and prefetching the kanban routes so every page feels instant.",
+      projectId: "proj_neuralflow",
+      priority: TaskPriority.HIGH,
+      type: TaskType.SHIP,
+      estimatedPomodoros: 1,
+    },
+  });
+
+  await prisma.task.upsert({
+    where: { id: "task_learning_prisma_notes" },
+    update: {},
+    create: {
+      id: "task_learning_prisma_notes",
+      boardId: board.id,
+      columnId: "col_nf_backlog",
+      title: "Translate Next.js + AI + Databases notes into docs",
+      descriptionMarkdown:
+        "Summarize the Command Center learning board (Prisma, migrations, safety) into Neural Flow docs so the team has quick reference.",
+      projectId: "proj_learning",
+      priority: TaskPriority.MEDIUM,
+      type: TaskType.LEARNING,
+      estimatedPomodoros: 1,
+    },
+  });
+
+  await prisma.task.upsert({
+    where: { id: "task_learning_planetscale_branch" },
+    update: {},
+    create: {
+      id: "task_learning_planetscale_branch",
+      boardId: board.id,
+      columnId: "col_nf_backlog",
+      title: "Create a PlanetScale branch for staging",
+      descriptionMarkdown:
+        "Follow the Planetscale DB notes to branch the schema, run migrations, and verify the Neural Flow migration workflow in isolation.",
+      projectId: "proj_learning",
+      priority: TaskPriority.MEDIUM,
+      type: TaskType.MAINTENANCE,
+      estimatedPomodoros: 2,
+    },
+  });
+
+  await prisma.task.upsert({
+    where: { id: "task_valon_template" },
+    update: {},
+    create: {
+      id: "task_valon_template",
+      boardId: board.id,
+      columnId: "col_nf_done",
+      title: "Turn Valon interview notes into templates",
+      descriptionMarkdown:
+        "Capture the Command Center Valon entry and convert it into reusable question/answer cards inside Neural Flow.",
+      projectId: "proj_valon",
+      priority: TaskPriority.LOW,
+      type: TaskType.SHIP,
+      status: TaskStatus.DONE,
+    },
+  });
 }
 
 main()
@@ -377,4 +445,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

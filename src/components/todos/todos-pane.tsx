@@ -4,14 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Check, MapPin, Plus, Wand2, ScatterChart } from "lucide-react";
+import { Check, MapPin, Plus, Wand2, ScatterChart, GripVertical, Pencil, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useMarkDone, useMyTodos } from "@/hooks/api";
+import { useDeleteCard, useMarkDone, useMyTodos } from "@/hooks/api";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { MyTodo } from "@/hooks/api";
 import { CardSheet } from "@/components/cards/CardSheet";
 import { AssistantDock } from "@/components/assistant/AssistantDock";
@@ -46,9 +47,25 @@ export function TodosPane() {
   });
 
   const markDone = useMarkDone();
+  const deleteCard = useDeleteCard();
   const totalTodos = todos.length;
   const highPriorityCount = todos.filter((t) => t.priority === "HIGH").length;
   const estimatedPomodoros = todos.reduce((sum, t) => sum + (t.estimatedPomodoros ?? 0), 0);
+
+  const [priorityFilter, setPriorityFilter] = useState<'ALL'|'HIGH'|'MEDIUM'|'LOW'>("ALL");
+  const [sortBy, setSortBy] = useState<'priority'|'estimate'|'title'>("priority");
+
+  const visibleTodos = useMemo(() => {
+    const order: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 } as const as any;
+    let arr = todos.slice();
+    if (priorityFilter !== 'ALL') arr = arr.filter(t => t.priority === priorityFilter);
+    arr.sort((a, b) => {
+      if (sortBy === 'priority') return (order[b.priority ?? 'LOW'] ?? 0) - (order[a.priority ?? 'LOW'] ?? 0);
+      if (sortBy === 'estimate') return (b.estimatedPomodoros ?? 0) - (a.estimatedPomodoros ?? 0);
+      return (a.title || '').localeCompare(b.title || '');
+    });
+    return arr;
+  }, [todos, priorityFilter, sortBy]);
 
   useEffect(() => {
     const handleFocusQuickAdd = () => {
@@ -149,6 +166,40 @@ export function TodosPane() {
             <p className="text-sm text-muted-foreground/70">Tap an item to open the full card and keep context in a single glance.</p>
           </CardHeader>
           <CardContent className="px-0 pb-6 pt-0">
+            <div className="flex items-center justify-between gap-3 px-6 py-3">
+              <div className="text-xs text-muted-foreground/80">{totalTodos} tasks • {highPriorityCount} high • {estimatedPomodoros} pomodoros</div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 rounded-full border border-border/40 bg-foreground/5 p-1">
+                  {(['ALL','HIGH','MEDIUM','LOW'] as const).map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPriorityFilter(p)}
+                      className={
+                        "rounded-full px-3 py-1 text-[11px] uppercase tracking-wide transition " +
+                        (priorityFilter === p ? "bg-foreground/10 text-white" : "text-muted-foreground hover:text-foreground")
+                      }
+                      aria-pressed={priorityFilter === p}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground/80">
+                  <span>Sort</span>
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                    <SelectTrigger className="h-8 w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="priority">Priority</SelectItem>
+                      <SelectItem value="estimate">Estimate</SelectItem>
+                      <SelectItem value="title">Title</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
             <div className="max-h-[460px] overflow-hidden px-6">
               {isLoading ? (
                 <div className="space-y-3 py-2">
@@ -164,7 +215,7 @@ export function TodosPane() {
                 </div>
               ) : (
                 <ul className="flex flex-col gap-3 pb-2">
-                  {todos.map((t) => (
+                  {visibleTodos.map((t) => (
                     <li key={t.id}>
                       <motion.div
                         layoutId={`card-${t.id}`}
@@ -178,11 +229,16 @@ export function TodosPane() {
                           }
                         }}
                       >
-                        <div className="flex-1 space-y-2">
-                          <motion.h3 layoutId={`card-title-${t.id}`} className="text-lg font-semibold text-white">
+                        <div className="flex flex-1 items-start gap-3">
+                          <span className="mt-1 hidden text-muted-foreground/70 transition group-hover:opacity-100 sm:block">
+                            <GripVertical className="size-4 cursor-grab" aria-hidden />
+                          </span>
+                          <div className="flex-1 space-y-2">
+                            <motion.h3 layoutId={`card-title-${t.id}`} className="text-lg font-semibold text-white">
+                              {t.priority ? <span className={dotClass(t.priority)} aria-hidden /> : null}
                             {t.title}
-                          </motion.h3>
-                          <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-wide">
+                            </motion.h3>
+                            <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-wide">
                             {t.priority ? (
                               <span className={`rounded-full border px-2 py-0.5 font-semibold ${PRIORITY_STYLES[t.priority]}`}>
                                 {t.priority}
@@ -198,15 +254,51 @@ export function TodosPane() {
                                 {tag}
                               </span>
                             ))}
-                          </div>
-                          {t.location ? (
+                            </div>
+                            {t.location ? (
                             <div className="mt-1 flex items-center gap-1 text-[11px] uppercase tracking-wide text-emerald-200/90">
                               <MapPin className="size-3" />
                               <span className="text-[11px] font-semibold text-foreground/70">{t.location}</span>
                             </div>
-                          ) : null}
+                            ) : null}
+                          </div>
                         </div>
-                        <button
+                        <div className="flex items-center gap-2">
+                          <div className="opacity-0 transition group-hover:opacity-100">
+                            <div className="flex items-center gap-1">
+                              <button
+                                className="rounded-2xl border border-border/30 bg-foreground/5 p-2 text-white/80 hover:bg-foreground/10"
+                                title="Open"
+                                aria-label="Open task"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  try { router.push(`/todos/tasks/${t.id}`); } catch { setOpenTaskId(t.id); }
+                                }}
+                              >
+                                <Eye className="size-4" />
+                              </button>
+                              <button
+                                className="rounded-2xl border border-border/30 bg-foreground/5 p-2 text-white/80 hover:bg-foreground/10"
+                                title="Edit"
+                                aria-label="Edit task"
+                                onClick={(e) => { e.stopPropagation(); setOpenTaskId(t.id); }}
+                              >
+                                <Pencil className="size-4" />
+                              </button>
+                              <button
+                                className="rounded-2xl border border-border/30 bg-foreground/5 p-2 text-white/80 hover:bg-foreground/10"
+                                title="Delete"
+                                aria-label="Delete task"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try { await deleteCard.mutateAsync({ taskId: t.id }); } finally { await invalidateBoardsAndTodos(); }
+                                }}
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </div>
+                          </div>
+                          <button
                           className="grid h-10 w-10 place-items-center rounded-2xl border border-border/30 bg-foreground/10 text-white transition hover:bg-foreground/20"
                           title="Mark done"
                           onClick={async (e) => {
@@ -230,6 +322,7 @@ export function TodosPane() {
                         >
                           <Check className="size-4" />
                         </button>
+                        </div>
                       </motion.div>
                     </li>
                   ))}
@@ -243,7 +336,7 @@ export function TodosPane() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {
                       e.preventDefault();
                       handleQuickAddSubmit();
                     }
@@ -260,7 +353,7 @@ export function TodosPane() {
                   Add
                 </Button>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground/80">Press Enter or tap Add to drop a new card into your flow.</p>
+              <p className="mt-2 text-xs text-muted-foreground/80">Press Enter or ⌘+Enter to add quickly. Tap Add to submit.</p>
             </div>
           </CardContent>
         </Card>
