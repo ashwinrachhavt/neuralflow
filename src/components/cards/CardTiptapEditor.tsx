@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useRef } from "react";
 
 import { useMutation } from "@tanstack/react-query";
@@ -9,13 +7,16 @@ import TaskList from "@tiptap/extension-task-list";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import type { Editor } from "@tiptap/react";
-import { Bold, CheckSquare, Code2, Heading2, Italic, List, Quote } from "lucide-react";
+import { Bold, CheckSquare, Code2, Heading2, Italic, List, Quote, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SlashCommand, slashCommandOptions } from "@/components/editor/slash-command";
 
 export type CardTiptapEditorProps = {
+  taskId?: string;
   initialContent?: string | null;
   noteId?: string | null;
   className?: string;
@@ -23,7 +24,7 @@ export type CardTiptapEditorProps = {
 
 type SavePayload = { contentJson: JSONContent; contentMarkdown: string };
 
-export function CardTiptapEditor({ initialContent, noteId, className }: CardTiptapEditorProps) {
+export function CardTiptapEditor({ taskId, initialContent, noteId, className }: CardTiptapEditorProps) {
   const parsedContent = useMemo<JSONContent | string>(() => {
     if (!initialContent) return "";
     try {
@@ -47,6 +48,23 @@ export function CardTiptapEditor({ initialContent, noteId, className }: CardTipt
     },
   });
 
+  const aiContinueMutation = useMutation({
+    mutationFn: async (text: string) => {
+      const res = await fetch("/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: `Continue this text:\n\n${text}` }),
+      });
+      if (!res.ok) throw new Error("AI generation failed");
+      return res.json();
+    },
+    onSuccess: (data, variables) => {
+      editor?.commands.insertContent(data.text);
+      toast.success("AI generated content");
+    },
+    onError: () => toast.error("Failed to generate content"),
+  });
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -58,7 +76,8 @@ export function CardTiptapEditor({ initialContent, noteId, className }: CardTipt
       }),
       TaskList.configure({ HTMLAttributes: { class: "not-prose space-y-1" } }),
       TaskItem.configure({ nested: true }),
-      Placeholder.configure({ placeholder: "Write your notes or task details…" }),
+      Placeholder.configure({ placeholder: "Type '/' for commands or start writing..." }),
+      SlashCommand.configure(slashCommandOptions),
     ],
     content: parsedContent,
     onUpdate({ editor }) {
@@ -81,7 +100,10 @@ export function CardTiptapEditor({ initialContent, noteId, className }: CardTipt
       editor.commands.clearContent();
       return;
     }
-    editor.commands.setContent(parsedContent, { emitUpdate: false });
+    // Only set content if it's different to avoid cursor jumps, or if it's the first load
+    if (editor.getText() === "" && parsedContent) {
+      editor.commands.setContent(parsedContent, { emitUpdate: false });
+    }
   }, [editor, parsedContent]);
 
   useEffect(() => {
@@ -89,6 +111,22 @@ export function CardTiptapEditor({ initialContent, noteId, className }: CardTipt
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
     };
   }, []);
+
+  // AI Event Listeners
+  useEffect(() => {
+    const onContinue = () => {
+      const text = editor?.getText();
+      if (text) {
+        toast.info("AI is writing...");
+        aiContinueMutation.mutate(text.slice(-500)); // Send last 500 chars context
+      } else {
+        toast.error("Write something first!");
+      }
+    };
+
+    window.addEventListener('ai-continue-writing', onContinue);
+    return () => window.removeEventListener('ai-continue-writing', onContinue);
+  }, [editor, aiContinueMutation]);
 
   if (!noteId) {
     return (
@@ -102,20 +140,24 @@ export function CardTiptapEditor({ initialContent, noteId, className }: CardTipt
 
   return (
     <div className={cn("rounded-xl border border-border/70 bg-card/70 shadow-sm", className)}>
-      <div className="flex flex-wrap gap-2 border-b border-border/60 bg-background/70 p-3">
+      {/* Floating Toolbar (Optional, maybe hide if minimalistic) */}
+      <div className="flex flex-wrap gap-2 border-b border-border/60 bg-background/70 p-3 opacity-0 transition-opacity hover:opacity-100 focus-within:opacity-100">
         {items.map((item) => (
           <Button
             key={item.id}
             variant={item.active ? "secondary" : "ghost"}
             size="sm"
-            className="rounded-full"
+            className="rounded-full h-8 px-2.5"
             onClick={() => item.command?.()}
             disabled={!editor}
           >
             <item.icon className="size-4" />
-            {item.label}
           </Button>
         ))}
+        <div className="ml-auto flex items-center gap-1">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">AI Powered</span>
+          <Sparkles className="size-3 text-indigo-500" />
+        </div>
       </div>
       <div className="p-4">
         <EditorContent editor={editor} />

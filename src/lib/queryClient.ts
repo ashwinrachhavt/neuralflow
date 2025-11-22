@@ -10,6 +10,18 @@ export const queryKeys = {
 };
 
 export function createQueryClient() {
-  return new QueryClient();
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 30_000, // keep data fresh for 30s to reduce thrash
+        gcTime: 5 * 60_000, // retain cache for 5 minutes
+        retry: 1,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: true,
+      },
+      mutations: {
+        retry: 0,
+      },
+    },
+  });
 }
-

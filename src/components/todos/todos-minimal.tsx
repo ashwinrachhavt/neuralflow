@@ -42,19 +42,37 @@ export function TodosMinimal() {
           placeholder="Add a task and press Enter"
           value={quick}
           onChange={(e) => setQuick(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { const v = quick.trim(); if (!v) return; addQuick.mutate(v); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { const v = quick.trim(); if (!v || addQuick.isPending) return; addQuick.mutate(v); } }}
         />
-        <Button size="icon" variant="outline" onClick={() => { const v = quick.trim(); if (!v) return; addQuick.mutate(v); }}>
+        <Button size="icon" variant="outline" disabled={addQuick.isPending} onClick={() => { const v = quick.trim(); if (!v || addQuick.isPending) return; addQuick.mutate(v); }}>
           <Plus className="size-4" />
         </Button>
       </div>
 
       <div className="rounded-xl border border-border/60 bg-muted/15 p-3">
-        {aiPlanned.length > 0 ? (
+        {isLoading ? (
+          <ul className="divide-y divide-border/50">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <li key={i} className="py-2">
+                <div className="flex items-center justify-between gap-3 px-1">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="h-4 w-4 rounded border border-border/70" />
+                    <span className="h-4 w-48 animate-pulse rounded bg-foreground/10" />
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="h-4 w-10 animate-pulse rounded bg-foreground/10" />
+                    <span className="h-4 w-14 animate-pulse rounded bg-foreground/10" />
+                    <span className="h-4 w-8 animate-pulse rounded bg-foreground/10" />
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : aiPlanned.length > 0 ? (
           <section>
             <h2 className="mb-2 text-sm font-semibold text-muted-foreground">AI Planned</h2>
             <ul className="divide-y divide-border/50">
-            {isLoading ? null : aiPlanned.map((t) => (
+            {aiPlanned.map((t) => (
               <li key={t.id} className="py-0.5">
                 <TodoRow
                   id={t.id}

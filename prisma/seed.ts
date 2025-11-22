@@ -3,18 +3,23 @@ import { PrismaClient, TaskPriority, TaskStatus, TaskType } from "@prisma/client
 const prisma = new PrismaClient();
 
 async function main() {
-  // Optional contextual seed for Ashwin's Clerk profile + tenant
+  const seedUserId = process.env.SEED_CLERK_USER_ID || "user_demo";
+  const seedUserEmail = process.env.SEED_CLERK_EMAIL || "demo@example.com";
+  const seedUserName = process.env.SEED_CLERK_NAME || "Demo User";
+
+  // Seed Ashwin profile + tenant independently of demo user
   await seedAshwinProfileAndTenant();
 
-  const demoUserId = "user_demo";
-
   const user = await prisma.user.upsert({
-    where: { id: demoUserId },
-    update: {},
+    where: { id: seedUserId },
+    update: {
+      email: seedUserEmail,
+      name: seedUserName,
+    },
     create: {
-      id: demoUserId,
-      email: "demo@example.com",
-      name: "Demo User",
+      id: seedUserId,
+      email: seedUserEmail,
+      name: seedUserName,
     },
   });
 
@@ -235,10 +240,10 @@ async function main() {
 }
 
 async function seedAshwinProfileAndTenant() {
-  const clerkUserId = process.env.SEED_CLERK_USER_ID || "user_ashwin";
-  const ashwinName = process.env.SEED_CLERK_NAME || "Ashwin Rachha";
-  const ashwinEmail = process.env.SEED_CLERK_EMAIL || null;
-  const ashwinImage = process.env.SEED_CLERK_IMAGE || null;
+  const clerkUserId = process.env.SEED_ASHWIN_USER_ID || "user_ashwin";
+  const ashwinName = process.env.SEED_ASHWIN_NAME || "Ashwin Rachha";
+  const ashwinEmail = process.env.SEED_ASHWIN_EMAIL || null;
+  const ashwinImage = process.env.SEED_ASHWIN_IMAGE || null;
 
   // Upsert Ashwin's profile
   const ashwin = await prisma.user.upsert({
