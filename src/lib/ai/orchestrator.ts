@@ -28,10 +28,36 @@ export async function runDaoOrchestrator(input: OrchestratorInput): Promise<Agen
   };
 
   for (const agent of PIPELINE) {
-    const result = await agent.run(ctx);
-    ctx = result.context;
+    const started = Date.now();
+    try {
+      if (process.env.NODE_ENV !== "production") {
+        console.info(`[dao-orchestrator] running agent=${agent.name}`);
+      }
+
+      const result = await agent.run(ctx);
+      const durationMs = Date.now() - started;
+
+      if (process.env.NODE_ENV !== "production") {
+        console.info(
+          `[dao-orchestrator] agent=${agent.name} ok durationMs=${durationMs}`,
+          {
+            keys: Object.keys(result.context ?? {}),
+            meta: (result as any)?.context?.meta,
+          }
+        );
+      }
+
+      ctx = result.context;
+    } catch (err) {
+      const durationMs = Date.now() - started;
+      console.error(
+        `[dao-orchestrator] agent=${agent.name} failed durationMs=${durationMs}`,
+        err
+      );
+      // Hard fail for now to surface issues during development
+      throw err;
+    }
   }
 
   return ctx;
 }
-

@@ -112,6 +112,7 @@ Visit [http://localhost:3000](http://localhost:3000). The app expects a Clerk se
 - `src/lib/prisma.ts` – Prisma client singleton
 - `src/lib/get-or-create-user.ts` – Clerk ↔️ database bridge
 - `src/lib/tenancy.ts` – helper to create a default tenant + membership for a user
+- `docs/CodingAgentPhilosophy.md` – coding-agent philosophy and PR Definition of Done
 
 ---
 
