@@ -88,19 +88,24 @@ export function DaoPlayground() {
   };
 
   const runGamifyAgent = async () => {
+    if (!user?.id) return toast.error("You must be logged in");
     setGamifyLoading(true);
     try {
-      let details = {};
-      try {
-        details = JSON.parse(gamifyDetails);
-      } catch {
-        return toast.error("Invalid JSON details");
+      const payload: any = {
+        userId: user.id,
+        action: gamifyAction
+      };
+
+      if (gamifyAction === "TASK_COMPLETE") {
+        payload.taskId = gamifyDetails;
+      } else if (gamifyAction === "POMODORO_COMPLETE") {
+        payload.sessionId = gamifyDetails;
       }
 
       const res = await fetch("/api/ai/gamify-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: gamifyAction, details }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
@@ -243,10 +248,15 @@ export function DaoPlayground() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Action Type</label>
                   <Input value={gamifyAction} onChange={(e) => setGamifyAction(e.target.value)} />
+                  <p className="text-xs text-muted-foreground">Supported: TASK_COMPLETE, POMODORO_COMPLETE</p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Details (JSON)</label>
-                  <Input value={gamifyDetails} onChange={(e) => setGamifyDetails(e.target.value)} />
+                  <label className="text-sm font-medium">Resource ID (Task/Session)</label>
+                  <Input
+                    value={gamifyDetails}
+                    onChange={(e) => setGamifyDetails(e.target.value)}
+                    placeholder="Task ID or Session ID"
+                  />
                 </div>
               </div>
               <Button onClick={runGamifyAgent} disabled={gamifyLoading}>
@@ -266,6 +276,13 @@ export function DaoPlayground() {
                       <div className="text-xs text-muted-foreground">New Streak</div>
                     </div>
                   </div>
+
+                  {gamifyResult.context?.gamifyResult?.flavorText && (
+                    <div className="rounded-md bg-primary/10 p-4 text-sm italic text-primary border border-primary/20">
+                      "{gamifyResult.context.gamifyResult.flavorText}"
+                    </div>
+                  )}
+
                   <div className="rounded-md bg-muted p-4 overflow-auto max-h-[300px]">
                     <pre className="text-xs">{JSON.stringify(gamifyResult.context?.gamifyResult, null, 2)}</pre>
                   </div>
