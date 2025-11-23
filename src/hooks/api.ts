@@ -187,6 +187,29 @@ export function useCreateBoard() {
 export function useDefaultBoardId() {
   return useQuery<{ id: string; title: string }>({ queryKey: ['boards', 'default'], queryFn: () => getJSON('/api/boards/default'), staleTime: 5000 });
 }
+
+// Aggregated per-user snapshot
+export type UserOverview = {
+  user: { id: string; email: string | null; name: string | null; image: string | null; createdAt: string } | null;
+  boards: {
+    id: string;
+    title: string;
+    columns: { id: string; name: string; position: number }[];
+    tasks: { id: string; title: string; descriptionMarkdown: string | null; status: string; priority: 'LOW'|'MEDIUM'|'HIGH'|null; type?: string | null; columnId: string; projectId: string | null; docId: string | null; tags?: string[]; estimatedPomodoros?: number | null; dueDate?: string | null; createdAt: string; updatedAt: string }[];
+  }[];
+  calendar: { events: any[]; meetings: any[] };
+  projects: { id: string; slug: string; title: string; description: string | null; status: string; points: number; notionUrl: string | null; updatedAt: string; _count: { tasks: number; docs: number } }[];
+  gamification: { profile: any | null; stones: any[]; stoneProgresses: any[]; achievements: any[] };
+  flashcards: { decks: any[]; reviews: any[] };
+  quizzes: { id: string; title: string; createdAt: string; updatedAt: string; _count: { questions: number; attempts: number } }[];
+  focus: { sessions: any[] };
+  memberships: any[];
+  reporterProfile: any | null;
+  fetchedAt: string;
+};
+export function useMyOverview() {
+  return useQuery<UserOverview>({ queryKey: ['me','overview'], queryFn: () => getJSON('/api/me/overview'), staleTime: 5000 });
+}
 // All-user todos (across boards)
 export type MyTodo = {
   id: string;
