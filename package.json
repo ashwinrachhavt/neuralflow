@@ -19,9 +19,6 @@
     "prisma:seed": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed.ts",
     "seed:ashwin": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed-ashwin.ts"
   },
-  "prisma": {
-    "seed": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed.ts"
-  },
   "pnpm": {
     "overrides": {
       "@tiptap/core": "3.11.0",

@@ -5,8 +5,9 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Dialog, DialogBackdrop, DialogPanel, Transition } from "@headlessui/react";
 import type { PublicImage } from "@/lib/server/list-public-images";
+import { cn } from "@/lib/utils";
 
-export function JewelsGrid({ images, milestones, points = 0 }: { images: PublicImage[]; milestones: number[]; points?: number }) {
+export function JewelsGrid({ images }: { images: any[] }) {
   const [openSlug, setOpenSlug] = React.useState<string | null>(null);
   const current = openSlug ? images.find(i => i.slug === openSlug) ?? null : null;
   const currentIndex = openSlug ? images.findIndex(i => i.slug === openSlug) : -1;
@@ -41,23 +42,38 @@ export function JewelsGrid({ images, milestones, points = 0 }: { images: PublicI
             transition={{ duration: 0.25, delay: idx * 0.03 }}
             onClick={() => setOpenSlug(im.slug)}
             whileHover={{ scale: 1.015 }}
-            className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 p-4 text-left shadow-sm outline-none ring-0 transition hover:border-primary/40 hover:bg-card/90"
+            className={cn(
+              "group relative overflow-hidden rounded-2xl border p-4 text-left shadow-sm outline-none ring-0 transition hover:bg-card/90",
+              im.unlocked ? "border-primary/20 bg-primary/5" : "border-border/60 bg-card/80"
+            )}
           >
             <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full ring-2 ring-foreground/10">
               {/* Shared element for soft zoom */}
               <motion.div layoutId={`jewel-${im.slug}`} className="absolute inset-0">
-                <Image src={im.src} alt={im.name} fill className="object-cover object-center opacity-40 blur-[1px]" />
+                <Image
+                  src={im.src}
+                  alt={im.name}
+                  fill
+                  className={cn(
+                    "object-cover object-center transition-all duration-500",
+                    im.unlocked ? "opacity-100 blur-0" : "opacity-40 blur-[1px] grayscale"
+                  )}
+                />
               </motion.div>
-              <div className="absolute inset-0 grid place-items-center bg-black/40 text-[10px] uppercase tracking-widest text-white">Locked</div>
+              {!im.unlocked && (
+                <div className="absolute inset-0 grid place-items-center bg-black/40 text-[10px] uppercase tracking-widest text-white">Locked</div>
+              )}
             </div>
             <div className="mt-3 text-center">
               <div className="text-sm font-semibold line-clamp-1" title={im.name}>{im.name}</div>
               <div className="mt-1 text-[11px] text-muted-foreground">
-                Unlock at {milestones[idx] ?? milestones[milestones.length-1]} pts • You: {points}
+                {im.theme}
               </div>
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
-                <div className="h-full w-0 bg-primary" />
-              </div>
+              {im.unlocked && (
+                <div className="mt-2 text-[10px] font-medium text-primary">
+                  UNLOCKED
+                </div>
+              )}
             </div>
           </motion.button>
         ))}
@@ -78,20 +94,25 @@ export function JewelsGrid({ images, milestones, points = 0 }: { images: PublicI
                       {/* Subtle scale/rotate on zoom for flair */}
                       <motion.div initial={{ scale: 0.98, rotate: -1 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }} className="absolute inset-0">
                         <motion.div layoutId={`jewel-${current.slug}`} className="absolute inset-0">
-                          <Image src={current.src} alt={current.name} fill className="object-contain" />
+                          <Image
+                            src={current.src}
+                            alt={current.name}
+                            fill
+                            className={cn(
+                              "object-contain transition-all duration-500",
+                              current.unlocked ? "opacity-100 blur-0" : "opacity-40 blur-[1px] grayscale"
+                            )}
+                          />
                         </motion.div>
                       </motion.div>
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/10" />
                     </div>
-                    <div className="absolute right-3 top-3 rounded-full border border-border/60 bg-foreground/10 px-3 py-1 text-[10px] uppercase tracking-widest text-foreground/90">Locked</div>
+                    {!current.unlocked && (
+                      <div className="absolute right-3 top-3 rounded-full border border-border/60 bg-foreground/10 px-3 py-1 text-[10px] uppercase tracking-widest text-foreground/90">Locked</div>
+                    )}
                     <div className="p-4">
                       <h3 className="text-lg font-semibold">{current.name}</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">A glimpse of the jewel you can unlock by reaching its milestone. Keep shipping.</p>
-                      {currentIndex >= 0 ? (
-                        <p className="mt-2 text-xs font-medium text-muted-foreground">
-                          Unlock at <span className="font-semibold text-foreground">{milestones[currentIndex] ?? milestones[milestones.length - 1]}</span> pts • You: {points}
-                        </p>
-                      ) : null}
+                      <p className="mt-1 text-xs text-muted-foreground">{current.theme}</p>
                       <div className="mt-3 text-right">
                         <button onClick={() => setOpenSlug(null)} className="rounded-full border border-border/60 px-4 py-1.5 text-sm hover:bg-foreground/10">Close</button>
                       </div>

@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
+import { GamificationOverlay } from "@/components/gamification/GamificationOverlay";
 import { ProductAnalytics } from "@/components/product-analytics";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
@@ -55,7 +56,9 @@ export default function RootLayout({
             <QueryProvider>
               <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
                 <Navbar />
-                {children}
+                <GamificationOverlay> {/* Added GamificationOverlay */}
+                  {children}
+                </GamificationOverlay> {/* Added GamificationOverlay */}
               </div>
               <Toaster richColors position="top-right" />
               <GlobalShortcuts />

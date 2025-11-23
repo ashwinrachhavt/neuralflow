@@ -42,6 +42,20 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "ReporterProfile" (
+    "userId" TEXT NOT NULL,
+    "personalityNotes" JSONB,
+    "preferredCadence" TEXT,
+    "longTermGoals" JSONB,
+    "experiments" JSONB,
+    "trendNotes" JSONB,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ReporterProfile_pkey" PRIMARY KEY ("userId")
+);
+
+-- CreateTable
 CREATE TABLE "Board" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -412,6 +426,20 @@ CREATE TABLE "CalendarEvent" (
 );
 
 -- CreateTable
+CREATE TABLE "Meeting" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "startAt" TIMESTAMP(3) NOT NULL,
+    "endAt" TIMESTAMP(3) NOT NULL,
+    "notes" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Meeting_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "FocusSession" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -532,6 +560,9 @@ CREATE INDEX "CalendarEvent_userId_startAt_idx" ON "CalendarEvent"("userId", "st
 CREATE INDEX "CalendarEvent_userId_endAt_idx" ON "CalendarEvent"("userId", "endAt");
 
 -- CreateIndex
+CREATE INDEX "Meeting_userId_startAt_idx" ON "Meeting"("userId", "startAt");
+
+-- CreateIndex
 CREATE INDEX "FocusSession_userId_idx" ON "FocusSession"("userId");
 
 -- CreateIndex
@@ -545,6 +576,9 @@ CREATE INDEX "Membership_userId_idx" ON "Membership"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Membership_tenantId_userId_key" ON "Membership"("tenantId", "userId");
+
+-- AddForeignKey
+ALTER TABLE "ReporterProfile" ADD CONSTRAINT "ReporterProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Board" ADD CONSTRAINT "Board_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -662,6 +696,9 @@ ALTER TABLE "CalendarEvent" ADD CONSTRAINT "CalendarEvent_userId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "CalendarEvent" ADD CONSTRAINT "CalendarEvent_relatedTaskId_fkey" FOREIGN KEY ("relatedTaskId") REFERENCES "Task"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Meeting" ADD CONSTRAINT "Meeting_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "FocusSession" ADD CONSTRAINT "FocusSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -18,11 +18,22 @@ import { CardSheet } from "@/components/cards/CardSheet";
 import { PlannerDock } from "@/components/ai/PlannerDock";
 import { StoneCelebrateModal } from "@/components/gamification/StoneCelebrateModal";
 import { GEM_ICON_PATHS, GEM_META } from "@/lib/gamification/catalog";
+import { GamifiedAddButton } from "@/components/todos/GamifiedAddButton";
 
 const PRIORITY_STYLES: Record<NonNullable<MyTodo['priority']>, string> = {
   HIGH: "border-rose-400/80 bg-rose-500/10 text-rose-200",
   MEDIUM: "border-amber-400/80 bg-amber-500/10 text-amber-200",
   LOW: "border-emerald-400/80 bg-emerald-500/10 text-emerald-200",
+};
+
+const dotClass = (priority: NonNullable<MyTodo['priority']>) => {
+  const baseClass = "mr-2 inline-block size-2 rounded-full";
+  const colorMap = {
+    HIGH: "bg-rose-400",
+    MEDIUM: "bg-amber-400",
+    LOW: "bg-emerald-400",
+  };
+  return `${baseClass} ${colorMap[priority]}`;
 };
 
 export function TodosPane() {
@@ -42,7 +53,7 @@ export function TodosPane() {
       return (await res.json()) as { id: string };
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
+      await qc.invalidateQueries({ queryKey: ['my-todos', 'TODO'] });
     }
   });
 
@@ -52,8 +63,8 @@ export function TodosPane() {
   const highPriorityCount = todos.filter((t) => t.priority === "HIGH").length;
   const estimatedPomodoros = todos.reduce((sum, t) => sum + (t.estimatedPomodoros ?? 0), 0);
 
-  const [priorityFilter, setPriorityFilter] = useState<'ALL'|'HIGH'|'MEDIUM'|'LOW'>("ALL");
-  const [sortBy, setSortBy] = useState<'priority'|'estimate'|'title'>("priority");
+  const [priorityFilter, setPriorityFilter] = useState<'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'>("ALL");
+  const [sortBy, setSortBy] = useState<'priority' | 'estimate' | 'title'>("priority");
 
   const visibleTodos = useMemo(() => {
     const order: Record<string, number> = { HIGH: 3, MEDIUM: 2, LOW: 1 } as const as any;
@@ -92,7 +103,7 @@ export function TodosPane() {
     try {
       await qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] === 'board' || q.queryKey[0] === 'cards' || q.queryKey[0] === 'boards') });
     } catch (e) { void e; }
-    await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
+    await qc.invalidateQueries({ queryKey: ['my-todos', 'TODO'] });
   }
 
   const handleQuickAddSubmit = () => {
@@ -170,7 +181,7 @@ export function TodosPane() {
               <div className="text-xs text-muted-foreground/80">{totalTodos} tasks • {highPriorityCount} high • {estimatedPomodoros} pomodoros</div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 rounded-full border border-border/40 bg-foreground/5 p-1">
-                  {(['ALL','HIGH','MEDIUM','LOW'] as const).map(p => (
+                  {(['ALL', 'HIGH', 'MEDIUM', 'LOW'] as const).map(p => (
                     <button
                       key={p}
                       type="button"
@@ -236,30 +247,30 @@ export function TodosPane() {
                           <div className="flex-1 space-y-2">
                             <motion.h3 layoutId={`card-title-${t.id}`} className="text-lg font-semibold text-white">
                               {t.priority ? <span className={dotClass(t.priority)} aria-hidden /> : null}
-                            {t.title}
+                              {t.title}
                             </motion.h3>
                             <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-wide">
-                            {t.priority ? (
-                              <span className={`rounded-full border px-2 py-0.5 font-semibold ${PRIORITY_STYLES[t.priority]}`}>
-                                {t.priority}
-                              </span>
-                            ) : null}
-                            {typeof t.estimatedPomodoros === "number" ? (
-                              <span className="rounded-full border border-border/30 px-2 py-0.5 text-[12px] text-muted-foreground/70">
-                                {t.estimatedPomodoros} pomodor{t.estimatedPomodoros === 1 ? "o" : "os"}
-                              </span>
-                            ) : null}
-                            {t.tags?.slice(0, 2).map((tag) => (
-                              <span key={`${t.id}-${tag}`} className="rounded-full border border-border/30 bg-foreground/10 px-2 py-0.5 text-[12px] text-muted-foreground">
-                                {tag}
-                              </span>
-                            ))}
+                              {t.priority ? (
+                                <span className={`rounded-full border px-2 py-0.5 font-semibold ${PRIORITY_STYLES[t.priority]}`}>
+                                  {t.priority}
+                                </span>
+                              ) : null}
+                              {typeof t.estimatedPomodoros === "number" ? (
+                                <span className="rounded-full border border-border/30 px-2 py-0.5 text-[12px] text-muted-foreground/70">
+                                  {t.estimatedPomodoros} pomodor{t.estimatedPomodoros === 1 ? "o" : "os"}
+                                </span>
+                              ) : null}
+                              {t.tags?.slice(0, 2).map((tag) => (
+                                <span key={`${t.id}-${tag}`} className="rounded-full border border-border/30 bg-foreground/10 px-2 py-0.5 text-[12px] text-muted-foreground">
+                                  {tag}
+                                </span>
+                              ))}
                             </div>
                             {t.location ? (
-                            <div className="mt-1 flex items-center gap-1 text-[11px] uppercase tracking-wide text-emerald-200/90">
-                              <MapPin className="size-3" />
-                              <span className="text-[11px] font-semibold text-foreground/70">{t.location}</span>
-                            </div>
+                              <div className="mt-1 flex items-center gap-1 text-[11px] uppercase tracking-wide text-emerald-200/90">
+                                <MapPin className="size-3" />
+                                <span className="text-[11px] font-semibold text-foreground/70">{t.location}</span>
+                              </div>
                             ) : null}
                           </div>
                         </div>
@@ -299,29 +310,29 @@ export function TodosPane() {
                             </div>
                           </div>
                           <button
-                          className="grid h-10 w-10 place-items-center rounded-2xl border border-border/30 bg-foreground/10 text-white transition hover:bg-foreground/20"
-                          title="Mark done"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await markDone.mutateAsync(t.id);
-                            try {
-                              const g = await fetch('/api/gamify/on-task-completed', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ taskId: t.id }),
-                              });
-                              const data = await g.json().catch(() => null);
-                              const first: string | undefined = (data?.awards?.[0]) as any;
-                              if (first && first in GEM_ICON_PATHS) {
-                                const meta = GEM_META[first as keyof typeof GEM_ICON_PATHS];
-                                setCelebrate({ name: meta.name, image: GEM_ICON_PATHS[first as keyof typeof GEM_ICON_PATHS], rarity: meta.rarity });
-                              }
-                            } catch (e) { void e; }
-                            await invalidateBoardsAndTodos();
-                          }}
-                        >
-                          <Check className="size-4" />
-                        </button>
+                            className="grid h-10 w-10 place-items-center rounded-2xl border border-border/30 bg-foreground/10 text-white transition hover:bg-foreground/20"
+                            title="Mark done"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              await markDone.mutateAsync(t.id);
+                              try {
+                                const g = await fetch('/api/gamify/on-task-completed', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ taskId: t.id }),
+                                });
+                                const data = await g.json().catch(() => null);
+                                const first: string | undefined = (data?.awards?.[0]) as any;
+                                if (first && first in GEM_ICON_PATHS) {
+                                  const meta = GEM_META[first as keyof typeof GEM_ICON_PATHS];
+                                  setCelebrate({ name: meta.name, image: GEM_ICON_PATHS[first as keyof typeof GEM_ICON_PATHS], rarity: meta.rarity });
+                                }
+                              } catch (e) { void e; }
+                              await invalidateBoardsAndTodos();
+                            }}
+                          >
+                            <Check className="size-4" />
+                          </button>
                         </div>
                       </motion.div>
                     </li>
@@ -331,29 +342,44 @@ export function TodosPane() {
             </div>
             <div className="mt-6 rounded-[1.5rem] border border-border/20 bg-gradient-to-r from-indigo-500/10 via-[var(--hero-via)] to-[var(--hero-to)] p-4 shadow-[0_10px_40px_rgba(15,23,42,0.35)] backdrop-blur">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Input
-                  id="todos-quick-add-input"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {
-                      e.preventDefault();
-                      handleQuickAddSubmit();
-                    }
-                  }}
-                  placeholder="What needs your attention next?"
-                  className="flex-1 bg-transparent text-white placeholder:text-white/70"
-                />
-                <Button
-                  className="w-full gap-2 sm:w-auto"
-                  onClick={handleQuickAddSubmit}
-                  disabled={addMutation.isPending}
+                <motion.div
+                  className="relative flex-1"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
                 >
-                  <Plus className="size-4" />
-                  Add
-                </Button>
+                  <Input
+                    id="todos-quick-add-input"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {
+                        e.preventDefault();
+                        handleQuickAddSubmit();
+                      }
+                    }}
+                    placeholder="What needs your attention next?"
+                    className="bg-transparent text-white placeholder:text-white/70 focus:ring-2 focus:ring-purple-500/50 transition-all"
+                  />
+                  {title.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/50"
+                    >
+                      {title.length}/100
+                    </motion.div>
+                  )}
+                </motion.div>
+                <GamifiedAddButton
+                  onClick={handleQuickAddSubmit}
+                  disabled={!title.trim()}
+                  isLoading={addMutation.isPending}
+                  xpToEarn={10}
+                  streak={undefined}
+                  className="w-full sm:w-auto"
+                />
               </div>
-              <p className="mt-2 text-xs text-muted-foreground/80">Press Enter or ⌘+Enter to add quickly. Tap Add to submit.</p>
+              <p className="mt-2 text-xs text-muted-foreground/80">Press Enter or ⌘+Enter to add quickly. Each task earns you XP!</p>
             </div>
           </CardContent>
         </Card>

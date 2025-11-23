@@ -3,21 +3,24 @@ import { gamifyAgent } from "@/lib/ai/agents/gamifyAgent";
 import { z } from "zod";
 
 const BodySchema = z.object({
-    action: z.string(), // e.g., "TASK_COMPLETE", "POMODORO_COMPLETE"
-    details: z.record(z.string(), z.any()).optional(),
+    userId: z.string(),
+    action: z.enum(["TASK_COMPLETE", "POMODORO_COMPLETE"]),
+    taskId: z.string().optional(),
+    sessionId: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { action, details } = BodySchema.parse(body);
+        const { userId, action, taskId, sessionId } = BodySchema.parse(body);
 
-        // Mock context
+        // Context for the agent
         const ctx: any = {
-            userId: "debug-user",
+            userId,
             gamification: {
                 action,
-                ...details,
+                taskId,
+                sessionId,
             },
         };
 

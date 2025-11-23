@@ -58,8 +58,21 @@ export interface AgentContext {
   flashcards?: FlashcardDTO[];
   quizQuestions?: QuizQuestionDTO[];
   gemAwards?: GemAward[];
+  gamifyResult?: {
+    shards: any[];
+    awards: string[];
+    flavorText?: string;
+    xpDelta?: number;
+    streakAfter?: number;
+  };
 
   // Misc
+  gamification?: {
+    action: "TASK_COMPLETE" | "POMODORO_COMPLETE";
+    taskId?: string;
+    sessionId?: string;
+    [key: string]: any;
+  };
   meta?: Record<string, unknown>;
 }
 

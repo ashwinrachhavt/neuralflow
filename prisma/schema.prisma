@@ -25,7 +25,8 @@ model User {
   flashcardReviews    FlashcardReview[]
   pomodoroSessions    PomodoroSession[]
   focusSessions       FocusSession[]
-  calendarEvents      CalendarEvent[]
+   calendarEvents      CalendarEvent[]
+   meetings            Meeting[]
   quizzes             Quiz[]
   quizAttempts        QuizAttempt[]            @relation("UserToQuizAttempts")
   embeddings          Embedding[]              @relation("UserToEmbeddings")
@@ -516,6 +517,20 @@ model CalendarEvent {
 
   @@index([userId, startAt])
   @@index([userId, endAt])
+}
+
+model Meeting {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  title     String
+  startAt   DateTime
+  endAt     DateTime
+  notes     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, startAt])
 }
 
 model FocusSession {
