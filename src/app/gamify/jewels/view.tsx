@@ -4,7 +4,6 @@ import * as React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Dialog, DialogBackdrop, DialogPanel, Transition } from "@headlessui/react";
-import type { PublicImage } from "@/lib/server/list-public-images";
 import { cn } from "@/lib/utils";
 
 export function JewelsGrid({ images }: { images: any[] }) {

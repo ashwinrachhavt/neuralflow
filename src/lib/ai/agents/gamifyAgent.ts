@@ -1,5 +1,4 @@
 import { generateText } from "ai";
-import { z } from "zod";
 import { openai } from "../client";
 import type { Agent, AgentContext, AgentResult } from "../types";
 import { gamificationEngine } from "../../gamification/engine";
@@ -52,4 +51,3 @@ Write a short, mythic 1-sentence congratulation.
     };
   },
 };
-

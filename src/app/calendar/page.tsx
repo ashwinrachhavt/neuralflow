@@ -143,21 +143,7 @@ export default function CalendarPage() {
   const [isSaving, setIsSaving] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
 
-  // Drag and drop state
-  const dayRefs = React.useRef<(HTMLDivElement | null)[]>([]);
-  const [draggingEventId, setDraggingEventId] = React.useState<string | null>(
-    null
-  );
-  const [dragStartPos, setDragStartPos] = React.useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [initialEventStart, setInitialEventStart] = React.useState<Date | null>(
-    null
-  );
-  const [initialDayIndex, setInitialDayIndex] = React.useState<number | null>(
-    null
-  );
+  // (Reserved for future drag/resize) — removed unused state to satisfy lint
 
   const weekDays = React.useMemo(() => {
     return Array.from({ length: 7 }).map((_, index) => {

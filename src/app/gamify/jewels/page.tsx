@@ -33,7 +33,7 @@ export default async function JewelsPage() {
   const images = publicImages.map(img => {
     // Check if this image is in our catalog
     const catalogEntry = Object.entries(GEM_META).find(
-      ([slug, meta]) => img.slug === slug || img.name.toLowerCase().includes(slug)
+      ([slug]) => img.slug === slug || img.name.toLowerCase().includes(slug)
     );
 
     const slug = catalogEntry ? catalogEntry[0] as GemSlug : img.slug;

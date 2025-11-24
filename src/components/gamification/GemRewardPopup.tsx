@@ -70,7 +70,7 @@ export function GemRewardPopup({ slug, flavorText, onClose }: GemRewardPopupProp
                                     alt={meta.name}
                                     fill
                                     className="object-contain"
-                                    onError={(e) => {
+                                    onError={() => {
                                         // Fallback logic if needed, for now we assume paths are valid
                                         // e.currentTarget.style.display = 'none';
                                     }}

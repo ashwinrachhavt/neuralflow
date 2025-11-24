@@ -2,7 +2,6 @@ import { PageShell } from "@/components/layout/page-shell";
 import { SectionHeader } from "@/components/section-header";
 import { JewelsGrid } from "../view";
 import { listPublicImages } from "@/lib/server/list-public-images";
-import { generateMilestones } from "@/lib/gamification/progression";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +19,6 @@ export default async function AllJewelsPage() {
         theme: "",
         rarity: "COMMON" as const,
     }));
-
-    // Use a dummy milestones array just to satisfy the component; not used for unlocked items.
-    const milestones = generateMilestones(enriched.length);
 
     return (
         <PageShell>

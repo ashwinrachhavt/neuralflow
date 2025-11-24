@@ -312,7 +312,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
               const data = await res.json();
               toast.success(`Moved ${data.moved} done task(s) to Hidden`);
               await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
-            } catch (e) {
+            } catch (_e) {
               toast.error('Failed to move done tasks');
             }
           }}>Move all Done to Hidden</Button>
@@ -433,7 +433,8 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
                           });
                           requestAnimationFrame(() => setOpenTaskId(newId));
                         }
-                      } catch {
+                      } catch (_e) {
+                        // noop
                       } finally {
                         await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
                       }

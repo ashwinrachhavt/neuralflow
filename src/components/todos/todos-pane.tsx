@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Check, MapPin, Plus, Wand2, ScatterChart, GripVertical, Pencil, Trash2, Eye } from "lucide-react";
+import { Check, MapPin, Wand2, ScatterChart, GripVertical, Pencil, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
