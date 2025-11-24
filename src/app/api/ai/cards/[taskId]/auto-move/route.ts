@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/server/db/client";
+import { prisma } from "@/lib/prisma";
 import { getUserOr401 } from "@/lib/api-helpers";
 import { autoMoveDecision } from "@/lib/ai/agents/autoMoverAgent";
 import { logAgentRunStart, logAgentRunFinish } from "@/server/db/agentRuns";
@@ -43,7 +43,17 @@ export async function POST(_req: Request, ctx: Ctx) {
   }
 
   if (result.move && result.targetColumnId && result.targetColumnId !== task.columnId) {
-    await prisma.task.update({ where: { id: task.id }, data: { columnId: result.targetColumnId, aiState: 'COMPLETED' } });
+    // Best-effort status sync based on target column name
+    const target = boardColumns.find(c => c.id === result.targetColumnId);
+    const name = (target?.name ?? '').toLowerCase();
+    let statusUpdate: any = undefined;
+    if (name.includes('backlog')) statusUpdate = 'BACKLOG';
+    else if (name.includes('todo')) statusUpdate = 'TODO';
+    else if (name.includes('progress')) statusUpdate = 'IN_PROGRESS';
+    else if (name.includes('done')) statusUpdate = 'DONE';
+    else if (name.includes('hidden') || name.includes('archive')) statusUpdate = 'DONE';
+
+    await prisma.task.update({ where: { id: task.id }, data: { columnId: result.targetColumnId, aiState: 'COMPLETED', ...(statusUpdate ? { status: statusUpdate } : {}) } });
   }
 
   if (!result) {

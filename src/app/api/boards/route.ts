@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserOr401, readJson } from '@/lib/api-helpers';
-import { prisma } from '@/server/db/client';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   const user = await getUserOr401();

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getUserOr401, readJson } from '@/lib/api-helpers';
 import { getOrCreateDefaultBoard } from '@/server/db/boards';
-import { prisma } from '@/server/db/client';
+import { prisma } from '@/lib/prisma';
 
-type Body = { title?: string; descriptionMarkdown?: string };
+type Body = { title?: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE' };
 
 export async function POST(req: Request) {
   const user = await getUserOr401();
@@ -11,6 +11,8 @@ export async function POST(req: Request) {
   const body = await readJson<Body>(req);
   const title = (body?.title || '').trim();
   const descriptionMarkdown = body?.descriptionMarkdown || '';
+  const priority = body?.priority;
+  const type = body?.type;
   if (!title) return NextResponse.json({ message: 'title required' }, { status: 400 });
 
   const boardRes = await getOrCreateDefaultBoard((user as any).id);
@@ -25,9 +27,10 @@ export async function POST(req: Request) {
       title,
       descriptionMarkdown,
       status: 'TODO',
+      ...(priority ? { priority } : {}),
+      ...(type ? { type } : {}),
     },
     select: { id: true },
   });
   return NextResponse.json({ id: task.id });
 }
-

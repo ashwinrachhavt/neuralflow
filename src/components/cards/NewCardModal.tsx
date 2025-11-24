@@ -58,4 +58,3 @@ export function NewCardModal({ open, onClose, onSubmit }: Props) {
     </Dialog>
   );
 }
-

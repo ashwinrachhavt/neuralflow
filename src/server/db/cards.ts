@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { prisma } from "./client";
+import { prisma } from "@/lib/prisma";
 import { NotFoundError, ForbiddenError } from "./result";
 
 export async function getByIdForUser(taskId: string, userId: string) {
@@ -28,7 +28,11 @@ export async function updateDescription(taskId: string, descriptionMarkdown: str
   return prisma.task.update({ where: { id: taskId }, data: { descriptionMarkdown } });
 }
 
-export async function updatePartial(taskId: string, data: { title?: string; descriptionMarkdown?: string }, userId: string) {
+export async function updatePartial(
+  taskId: string,
+  data: { title?: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'|null; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|null; tags?: string[] | null; estimatedPomodoros?: number | null },
+  userId: string,
+) {
   const existing = await prisma.task.findFirst({ where: { id: taskId, board: { userId } }, select: { id: true } });
   if (!existing) throw new ForbiddenError();
   return prisma.task.update({ where: { id: taskId }, data });

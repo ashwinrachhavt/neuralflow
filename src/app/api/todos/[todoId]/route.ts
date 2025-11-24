@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserOr401, readJson } from '@/lib/api-helpers';
-import { prisma } from '@/server/db/client';
+import { prisma } from '@/lib/prisma';
 import { deleteForUser, getByIdForUser, updatePartial } from '@/server/db/cards';
 
 type RouteContext = { params: Promise<{ todoId: string }> };
@@ -61,4 +61,3 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
   await deleteForUser(todoId, (user as any).id);
   return NextResponse.json({ ok: true });
 }
-

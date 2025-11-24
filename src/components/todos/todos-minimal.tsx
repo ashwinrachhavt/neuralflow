@@ -17,10 +17,12 @@ export function TodosMinimal() {
   const upcoming = tasks.filter(t => !t.aiPlanned);
 
   const [quick, setQuick] = useState("");
+  const [newType, setNewType] = useState<'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|undefined>(undefined);
+  const [newPriority, setNewPriority] = useState<'LOW'|'MEDIUM'|'HIGH'|undefined>('MEDIUM');
   const markDone = useMarkDone();
   const addQuick = useMutation({
-    mutationFn: async (t: string) => {
-      const res = await fetch('/api/tasks/quick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: t }) });
+    mutationFn: async (payload: { title: string; type?: string; priority?: string }) => {
+      const res = await fetch('/api/tasks/quick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error('failed');
       return await res.json();
     },
@@ -37,18 +39,66 @@ export function TodosMinimal() {
         <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
       </header>
 
-      <div className="mb-4 flex items-center gap-2">
-        <Input
-          placeholder="Add a task and press Enter"
-          value={quick}
-          onChange={(e) => setQuick(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { const v = quick.trim(); if (!v || addQuick.isPending) return; addQuick.mutate(v); } }}
-        />
-        <Button size="icon" variant="outline" disabled={addQuick.isPending} onClick={() => { const v = quick.trim(); if (!v || addQuick.isPending) return; addQuick.mutate(v); }}>
-          <Plus className="size-4" />
-        </Button>
+      <div className="mb-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="inline-flex overflow-hidden rounded-md border border-border/30 bg-background/40 opacity-70 hover:opacity-100 transition">
+            {([
+              { v: undefined, label: 'Any' },
+              { v: 'DEEP_WORK', label: 'Deep' },
+              { v: 'SHALLOW_WORK', label: 'Shallow' },
+              { v: 'LEARNING', label: 'Learn' },
+              { v: 'SHIP', label: 'Ship' },
+              { v: 'MAINTENANCE', label: 'Maint' },
+            ] as const).map((opt, i, arr) => (
+              <button
+                key={String(opt.v ?? 'any')}
+                type="button"
+                className={
+                  (newType === opt.v ? 'bg-foreground text-background' : 'text-muted-foreground/80 hover:bg-foreground/10') +
+                  ' px-2 py-0.5 text-[10px] transition-colors ' +
+                  (i !== arr.length - 1 ? ' border-r border-border/30' : '')
+                }
+                onClick={() => setNewType(opt.v as any)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="inline-flex overflow-hidden rounded-md border border-border/30 bg-background/40 opacity-70 hover:opacity-100 transition">
+            {([
+              { v: 'LOW', label: 'Low' },
+              { v: 'MEDIUM', label: 'Med' },
+              { v: 'HIGH', label: 'High' },
+            ] as const).map((opt, i, arr) => (
+              <button
+                key={opt.v}
+                type="button"
+                className={
+                  (newPriority === opt.v ? 'bg-foreground text-background' : 'text-muted-foreground/80 hover:bg-foreground/10') +
+                  ' px-2 py-0.5 text-[10px] transition-colors ' +
+                  (i !== arr.length - 1 ? ' border-r border-border/30' : '')
+                }
+                onClick={() => setNewPriority(opt.v as any)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Add a task and press Enter"
+            value={quick}
+            onChange={(e) => setQuick(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { const v = quick.trim(); if (!v || addQuick.isPending) return; addQuick.mutate({ title: v, type: newType, priority: newPriority } as any); } }}
+          />
+          <Button size="icon" variant="outline" disabled={addQuick.isPending} onClick={() => { const v = quick.trim(); if (!v || addQuick.isPending) return; addQuick.mutate({ title: v, type: newType, priority: newPriority } as any); }}>
+            <Plus className="size-4" />
+          </Button>
+        </div>
       </div>
 
+      {!(isLoading || tasks.length === 0) ? (
       <div className="rounded-xl border border-border/60 bg-muted/15 p-3">
         {isLoading ? (
           <ul className="divide-y divide-border/50">
@@ -114,6 +164,7 @@ export function TodosMinimal() {
           </ul>
         </section>
       </div>
+      ) : null}
     </div>
   );
 }

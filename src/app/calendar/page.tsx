@@ -235,17 +235,35 @@ export default function CalendarPage() {
   };
 
   const openCreateModal = (seedDate?: Date) => {
+    // Fallback: top-of-hour from seed date
     const start = seedDate ? new Date(seedDate) : new Date();
     start.setMinutes(0, 0, 0);
     const end = new Date(start);
     end.setHours(end.getHours() + 1);
     setSelectedEvent(null);
     setFormState(
-      buildFormState({
-        startAt: formatDateTimeLocal(start),
-        endAt: formatDateTimeLocal(end),
-      })
+      buildFormState({ startAt: formatDateTimeLocal(start), endAt: formatDateTimeLocal(end) })
     );
+    setIsModalOpen(true);
+  };
+
+  const openCreateFromClick = (day: Date, e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const y = e.clientY - rect.top; // pixels from top of the day column
+    // Translate to minutes from startHour
+    const minuteFromTop = Math.max(0, Math.min(visibleMinutes, Math.round((y / containerHeight) * visibleMinutes)));
+    // Snap to 15-minute grid
+    const snap = 15;
+    const snapped = Math.round(minuteFromTop / snap) * snap;
+
+    const start = new Date(day);
+    start.setHours(0, 0, 0, 0);
+    start.setMinutes(startHour * 60 + snapped);
+    const end = new Date(start);
+    end.setMinutes(end.getMinutes() + 60);
+
+    setSelectedEvent(null);
+    setFormState(buildFormState({ startAt: formatDateTimeLocal(start), endAt: formatDateTimeLocal(end) }));
     setIsModalOpen(true);
   };
 
@@ -479,9 +497,7 @@ export default function CalendarPage() {
                   key={day.toISOString()}
                   className="relative min-h-[calc(14*52px)] border-l border-border/60 bg-background/90"
                   style={{ height: `${containerHeight}px` }}
-                  onClick={() => {
-                    openCreateModal(day);
-                  }}
+                  onClick={(e) => openCreateFromClick(day, e)}
                 >
                   {Array.from({ length: endHour - startHour }).map(
                     (_, index) => (
@@ -493,22 +509,9 @@ export default function CalendarPage() {
                     )
                   )}
                   {group.map((event) => {
-                    const utcStart = new Date(event.startAt);
-                    const utcEnd = new Date(event.endAt);
-                    const start = new Date(
-                      utcStart.getUTCFullYear(),
-                      utcStart.getUTCMonth(),
-                      utcStart.getUTCDate(),
-                      utcStart.getUTCHours(),
-                      utcStart.getUTCMinutes()
-                    );
-                    const end = new Date(
-                      utcEnd.getUTCFullYear(),
-                      utcEnd.getUTCMonth(),
-                      utcEnd.getUTCDate(),
-                      utcEnd.getUTCHours(),
-                      utcEnd.getUTCMinutes()
-                    );
+                    // Use local wall time directly for placement
+                    const start = new Date(event.startAt);
+                    const end = new Date(event.endAt);
                     const startMinutes =
                       start.getHours() * 60 +
                       start.getMinutes() -

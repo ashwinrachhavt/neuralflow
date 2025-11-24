@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUserOr401, readJson } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateDefaultBoard } from "@/lib/board";
+import { getOrCreateDefaultBoard } from "@/server/db/boards";
 import { TaskType } from "@prisma/client";
 
 type TaskDTO = {
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   }
 
   // If a boardId is provided and belongs to this user, use it; otherwise fallback to default board
-  let board = null as unknown as Awaited<ReturnType<typeof getOrCreateDefaultBoard>>;
+  let board: any = null;
   if (body?.boardId) {
     // Find board with columns for target user
     const b = await prisma.board.findFirst({
@@ -37,7 +37,9 @@ export async function POST(req: Request) {
     }
   }
   if (!board) {
-    board = await getOrCreateDefaultBoard((user as any).id);
+    const res = await getOrCreateDefaultBoard((user as any).id);
+    if (!res.ok) return NextResponse.json({ message: 'Failed to resolve board' }, { status: 500 });
+    board = res.value;
   }
   const todoColumn = board.columns.find((c) => c.name.toLowerCase().includes("todo")) ?? board.columns[0];
 

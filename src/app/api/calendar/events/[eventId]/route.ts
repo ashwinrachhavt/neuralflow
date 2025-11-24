@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/server/db/client";
+import { prisma } from "@/lib/prisma";
 import { getUserOr401 } from "@/lib/api-helpers";
 
 type EventRouteContext = { params: Promise<{ eventId: string }> };

@@ -66,6 +66,9 @@ type Task = {
   title: string;
   description?: string;
   tag?: string;
+  priority?: 'LOW'|'MEDIUM'|'HIGH'|null;
+  type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|null;
+  tags?: string[] | null;
   // AI suggestion fields (optional)
   aiSuggestedColumnId?: string | null;
   aiSuggestedPriority?: 'LOW' | 'MEDIUM' | 'HIGH' | null;
@@ -98,6 +101,8 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
 
   const [board, setBoard] = useState<BoardState>(INITIAL_BOARD);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null); // fallback when routing not available
+  const [showHidden, setShowHidden] = useState(false);
+  const [standardEnsured, setStandardEnsured] = useState(false);
 
   // Hydrate board from API
   useEffect(() => {
@@ -122,6 +127,9 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
         id: t.id,
         title: t.title,
         description: t.descriptionMarkdown ?? undefined,
+        priority: (t as any).priority ?? null,
+        type: (t as any).type ?? null,
+        tags: (t as any).tags ?? null,
         aiSuggestedColumnId: (t as any).aiSuggestedColumnId ?? null,
         aiSuggestedPriority: (t as any).aiSuggestedPriority ?? null,
         aiSuggestedEstimateMin: (t as any).aiSuggestedEstimateMin ?? null,
@@ -133,6 +141,28 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
 
     setBoard({ tasks: taskMap, columns, columnOrder });
   }, [data]);
+
+  // Ensure standard 4-lane design exists server-side (Backlog, Todo, In Progress, Done)
+  useEffect(() => {
+    const ensure = async () => {
+      if (!data || standardEnsured) return;
+      const cols = data.board.columnOrder.map((id) => data.board.columns[id]);
+      const lower = (s: string) => (s || '').trim().toLowerCase();
+      const hasBacklog = cols.some(c => lower(c.name).includes('backlog'));
+      const hasTodo = cols.some(c => lower(c.name) === 'todo' || lower(c.name).includes('to do'));
+      const hasInProg = cols.some(c => lower(c.name).includes('progress'));
+      const hasDone = cols.some(c => lower(c.name).includes('done'));
+      const needs = !(hasBacklog && hasTodo && hasInProg && hasDone);
+      if (needs) {
+        try {
+          await fetch(`/api/boards/${boardId}/ensure-standard`, { method: 'POST' });
+          await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
+        } catch { /* ignore */ }
+      }
+      setStandardEnsured(true);
+    };
+    void ensure();
+  }, [data, boardId, queryClient, standardEnsured]);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -274,6 +304,20 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-6">
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={async () => {
+            try {
+              const res = await fetch(`/api/boards/${boardId}/hide-done`, { method: 'POST' });
+              if (!res.ok) throw new Error('Failed to hide done tasks');
+              const data = await res.json();
+              toast.success(`Moved ${data.moved} done task(s) to Hidden`);
+              await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
+            } catch (e) {
+              toast.error('Failed to move done tasks');
+            }
+          }}>Move all Done to Hidden</Button>
+          <Button size="sm" variant="ghost" onClick={() => setShowHidden(s => !s)}>{showHidden ? 'Hide Hidden' : 'Show Hidden'}</Button>
+        </div>
         <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4">
           {isLoading ? (
             <>
@@ -302,21 +346,31 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
               No columns yet. Create a board or add a column.
             </div>
           ) : null}
-          {board.columnOrder.map(columnId => (
-            <KanbanColumn
-              key={columnId}
-              column={board.columns[columnId]}
-              tasks={board.tasks}
-              onEnrich={(taskId) => enrichTask.mutate(taskId)}
-              onSummary={(taskId) => summarizeNote.mutate(taskId)}
-              onQuiz={(taskId) => quizFromNote.mutate(taskId)}
-              onClassify={(taskId) => classifyTask.mutate(taskId)}
-              onSuggest={(taskId) => suggestTask.mutate(taskId)}
-              onAutoMove={(taskId) => autoMove.mutate(taskId)}
-              onOpen={(taskId) => {
-                try { router.push(`/boards/${boardId}/tasks/${taskId}`); } catch { setOpenTaskId(taskId); }
-              }}
-              openTaskId={openTaskId}
+          {(() => {
+            // Render fixed 4-lane layout: Backlog, Todo, In Progress, Done
+            const byId = board.columns;
+            const lower = (s?: string) => (s || '').trim().toLowerCase();
+            const findBy = (pred: (name: string) => boolean) => board.columnOrder.find(id => pred(lower(byId[id]?.title)));
+            const backlog = findBy(n => n.includes('backlog'));
+            const todo = findBy(n => n === 'todo' || n.includes('to do'));
+            const inProg = findBy(n => n.includes('progress'));
+            const done = findBy(n => n.includes('done'));
+            const main = [backlog, todo, inProg, done].filter(Boolean) as string[];
+            return main.map(columnId => (
+              <KanbanColumn
+                key={columnId}
+                column={board.columns[columnId]}
+                tasks={board.tasks}
+                onEnrich={(taskId) => enrichTask.mutate(taskId)}
+                onSummary={(taskId) => summarizeNote.mutate(taskId)}
+                onQuiz={(taskId) => quizFromNote.mutate(taskId)}
+                onClassify={(taskId) => classifyTask.mutate(taskId)}
+                onSuggest={(taskId) => suggestTask.mutate(taskId)}
+                onAutoMove={(taskId) => autoMove.mutate(taskId)}
+                onOpen={(taskId) => {
+                  try { router.push(`/boards/${boardId}/tasks/${taskId}`); } catch { setOpenTaskId(taskId); }
+                }}
+                openTaskId={openTaskId}
               onCreateCard={async (colId, title, description) => {
                 try {
                   const res = await createCard.mutateAsync({ boardId, columnId: colId, title, descriptionMarkdown: description });
@@ -340,9 +394,55 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
                   await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
                 }
               }}
-            />
-          ))}
+              />
+            ));
+          })()}
         </div>
+        {showHidden ? (
+          <div>
+            <div className="mb-2 text-sm font-medium text-muted-foreground">Hidden</div>
+            <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4">
+              {board.columnOrder
+                .filter(columnId => (board.columns[columnId]?.title ?? '').toLowerCase().includes('hidden'))
+                .map(columnId => (
+                  <KanbanColumn
+                    key={columnId}
+                    column={board.columns[columnId]}
+                    tasks={board.tasks}
+                    onEnrich={(taskId) => enrichTask.mutate(taskId)}
+                    onSummary={(taskId) => summarizeNote.mutate(taskId)}
+                    onQuiz={(taskId) => quizFromNote.mutate(taskId)}
+                    onClassify={(taskId) => classifyTask.mutate(taskId)}
+                    onSuggest={(taskId) => suggestTask.mutate(taskId)}
+                    onAutoMove={(taskId) => autoMove.mutate(taskId)}
+                    onOpen={(taskId) => {
+                      try { router.push(`/boards/${boardId}/tasks/${taskId}`); } catch { setOpenTaskId(taskId); }
+                    }}
+                    openTaskId={openTaskId}
+                    onCreateCard={async (colId, title, description) => {
+                      try {
+                        const res = await createCard.mutateAsync({ boardId, columnId: colId, title, descriptionMarkdown: description });
+                        const newId = (res as any)?.id as string | undefined;
+                        if (newId) {
+                          setBoard(current => {
+                            if (!current.columns[colId]) return current;
+                            const next = { ...current, tasks: { ...current.tasks }, columns: { ...current.columns } };
+                            next.tasks[newId] = { id: newId, title, description: description ?? '', aiSuggestedColumnId: null, aiSuggestedPriority: null, aiSuggestedEstimateMin: null, aiNextAction: null, aiState: null, aiConfidence: null };
+                            next.columns[colId] = { ...next.columns[colId], taskIds: [...next.columns[colId].taskIds, newId] };
+                            return next;
+                          });
+                          requestAnimationFrame(() => setOpenTaskId(newId));
+                        }
+                      } catch {
+                      } finally {
+                        await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
+                      }
+                    }}
+                  />
+                ))}
+            </div>
+          </div>
+        ) : null}
       </div>
       {openTaskId ? (
         <CardSheet taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} onOpenFull={(id) => (window.location.href = `/tasks/${id}`)} />
@@ -354,6 +454,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
 type KanbanColumnProps = {
   column: Column;
   tasks: Record<string, Task>;
+  
   onEnrich: (taskId: string) => void;
   onSummary: (taskId: string) => void;
   onQuiz: (taskId: string) => void;

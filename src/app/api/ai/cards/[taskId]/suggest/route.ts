@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/server/db/client";
+import { prisma } from "@/lib/prisma";
 import { getUserOr401 } from "@/lib/api-helpers";
 import { getRelatedItemsForTask } from "@/server/db/related";
 import { suggestNextAction } from "@/lib/ai/agents/suggestorAgent";

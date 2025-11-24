@@ -1,4 +1,4 @@
-import { prisma } from './client';
+import { prisma } from '@/lib/prisma';
 
 export async function getRelatedItemsForTask(taskId: string, userId: string) {
   const task = await prisma.task.findFirst({ where: { id: taskId, board: { userId } } });
@@ -29,4 +29,3 @@ export async function getRelatedItemsForTask(taskId: string, userId: string) {
     ...quizzes.map((q) => ({ type: 'quiz' as const, id: q.id, title: q.title })),
   ];
 }
-

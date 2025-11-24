@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserOr401, readJson } from '@/lib/api-helpers';
-import { prisma } from '@/server/db/client';
+import { prisma } from '@/lib/prisma';
 import { getOrCreateDefaultBoard } from '@/server/db/boards';
 
 // GET /api/todos?status=TODO&limit=100
@@ -13,35 +13,59 @@ export async function GET(req: Request) {
   const limitParam = url.searchParams.get('limit');
   const limit = Math.min(Math.max(Number(limitParam || 100), 1), 500);
 
-  const where: any = { board: { userId: (user as any).id } };
-  if (status && ['BACKLOG','TODO','IN_PROGRESS','DONE','ARCHIVED'].includes(status)) {
-    where.status = status;
-  }
-
-  const tasks = await prisma.task.findMany({
-    where,
-    orderBy: { updatedAt: 'desc' },
-    take: limit,
-    select: {
-      id: true,
-      boardId: true,
-      columnId: true,
-      title: true,
-      descriptionMarkdown: true,
-      priority: true,
-      status: true,
-      estimatedPomodoros: true,
-      tags: true,
-      aiPlanned: true,
-      createdAt: true,
-      updatedAt: true,
-      calendarEvents: {
-        select: { location: true, startAt: true },
-        orderBy: { startAt: 'asc' },
-        take: 1,
+  let tasks: any[];
+  if (status === 'TODO') {
+    // Make TODO tab reflect the Todo lane on the default board to avoid duplicating models
+    const boardRes = await getOrCreateDefaultBoard((user as any).id);
+    if (!boardRes.ok) return NextResponse.json({ message: 'Failed to resolve board' }, { status: 500 });
+    const board = boardRes.value;
+    const todoColumn = board.columns.find((c) => c.name.toLowerCase().includes('todo')) ?? board.columns[0];
+    tasks = await prisma.task.findMany({
+      where: { boardId: board.id, columnId: todoColumn.id },
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        boardId: true,
+        columnId: true,
+        title: true,
+        descriptionMarkdown: true,
+        priority: true,
+        status: true,
+        estimatedPomodoros: true,
+        tags: true,
+        aiPlanned: true,
+        createdAt: true,
+        updatedAt: true,
+        calendarEvents: { select: { location: true, startAt: true }, orderBy: { startAt: 'asc' }, take: 1 },
       },
-    },
-  });
+    });
+  } else {
+    const where: any = { board: { userId: (user as any).id } };
+    if (status && ['BACKLOG','TODO','IN_PROGRESS','DONE','ARCHIVED'].includes(status)) {
+      where.status = status;
+    }
+    tasks = await prisma.task.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        boardId: true,
+        columnId: true,
+        title: true,
+        descriptionMarkdown: true,
+        priority: true,
+        status: true,
+        estimatedPomodoros: true,
+        tags: true,
+        aiPlanned: true,
+        createdAt: true,
+        updatedAt: true,
+        calendarEvents: { select: { location: true, startAt: true }, orderBy: { startAt: 'asc' }, take: 1 },
+      },
+    });
+  }
 
   return NextResponse.json({
     tasks: tasks.map((task) => ({
@@ -112,4 +136,3 @@ export async function POST(req: Request) {
   });
   return NextResponse.json({ id: task.id });
 }
-

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/server/db/client';
+import { prisma } from '@/lib/prisma';
 import { getUserOr401 } from '@/lib/api-helpers';
 
 type Ctx = { params: Promise<{ todoId: string }> };
@@ -35,4 +35,3 @@ export async function PATCH(_req: Request, ctx: Ctx) {
   });
   return NextResponse.json({ id: updated.id, status: updated.status, columnId: updated.columnId });
 }
-

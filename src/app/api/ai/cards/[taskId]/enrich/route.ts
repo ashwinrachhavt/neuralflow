@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/server/db/client";
+import { prisma } from "@/lib/prisma";
 import { getUserOr401 } from "@/lib/api-helpers";
 import { enrichTask } from "@/lib/ai/agents/cardEnrichmentAgent";
 import { logAgentRunFinish, logAgentRunStart } from "@/server/db/agentRuns";

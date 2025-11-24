@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserOr401 } from '@/lib/api-helpers';
-import { prisma } from '@/server/db/client';
+import { prisma } from '@/lib/prisma';
 import { listByBoard } from '@/server/db/cards';
 
 type Ctx = { params: Promise<{ boardId: string }> };
@@ -24,6 +24,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     columnId: t.columnId,
     // extra metadata for richer UI
     priority: t.priority,
+    type: t.type,
     estimatedPomodoros: t.estimatedPomodoros,
     status: t.status,
     tags: t.tags,

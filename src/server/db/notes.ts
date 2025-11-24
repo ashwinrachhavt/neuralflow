@@ -1,4 +1,4 @@
-import { prisma } from "./client";
+import { prisma } from "@/lib/prisma";
 import { NotFoundError } from "./result";
 
 export async function getByTaskId(taskId: string) {
@@ -6,4 +6,3 @@ export async function getByTaskId(taskId: string) {
   if (!note) throw new NotFoundError();
   return note;
 }
-

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getUserOr401, readJson } from '@/lib/api-helpers';
 import { gamificationEngine as engine } from '@/lib/gamification/engine';
+import { prisma } from '@/lib/prisma';
 import type { GemSlug } from '@/lib/gamification/catalog';
 
 export async function POST(req: Request) {
@@ -11,10 +12,10 @@ export async function POST(req: Request) {
   try {
     await engine.ensureCatalog();
     // Use internal awardStone via claim flow
-    const created = await (await import('@/lib/prisma')).prisma.userStone.create({
+    const created = await prisma.userStone.create({
       data: {
         userId: (user as any).id,
-        stoneId: (await (await import('@/lib/prisma')).prisma.stoneDefinition.findFirstOrThrow({ where: { slug } })).id,
+        stoneId: (await prisma.stoneDefinition.findFirstOrThrow({ where: { slug } })).id,
         source: body.source ?? 'TEST',
       },
     });
@@ -23,4 +24,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: String(e?.message ?? e) }, { status: 400 });
   }
 }
-

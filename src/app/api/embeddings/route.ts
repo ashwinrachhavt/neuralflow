@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/server/db/client';
+import { prisma } from '@/lib/prisma';
 import { getUserOr401 } from '@/lib/api-helpers';
 
 export const dynamic = 'force-dynamic';
@@ -27,4 +27,3 @@ export async function GET() {
 
   return NextResponse.json({ nodes });
 }
-

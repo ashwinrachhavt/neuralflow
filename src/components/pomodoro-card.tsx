@@ -2,6 +2,7 @@
 
 import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { useBoard, useDefaultBoardId } from "@/hooks/api";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,15 +34,7 @@ type TimerState = {
   activeTaskId: string | null;
 };
 
-type ApiBoard = {
-  board: {
-    id: string;
-    title: string;
-    columnOrder: string[];
-    columns: Record<string, { id: string; name: string; position: number; taskIds: string[] }>;
-    tasks: Record<string, { id: string; title: string; descriptionMarkdown: string | null; columnId: string }>;
-  };
-};
+// BoardNormalized shape is provided by useBoard hook
 
 function formatDuration(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -59,15 +52,9 @@ function formatLabel(totalSeconds: number) {
 }
 
 export function PomodoroCard() {
-  const { data } = useQuery<ApiBoard>({
-    queryKey: ["board"],
-    queryFn: async () => {
-      const res = await fetch("/api/board");
-      if (!res.ok) throw new Error("Failed to load board");
-      return (await res.json()) as ApiBoard;
-    },
-    staleTime: 5_000,
-  });
+  const { data: defaultBoard } = useDefaultBoardId();
+  const defaultBoardId = defaultBoard?.id ?? "";
+  const { data } = useBoard(defaultBoardId);
 
   const taskOptions = useMemo(() => {
     const board = data?.board;
@@ -348,4 +335,3 @@ export function PomodoroCard() {
     </CardContainer>
   );
 }
-import { useQuery } from "@tanstack/react-query";

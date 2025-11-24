@@ -45,10 +45,13 @@ export function TodosPane() {
   const [plannerOpen, setPlannerOpen] = useState(false);
   const [celebrate, setCelebrate] = useState<null | { name: string; image?: string; rarity?: string }>(null);
   const [title, setTitle] = useState("");
+  const [newType, setNewType] = useState<'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|undefined>(undefined);
+  const [newPriority, setNewPriority] = useState<'LOW'|'MEDIUM'|'HIGH'|undefined>('MEDIUM');
+  
 
   const addMutation = useMutation({
-    mutationFn: async (t: string) => {
-      const res = await fetch('/api/tasks/quick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: t }) });
+    mutationFn: async (t: { title: string; type?: string; priority?: string }) => {
+      const res = await fetch('/api/tasks/quick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(t) });
       if (!res.ok) throw new Error('failed');
       return (await res.json()) as { id: string };
     },
@@ -109,8 +112,9 @@ export function TodosPane() {
   const handleQuickAddSubmit = () => {
     const trimmed = title.trim();
     if (!trimmed) return;
-    addMutation.mutate(trimmed);
+    addMutation.mutate({ title: trimmed, type: newType, priority: newPriority } as any);
     setTitle('');
+    setNewTopics('');
   };
 
   return (
@@ -341,6 +345,51 @@ export function TodosPane() {
               )}
             </div>
             <div className="mt-6 rounded-[1.5rem] border border-border/20 bg-gradient-to-r from-indigo-500/10 via-[var(--hero-via)] to-[var(--hero-to)] p-4 shadow-[0_10px_40px_rgba(15,23,42,0.35)] backdrop-blur">
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px]">
+                <div className="inline-flex overflow-hidden rounded-md border border-white/15 bg-white/5 opacity-70 hover:opacity-100 transition">
+                  {([
+                    { v: undefined, label: 'Any' },
+                    { v: 'DEEP_WORK', label: 'Deep' },
+                    { v: 'SHALLOW_WORK', label: 'Shallow' },
+                    { v: 'LEARNING', label: 'Learn' },
+                    { v: 'SHIP', label: 'Ship' },
+                    { v: 'MAINTENANCE', label: 'Maint' },
+                  ] as const).map((opt, i, arr) => (
+                    <button
+                      key={String(opt.v ?? 'any')}
+                      type="button"
+                      className={
+                        (newType === opt.v ? 'bg-white text-black' : 'text-white/70 hover:bg-white/10') +
+                        ' px-2 py-0.5 transition-colors ' +
+                        (i !== arr.length - 1 ? ' border-r border-white/15' : '')
+                      }
+                      onClick={() => setNewType(opt.v as any)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="inline-flex overflow-hidden rounded-md border border-white/15 bg-white/5 opacity-70 hover:opacity-100 transition">
+                  {([
+                    { v: 'LOW', label: 'Low' },
+                    { v: 'MEDIUM', label: 'Med' },
+                    { v: 'HIGH', label: 'High' },
+                  ] as const).map((opt, i, arr) => (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      className={
+                        (newPriority === opt.v ? 'bg-white text-black' : 'text-white/70 hover:bg-white/10') +
+                        ' px-2 py-0.5 transition-colors ' +
+                        (i !== arr.length - 1 ? ' border-r border-white/15' : '')
+                      }
+                      onClick={() => setNewPriority(opt.v as any)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <motion.div
                   className="relative flex-1"
@@ -379,6 +428,7 @@ export function TodosPane() {
                   className="w-full sm:w-auto"
                 />
               </div>
+              
               <p className="mt-2 text-xs text-muted-foreground/80">Press Enter or ⌘+Enter to add quickly. Each task earns you XP!</p>
             </div>
           </CardContent>

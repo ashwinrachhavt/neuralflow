@@ -1,4 +1,4 @@
-import { prisma } from './client';
+import { prisma } from '@/lib/prisma';
 
 type StartArgs = { userId?: string; type: string; model?: string | null };
 export async function logAgentRunStart({ userId, type, model }: StartArgs) {
@@ -21,4 +21,3 @@ export async function logAgentRunFinish({ runId, status, error, durationMs, outp
   }
   return true;
 }
-

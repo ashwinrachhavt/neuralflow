@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserOr401 } from '@/lib/api-helpers';
-import { prisma } from '@/server/db/client';
+import { prisma } from '@/lib/prisma';
 
 type Ctx = { params: Promise<{ boardId: string }> };
 

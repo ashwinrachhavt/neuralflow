@@ -1,4 +1,4 @@
-import { prisma } from "./client";
+import { prisma } from "@/lib/prisma";
 import type { Board } from "@prisma/client";
 import { Result, ok, err, NotFoundError } from "./result";
 
@@ -38,4 +38,3 @@ export async function getBoardColumns(boardId: string) {
   if (!columns.length) throw new NotFoundError("No columns for board");
   return columns;
 }
-

@@ -1,4 +1,4 @@
-import { prisma } from './client';
+import { prisma } from '@/lib/prisma';
 
 type Flashcard = { front: string; back: string };
 type QuizQ = { question: string; answer: string };
@@ -26,4 +26,3 @@ export async function createQuizForNote(userId: string, noteId: string, deckId: 
   });
   return quiz;
 }
-

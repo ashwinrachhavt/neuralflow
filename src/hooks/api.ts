@@ -73,7 +73,7 @@ export function useCard(cardId: string) {
 export function useCreateCard() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { boardId: string; columnId: string; title: string; descriptionMarkdown?: string }) =>
+    mutationFn: async (input: { boardId: string; columnId: string; title: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'; tags?: string[]; estimatedPomodoros?: number }) =>
       getJSON<{ id: string }>(`/api/tasks`, { method: 'POST', body: JSON.stringify(input) }),
     onSuccess: async (_res, vars) => {
       await qc.invalidateQueries({ queryKey: queryKeys.board(vars.boardId) });
