@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "node ./scripts/run-eslint.mjs",
+    "typecheck": "tsc --noEmit",
+    "check:unused": "node ./scripts/find-unused-components.mjs",
     "lint:fix": "node ./scripts/run-eslint.mjs --fix",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",

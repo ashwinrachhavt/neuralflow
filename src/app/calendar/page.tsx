@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'next/navigation';
 
 const startHour = 0;
 const endHour = 24;
@@ -56,11 +57,28 @@ const typeLabels: Record<EventType, string> = {
   BREAK: 'Break',
 };
 
-const typeStyles: Record<EventType, string> = {
-  FOCUS: 'text-white',
-  MEETING: 'text-white',
-  PERSONAL: 'text-white',
-  BREAK: 'text-white',
+// Visual styles per event type. Use translucent backgrounds and themed borders that adapt to light/dark.
+const EVENT_STYLES: Record<EventType, { border: string; bg: string; accent: string }> = {
+  FOCUS: {
+    border: 'border-emerald-500/40',
+    bg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
+    accent: 'bg-emerald-500/70',
+  },
+  MEETING: {
+    border: 'border-blue-500/40',
+    bg: 'bg-blue-500/10 dark:bg-blue-500/15',
+    accent: 'bg-blue-500/70',
+  },
+  PERSONAL: {
+    border: 'border-amber-500/40',
+    bg: 'bg-amber-500/10 dark:bg-amber-500/15',
+    accent: 'bg-amber-500/70',
+  },
+  BREAK: {
+    border: 'border-violet-500/40',
+    bg: 'bg-violet-500/10 dark:bg-violet-500/15',
+    accent: 'bg-violet-500/70',
+  },
 };
 
 function startOfWeek(date = new Date()) {
@@ -124,7 +142,8 @@ function buildFormState(seed?: Partial<FormState>) {
   };
 }
 
-export default function CalendarPage() {
+function CalendarPageInner() {
+  const searchParams = useSearchParams();
   const [weekStart, setWeekStart] = React.useState(() =>
     startOfWeek(new Date())
   );
@@ -143,7 +162,12 @@ export default function CalendarPage() {
   const [isSaving, setIsSaving] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
 
-  // (Reserved for future drag/resize) — removed unused state to satisfy lint
+  // Drag-to-create state
+  const [dragging, setDragging] = React.useState(false);
+  const [dragDayIndex, setDragDayIndex] = React.useState<number | null>(null);
+  const [dragRectTop, setDragRectTop] = React.useState<number>(0);
+  const [dragStartMin, setDragStartMin] = React.useState<number>(0);
+  const [dragCurrentMin, setDragCurrentMin] = React.useState<number>(0);
 
   const weekDays = React.useMemo(() => {
     return Array.from({ length: 7 }).map((_, index) => {
@@ -177,6 +201,18 @@ export default function CalendarPage() {
   React.useEffect(() => {
     loadEvents();
   }, [loadEvents]);
+
+  // If a specific date is provided (?date=YYYY-MM-DD), align the view to that week
+  React.useEffect(() => {
+    const dStr = searchParams.get('date');
+    if (!dStr) return;
+    const d = new Date(dStr);
+    if (!Number.isNaN(d.getTime())) {
+      const s = startOfWeek(d);
+      // Only update if different to avoid loops
+      if (s.toDateString() !== weekStart.toDateString()) setWeekStart(s);
+    }
+  }, [searchParams, weekStart]);
 
   const filteredEvents = React.useMemo(() => {
     if (!filters.length) return events;
@@ -233,25 +269,58 @@ export default function CalendarPage() {
     setIsModalOpen(true);
   };
 
-  const openCreateFromClick = (day: Date, e: React.MouseEvent<HTMLDivElement>) => {
+  // click handler replaced by drag-to-create
+
+  const snapTo = (min: number, step = 15) => Math.round(min / step) * step;
+
+  const startDragCreate = (day: Date, index: number, e: React.MouseEvent<HTMLDivElement>) => {
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-    const y = e.clientY - rect.top; // pixels from top of the day column
-    // Translate to minutes from startHour
+    const y = e.clientY - rect.top;
     const minuteFromTop = Math.max(0, Math.min(visibleMinutes, Math.round((y / containerHeight) * visibleMinutes)));
-    // Snap to 15-minute grid
-    const snap = 15;
-    const snapped = Math.round(minuteFromTop / snap) * snap;
-
-    const start = new Date(day);
-    start.setHours(0, 0, 0, 0);
-    start.setMinutes(startHour * 60 + snapped);
-    const end = new Date(start);
-    end.setMinutes(end.getMinutes() + 60);
-
-    setSelectedEvent(null);
-    setFormState(buildFormState({ startAt: formatDateTimeLocal(start), endAt: formatDateTimeLocal(end) }));
-    setIsModalOpen(true);
+    const snapped = snapTo(minuteFromTop, 15);
+    setDragging(true);
+    setDragDayIndex(index);
+    setDragRectTop(rect.top);
+    setDragStartMin(snapped);
+    setDragCurrentMin(snapped);
   };
+
+  React.useEffect(() => {
+    if (!dragging) return;
+    const onMove = (ev: MouseEvent) => {
+      const y = ev.clientY - dragRectTop;
+      const minuteFromTop = Math.max(0, Math.min(visibleMinutes, Math.round((y / containerHeight) * visibleMinutes)));
+      setDragCurrentMin(snapTo(minuteFromTop, 15));
+    };
+    const onUp = () => {
+      setDragging(false);
+      if (dragDayIndex == null) return;
+      const day = new Date(weekDays[dragDayIndex]);
+      const startMin = Math.max(0, Math.min(visibleMinutes, Math.min(dragStartMin, dragCurrentMin)));
+      let endMin = Math.max(0, Math.min(visibleMinutes, Math.max(dragStartMin, dragCurrentMin)));
+      // Ensure a reasonable minimum duration (30 minutes)
+      if (endMin - startMin < 30) endMin = Math.min(visibleMinutes, startMin + 60);
+
+      const start = new Date(day);
+      start.setHours(0, 0, 0, 0);
+      start.setMinutes(startHour * 60 + startMin);
+      const end = new Date(day);
+      end.setHours(0, 0, 0, 0);
+      end.setMinutes(startHour * 60 + endMin);
+
+      setSelectedEvent(null);
+      setFormState(buildFormState({ startAt: formatDateTimeLocal(start), endAt: formatDateTimeLocal(end) }));
+      setIsModalOpen(true);
+      // reset
+      setDragDayIndex(null);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp, { once: true });
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp as any);
+    };
+  }, [dragging, dragRectTop, dragDayIndex, dragStartMin, dragCurrentMin, containerHeight, visibleMinutes, weekDays]);
 
   const openEditModal = (event: CalendarEvent) => {
     setSelectedEvent(event);
@@ -476,14 +545,14 @@ export default function CalendarPage() {
                 </div>
               ))}
             </div>
-            {weekDays.map((day) => {
+            {weekDays.map((day, index) => {
               const group = groupedByDay.get(day.toDateString()) ?? [];
               return (
                 <div
                   key={day.toISOString()}
                   className="relative min-h-[calc(14*52px)] border-l border-border/60 bg-background/90"
                   style={{ height: `${containerHeight}px` }}
-                  onClick={(e) => openCreateFromClick(day, e)}
+                  onMouseDown={(e) => startDragCreate(day, index, e)}
                 >
                   {Array.from({ length: endHour - startHour }).map(
                     (_, index) => (
@@ -494,26 +563,37 @@ export default function CalendarPage() {
                       />
                     )
                   )}
+                  {/* Drag selection overlay */}
+                  {dragging && dragDayIndex === index ? (() => {
+                    const startMin = Math.min(dragStartMin, dragCurrentMin);
+                    const endMin = Math.max(dragStartMin, dragCurrentMin);
+                    const top = (startMin / visibleMinutes) * containerHeight;
+                    const height = Math.max(((endMin - startMin) / visibleMinutes) * containerHeight, 8);
+                    return (
+                      <div
+                        className="pointer-events-none absolute left-1 right-1 rounded-md border border-primary/40 bg-primary/20"
+                        style={{ top, height }}
+                      />
+                    );
+                  })() : null}
+
                   {group.map((event) => {
                     // Use local wall time directly for placement
                     const start = new Date(event.startAt);
                     const end = new Date(event.endAt);
-                    const startMinutes =
-                      start.getHours() * 60 +
-                      start.getMinutes() -
-                      startHour * 60;
-                    const endMinutes =
-                      end.getHours() * 60 + end.getMinutes() - startHour * 60;
+                    const startMinutes = start.getHours() * 60 + start.getMinutes() - startHour * 60;
+                    const endMinutes = end.getHours() * 60 + end.getMinutes() - startHour * 60;
                     const clippedStart = Math.max(0, startMinutes);
                     const clippedEnd = Math.min(visibleMinutes, endMinutes);
                     if (clippedEnd <= clippedStart) return null;
-                    const top =
-                      (clippedStart / visibleMinutes) * containerHeight;
-                    const height = Math.max(
-                      ((clippedEnd - clippedStart) / visibleMinutes) *
-                        containerHeight,
-                      30
-                    );
+                    const top = (clippedStart / visibleMinutes) * containerHeight;
+                    const height = Math.max(((clippedEnd - clippedStart) / visibleMinutes) * containerHeight, 30);
+                    const timeRange = `${formatTime(start)} – ${formatTime(end)}`;
+                    const startLabel = `${formatTime(start)}`;
+                    const endLabel = `${formatTime(end)}`;
+                    const isCompact = height < 42;
+                    const isUltraCompact = height < 28;
+                    const isExpanded = height >= 96;
                     return (
                       <button
                         key={event.id}
@@ -523,18 +603,57 @@ export default function CalendarPage() {
                           openEditModal(event);
                         }}
                         className={cn(
-                          'absolute left-1 right-1 rounded-lg p-2 text-left text-xs transition border border-red-400 border-dashed bg-transparent',
-                          typeStyles[event.type]
+                          'absolute left-1 right-1 overflow-hidden rounded-md border border-dashed p-1.5 text-left text-xs transition',
+                          EVENT_STYLES[event.type].border,
+                          EVENT_STYLES[event.type].bg,
+                          'text-foreground'
                         )}
                         style={{ top, height }}
                       >
-                        <div className="flex items-center justify-between text-[9px] uppercase tracking-wide">
-                          <span>{typeLabels[event.type]}</span>
-                          <span>{`${formatTime(start)} · ${formatTime(end)}`}</span>
-                        </div>
-                        <div className="mt-1 text-sm font-semibold leading-tight line-clamp-2">
-                          {event.title}
-                        </div>
+                        {/* left accent bar for quick recognition */}
+                        <span
+                          className={cn('absolute inset-y-0 left-0 w-1 rounded-l-md', EVENT_STYLES[event.type].accent)}
+                          aria-hidden
+                        />
+                        {isUltraCompact ? (
+                          // Very small blocks: show time only
+                          <div className="flex h-full items-center justify-center text-[10px] leading-none text-foreground/80">
+                            <span>{timeRange}</span>
+                          </div>
+                        ) : isExpanded ? (
+                          // Tall blocks: distribute content vertically for better use of space
+                          <div className="flex h-full flex-col">
+                            <div className="flex items-center justify-between text-[10px] uppercase tracking-wide leading-none text-foreground/70">
+                              <span className="truncate pr-1">{typeLabels[event.type]}</span>
+                              <span className="shrink-0 text-foreground/60">{startLabel}</span>
+                            </div>
+                            <div className="flex-1 grid place-items-center px-1">
+                              <div className="w-full text-center text-[13px] font-semibold leading-snug break-words text-foreground">
+                                {event.title}
+                              </div>
+                            </div>
+                            <div className="mt-auto flex items-center justify-end text-[10px] leading-none text-foreground/60">
+                              <span>{endLabel}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          // Regular/compact blocks
+                          <>
+                            <div className="flex items-center justify-between text-[10px] uppercase tracking-wide leading-none text-foreground/70">
+                              <span className="truncate pr-1">{typeLabels[event.type]}</span>
+                              <span className="shrink-0 text-foreground/60">{timeRange}</span>
+                            </div>
+                            {!isCompact ? (
+                              <div className="mt-1 text-sm font-semibold leading-tight line-clamp-2 text-foreground">
+                                {event.title}
+                              </div>
+                            ) : (
+                              <div className="mt-0.5 text-[11px] font-medium leading-tight line-clamp-1 text-foreground">
+                                {event.title}
+                              </div>
+                            )}
+                          </>
+                        )}
                       </button>
                     );
                   })}
@@ -700,5 +819,13 @@ export default function CalendarPage() {
         </DialogContent>
       </Dialog>
     </main>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <React.Suspense fallback={<div className="px-4 py-3 text-sm text-muted-foreground">Loading…</div>}>
+      <CalendarPageInner />
+    </React.Suspense>
   );
 }

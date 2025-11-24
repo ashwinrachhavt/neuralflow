@@ -189,7 +189,7 @@ export function PomodoroCard() {
 
   const selectedTask =
     taskOptions.find((task) => task.id === state.activeTaskId) ?? null;
-  const selectedMeta = state.activeTaskId && data?.board?.tasks[state.activeTaskId] ? data.board.tasks[state.activeTaskId] : null;
+  const selectedMeta = state.activeTaskId && data?.board?.tasks[state.activeTaskId] ? (data.board.tasks[state.activeTaskId] as any) : null;
   const selectedColumnName = useMemo(() => {
     if (!selectedMeta || !data?.board) return null as string | null;
     const col = data.board.columns[selectedMeta.columnId];

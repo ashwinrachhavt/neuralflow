@@ -30,12 +30,19 @@ export async function updateDescription(taskId: string, descriptionMarkdown: str
 
 export async function updatePartial(
   taskId: string,
-  data: { title?: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'|null; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|null; tags?: string[] | null; estimatedPomodoros?: number | null },
+  data: { title?: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'; tags?: string[]; estimatedPomodoros?: number | null },
   userId: string,
 ) {
   const existing = await prisma.task.findFirst({ where: { id: taskId, board: { userId } }, select: { id: true } });
   if (!existing) throw new ForbiddenError();
-  return prisma.task.update({ where: { id: taskId }, data });
+  const updateData: Prisma.TaskUpdateInput = {};
+  if (typeof data.title === 'string') updateData.title = data.title;
+  if (typeof data.descriptionMarkdown === 'string') updateData.descriptionMarkdown = data.descriptionMarkdown;
+  if (data.priority !== undefined) updateData.priority = data.priority as any;
+  if (data.type !== undefined) updateData.type = data.type as any;
+  if (data.estimatedPomodoros !== undefined) updateData.estimatedPomodoros = data.estimatedPomodoros;
+  if (data.tags !== undefined) updateData.tags = { set: data.tags } as any;
+  return prisma.task.update({ where: { id: taskId }, data: updateData });
 }
 
 export async function moveToColumn(taskId: string, columnId: string, userId: string) {

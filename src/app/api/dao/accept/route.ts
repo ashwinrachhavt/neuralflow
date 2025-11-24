@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     if (!res.ok) return NextResponse.json({ message: 'Failed to resolve board' }, { status: 500 });
     board = res.value;
   }
-  const todoColumn = board.columns.find((c) => c.name.toLowerCase().includes("todo")) ?? board.columns[0];
+  const todoColumn = (board.columns as Array<{ id: string; name: string }>).find((c) => c.name.toLowerCase().includes("todo")) ?? board.columns[0];
 
   const data = tasks.map((t) => ({
     boardId: board.id,

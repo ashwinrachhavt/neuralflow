@@ -12,22 +12,22 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClientSingleton | undefined;
 };
 
-let prismaInstance = globalForPrisma.prisma;
+let prismaInstance: PrismaClientSingleton | undefined = globalForPrisma.prisma;
 
 if (!prismaInstance) {
   prismaInstance = prismaClientSingleton();
 } else if (process.env.NODE_ENV !== "production") {
   // Hot reload fix: check if new models are missing from the cached instance
-  if (!("reporterProfile" in prismaInstance)) {
+  if (!("reporterProfile" in (prismaInstance as any))) {
     console.warn("Detected stale Prisma client (missing reporterProfile). Recreating...");
     try {
-      prismaInstance.$disconnect();
+      (prismaInstance as PrismaClientSingleton).$disconnect?.();
     } catch (_e) { /* ignore */ }
     prismaInstance = prismaClientSingleton();
   }
 }
 
-export const prisma = prismaInstance;
+export const prisma = prismaInstance as PrismaClientSingleton;
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

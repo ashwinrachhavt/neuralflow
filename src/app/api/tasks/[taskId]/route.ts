@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   const descriptionMarkdown = typeof body?.descriptionMarkdown === 'string' ? body?.descriptionMarkdown : undefined;
   const priority = body?.priority as any;
   const type = body?.type as any;
-  const tags = Array.isArray(body?.tags) ? (body!.tags as string[]).map(String) : (body?.tags === null ? null : undefined);
+  const tags = Array.isArray(body?.tags) ? (body!.tags as string[]).map(String) : undefined;
   const estimatedPomodoros = typeof body?.estimatedPomodoros === 'number' ? Math.max(0, Math.floor(body.estimatedPomodoros!)) : (body?.estimatedPomodoros === null ? null : undefined);
   if (!title && typeof descriptionMarkdown !== 'string' && priority === undefined && type === undefined && tags === undefined && estimatedPomodoros === undefined) {
     return NextResponse.json({ message: "No fields to update" }, { status: 400 });

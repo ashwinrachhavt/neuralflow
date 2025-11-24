@@ -1,4 +1,4 @@
-import { streamText } from 'ai';
+import { stepCountIs, streamText } from 'ai';
 import { openai } from '@/lib/ai/client';
 import { getTools } from '@/lib/ai/tools';
 
@@ -11,8 +11,8 @@ export async function POST(req: Request) {
     model: openai('gpt-4-turbo'),
     messages,
     tools,
-    maxSteps: 5,
+    stopWhen: stepCountIs(5),
     system:
       'You are a concise productivity assistant. You help the user manage their board. Do not be chatty; just do the work.',
-  }).toDataStreamResponse();
+  }).toTextStreamResponse();
 }

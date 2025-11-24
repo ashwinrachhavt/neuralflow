@@ -114,7 +114,6 @@ export function TodosPane() {
     if (!trimmed) return;
     addMutation.mutate({ title: trimmed, type: newType, priority: newPriority } as any);
     setTitle('');
-    setNewTopics('');
   };
 
   return (

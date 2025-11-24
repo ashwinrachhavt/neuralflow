@@ -22,7 +22,7 @@ export async function POST(_req: Request, ctx: Ctx) {
 
   const boardColumns = task.board.columns.map((c) => ({ id: c.id, name: c.name }));
 
-  let result;
+  let result: { move: boolean; targetColumnId: string | null } | undefined;
   try {
     result = await autoMoveDecision({
       task: {
@@ -42,6 +42,9 @@ export async function POST(_req: Request, ctx: Ctx) {
     await logAgentRunFinish({ runId: run.id, status: 'error', error: String(e?.message ?? e), durationMs: Date.now() - startedAt, output: result });
   }
 
+  // Ensure result is always defined before further checks
+  result = result ?? ({ move: false, targetColumnId: null } as const);
+
   if (result.move && result.targetColumnId && result.targetColumnId !== task.columnId) {
     // Best-effort status sync based on target column name
     const target = boardColumns.find(c => c.id === result.targetColumnId);
@@ -56,10 +59,7 @@ export async function POST(_req: Request, ctx: Ctx) {
     await prisma.task.update({ where: { id: task.id }, data: { columnId: result.targetColumnId, aiState: 'COMPLETED', ...(statusUpdate ? { status: statusUpdate } : {}) } });
   }
 
-  if (!result) {
-    // Shouldn't happen but guard to avoid undefined response
-    result = { move: false, targetColumnId: null } as const;
-  }
+  // result is defined here by earlier guard
   await logAgentRunFinish({ runId: run.id, status: 'ok', durationMs: Date.now() - startedAt, output: result });
   return NextResponse.json(result);
 }

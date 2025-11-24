@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 function getMonthGrid(date = new Date()) {
   const start = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -22,6 +23,7 @@ function getMonthGrid(date = new Date()) {
 }
 
 export function MiniCalendar() {
+  const router = useRouter();
   const [cursor, setCursor] = React.useState(() => new Date());
   const [selected, setSelected] = React.useState<Date | null>(null);
   const cells = getMonthGrid(cursor);
@@ -38,6 +40,8 @@ export function MiniCalendar() {
   function onSelectDay(day: number) {
     const dt = new Date(cursor.getFullYear(), cursor.getMonth(), day);
     setSelected(dt);
+    const key = dt.toLocaleDateString('en-CA');
+    router.push(`/calendar?date=${key}`);
   }
   return (
     <Card>

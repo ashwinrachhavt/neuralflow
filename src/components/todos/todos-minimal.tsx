@@ -13,8 +13,8 @@ export function TodosMinimal() {
   const qc = useQueryClient();
   const { data, isLoading } = useMyTodos('TODO');
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
-  const aiPlanned = tasks.filter(t => !!t.aiPlanned);
-  const upcoming = tasks.filter(t => !t.aiPlanned);
+  const aiPlanned = tasks.filter((t: any) => !!t.aiPlanned);
+  const upcoming = tasks.filter((t: any) => !t.aiPlanned);
 
   const [quick, setQuick] = useState("");
   const [newType, setNewType] = useState<'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|undefined>(undefined);

@@ -299,7 +299,7 @@ function formatStatus(status: TaskStatus) {
     case "ARCHIVED":
       return "Archived";
     default:
-      return status.toLowerCase().replace(/_/g, " ");
+      return String(status as any).toLowerCase().replace(/_/g, " ");
   }
 }
 

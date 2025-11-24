@@ -11,7 +11,7 @@ export type BoardNormalized = {
     title: string;
     columnOrder: string[];
     columns: Record<string, { id: string; name: string; position: number; taskIds: string[] }>;
-    tasks: Record<string, { id: string; title: string; descriptionMarkdown: string | null; columnId: string }>;
+    tasks: Record<string, { id: string; title: string; descriptionMarkdown: string | null; columnId: string; priority?: 'LOW'|'MEDIUM'|'HIGH'|null; estimatedPomodoros?: number | null; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|null }>;
   };
 };
 
@@ -222,6 +222,7 @@ export type MyTodo = {
   estimatedPomodoros?: number | null;
   tags?: string[] | null;
   location?: string | null;
+  aiPlanned?: boolean | null;
 };
 export function useMyTodos(status: 'TODO' | 'BACKLOG' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED' = 'TODO') {
   return useQuery<{ tasks: MyTodo[] }>({ queryKey: ['my-todos', status], queryFn: () => getJSON(`/api/tasks/my?status=${status}`), staleTime: 5000 });

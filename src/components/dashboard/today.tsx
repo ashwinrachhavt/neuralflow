@@ -57,12 +57,21 @@ export function TodayMain({ filters }: { filters: { type?: 'deep'|'shallow'|'all
   const nextEvents = React.useMemo(() => {
     const ev = (data?.calendar?.events ?? []) as Array<{ id: string; title: string; startAt: string; endAt: string; type?: string } >;
     const meetings = (data?.calendar?.meetings ?? []) as Array<{ id: string; title: string; startAt: string; endAt: string }>;
-    const all = [
+    const combined = [
       ...ev.map(e => ({ id: e.id, title: e.title, startAt: new Date(e.startAt), endAt: new Date(e.endAt), kind: e.type || 'FOCUS' })),
       ...meetings.map(m => ({ id: m.id, title: m.title, startAt: new Date(m.startAt), endAt: new Date(m.endAt), kind: 'MEETING' })),
     ];
-    all.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
-    return all.slice(0, 3);
+    combined.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+    // Deduplicate by kind+id+start time to avoid duplicate keys and visuals
+    const seen = new Set<string>();
+    const unique: Array<typeof combined[number] & { key: string }> = [];
+    for (const item of combined) {
+      const key = `${item.kind}:${item.id}:${item.startAt.getTime()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push({ ...item, key });
+    }
+    return unique.slice(0, 3);
   }, [data]);
 
   return (
@@ -74,7 +83,7 @@ export function TodayMain({ filters }: { filters: { type?: 'deep'|'shallow'|'all
       </Section>
       <Section title="Next Events">
         {nextEvents.length ? nextEvents.map(e => (
-          <Card key={e.id}>
+          <Card key={(e as any).key ?? `${e.kind}:${e.id}:${e.startAt.getTime()}`}>
             <CardContent className="p-3 text-sm flex items-center justify-between">
               <span className="truncate">{e.title}</span>
               <span className="text-muted-foreground">

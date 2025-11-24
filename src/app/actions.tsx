@@ -52,7 +52,7 @@ export async function submitUserMessage(input: string): Promise<ClientMessage> {
         tools: {
             proposeTask: {
                 description: "Propose a new task to be added to the board",
-                parameters: z.object({
+                inputSchema: z.object({
                     title: z.string().describe("The title of the task"),
                     description: z.string().optional().describe("A brief description of the task"),
                     priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional().describe("The priority level"),
