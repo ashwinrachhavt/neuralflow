@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { useSearchParams } from 'next/navigation';
 
 const startHour = 0;
@@ -161,6 +162,7 @@ function CalendarPageInner() {
   );
   const [isSaving, setIsSaving] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
+  const [compact, setCompact] = React.useState(false);
 
   // Drag-to-create state
   const [dragging, setDragging] = React.useState(false);
@@ -506,8 +508,18 @@ function CalendarPageInner() {
             </span>
           </Button>
         ))}
+        <Button
+          size="sm"
+          variant={compact ? 'secondary' : 'outline'}
+          onClick={() => setCompact((v) => !v)}
+          className="ml-auto"
+          title="Toggle compact view"
+        >
+          {compact ? 'Compact: On' : 'Compact: Off'}
+        </Button>
       </section>
 
+      <Tooltip.Provider>
       <Card className="space-y-3">
         <CardHeader className="border-b border-border/60 bg-background/80">
           <div className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))]">
@@ -591,25 +603,31 @@ function CalendarPageInner() {
                     const timeRange = `${formatTime(start)} – ${formatTime(end)}`;
                     const startLabel = `${formatTime(start)}`;
                     const endLabel = `${formatTime(end)}`;
-                    const isCompact = height < 42;
-                    const isUltraCompact = height < 28;
+                    const isCompact = compact || height < 42;
+                    const isUltraCompact = compact ? height < 32 : height < 28;
+                    const headerSize = compact ? 'text-[9px]' : 'text-[10px]';
+                    const titleCompactSize = compact ? 'text-[10px]' : 'text-[11px]';
+                    const titleRegularSize = compact ? 'text-[12px]' : 'text-sm';
+                    const dateLabel = start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
                     const isExpanded = height >= 96;
                     return (
-                      <button
-                        key={event.id}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditModal(event);
-                        }}
-                        className={cn(
-                          'absolute left-1 right-1 overflow-hidden rounded-md border border-dashed p-1.5 text-left text-xs transition',
-                          EVENT_STYLES[event.type].border,
-                          EVENT_STYLES[event.type].bg,
-                          'text-foreground'
-                        )}
-                        style={{ top, height }}
-                      >
+                      <Tooltip.Root delayDuration={200} key={event.id}>
+                        <Tooltip.Trigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(event);
+                            }}
+                            className={cn(
+                              'absolute left-1 right-1 overflow-hidden rounded-md border border-dashed text-left text-xs transition',
+                              compact ? 'p-1' : 'p-1.5',
+                              EVENT_STYLES[event.type].border,
+                              EVENT_STYLES[event.type].bg,
+                              'text-foreground'
+                            )}
+                            style={{ top, height }}
+                          >
                         {/* left accent bar for quick recognition */}
                         <span
                           className={cn('absolute inset-y-0 left-0 w-1 rounded-l-md', EVENT_STYLES[event.type].accent)}
@@ -617,44 +635,55 @@ function CalendarPageInner() {
                         />
                         {isUltraCompact ? (
                           // Very small blocks: show time only
-                          <div className="flex h-full items-center justify-center text-[10px] leading-none text-foreground/80">
+                          <div className={cn('flex h-full items-center justify-center leading-none text-foreground/80', headerSize)}>
                             <span>{timeRange}</span>
                           </div>
                         ) : isExpanded ? (
                           // Tall blocks: distribute content vertically for better use of space
                           <div className="flex h-full flex-col">
-                            <div className="flex items-center justify-between text-[10px] uppercase tracking-wide leading-none text-foreground/70">
+                            <div className={cn('flex items-center justify-between uppercase tracking-wide leading-none text-foreground/70', headerSize)}>
                               <span className="truncate pr-1">{typeLabels[event.type]}</span>
                               <span className="shrink-0 text-foreground/60">{startLabel}</span>
                             </div>
                             <div className="flex-1 grid place-items-center px-1">
-                              <div className="w-full text-center text-[13px] font-semibold leading-snug break-words text-foreground">
+                              <div className={cn('w-full text-center font-semibold leading-snug break-words text-foreground', compact ? 'text-[12px]' : 'text-[13px]')}>
                                 {event.title}
                               </div>
                             </div>
-                            <div className="mt-auto flex items-center justify-end text-[10px] leading-none text-foreground/60">
+                            <div className={cn('mt-auto flex items-center justify-end leading-none text-foreground/60', headerSize)}>
                               <span>{endLabel}</span>
                             </div>
                           </div>
                         ) : (
                           // Regular/compact blocks
                           <>
-                            <div className="flex items-center justify-between text-[10px] uppercase tracking-wide leading-none text-foreground/70">
+                            <div className={cn('flex items-center justify-between uppercase tracking-wide leading-none text-foreground/70', headerSize)}>
                               <span className="truncate pr-1">{typeLabels[event.type]}</span>
                               <span className="shrink-0 text-foreground/60">{timeRange}</span>
                             </div>
                             {!isCompact ? (
-                              <div className="mt-1 text-sm font-semibold leading-tight line-clamp-2 text-foreground">
+                              <div className={cn('mt-1 font-semibold leading-tight line-clamp-2 text-foreground', titleRegularSize)}>
                                 {event.title}
                               </div>
                             ) : (
-                              <div className="mt-0.5 text-[11px] font-medium leading-tight line-clamp-1 text-foreground">
+                              <div className={cn('mt-0.5 font-medium leading-tight line-clamp-1 text-foreground', titleCompactSize)}>
                                 {event.title}
                               </div>
                             )}
                           </>
                         )}
-                      </button>
+                          </button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content side="top" align="center" className="z-50 rounded-md border border-border/60 bg-background/95 px-3 py-2 text-xs shadow-md">
+                          <div className="font-semibold text-foreground">{event.title}</div>
+                          <div className="text-foreground/70">{dateLabel} • {timeRange}</div>
+                          {event.location ? (
+                            <div className="text-foreground/70">📍 {event.location}</div>
+                          ) : null}
+                          <div className="mt-1 text-[10px] uppercase tracking-wide text-foreground/60">{typeLabels[event.type]}</div>
+                          <Tooltip.Arrow className="fill-background" />
+                        </Tooltip.Content>
+                      </Tooltip.Root>
                     );
                   })}
                 </div>
@@ -668,6 +697,7 @@ function CalendarPageInner() {
           ) : null}
         </CardContent>
       </Card>
+      </Tooltip.Provider>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent>
