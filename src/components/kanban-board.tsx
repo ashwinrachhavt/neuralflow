@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, Wand2, Tag, Lightbulb, FileText, GraduationCap, MoveRight } from "lucide-react";
+import { Plus, Wand2, Tag, FileText } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMoveCard, useCreateCard, useBoard } from "@/hooks/api";
@@ -69,6 +69,8 @@ type Task = {
   priority?: 'LOW'|'MEDIUM'|'HIGH'|null;
   type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|null;
   tags?: string[] | null;
+  topics?: string[] | null;
+  primaryTopic?: string | null;
   // AI suggestion fields (optional)
   aiSuggestedColumnId?: string | null;
   aiSuggestedPriority?: 'LOW' | 'MEDIUM' | 'HIGH' | null;
@@ -130,6 +132,8 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
         priority: (t as any).priority ?? null,
         type: (t as any).type ?? null,
         tags: (t as any).tags ?? null,
+        topics: (t as any).topics ?? null,
+        primaryTopic: (t as any).primaryTopic ?? null,
         aiSuggestedColumnId: (t as any).aiSuggestedColumnId ?? null,
         aiSuggestedPriority: (t as any).aiSuggestedPriority ?? null,
         aiSuggestedEstimateMin: (t as any).aiSuggestedEstimateMin ?? null,
@@ -195,41 +199,17 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   const classifyTask = useMutation({
     mutationFn: async (taskId: string) => {
       const res = await fetch(`/api/ai/cards/${taskId}/classify`, { method: "POST" });
-      if (!res.ok) throw new Error("Unable to classify task");
-      return (await res.json()) as { suggestedColumnId: string; suggestedPriority: 'LOW' | 'MEDIUM' | 'HIGH'; suggestedEstimateMin: number; confidence: number };
+      if (!res.ok) throw new Error("Unable to categorize task");
+      return (await res.json()) as { topics: string[]; primaryTopic: string; confidence: number };
     },
     onSuccess: async (data) => {
-      toast.success(`AI classified • ${Math.round((data.confidence ?? 0) * 100)}% confidence`, { description: `${data.suggestedPriority} • ≈ ${data.suggestedEstimateMin} min` });
+      toast.success(`Categorized • ${Math.round((data.confidence ?? 0) * 100)}% confidence`, { description: `${data.primaryTopic}${data.topics?.length ? ' • +' + (data.topics.length - 1) : ''}` });
       await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
     },
-    onError: () => toast.error("Failed to classify"),
+    onError: () => toast.error("Failed to categorize"),
   });
 
-  const suggestTask = useMutation({
-    mutationFn: async (taskId: string) => {
-      const res = await fetch(`/api/ai/cards/${taskId}/suggest`, { method: "POST" });
-      if (!res.ok) throw new Error("Unable to suggest next action");
-      return (await res.json()) as { nextAction: string; shouldMove: boolean; suggestedColumnId: string | null; confidence: number };
-    },
-    onSuccess: async (data) => {
-      toast.info(`Next: ${data.nextAction}`, { description: `${Math.round((data.confidence ?? 0) * 100)}% confidence${data.shouldMove ? ' • suggests move' : ''}` });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
-    },
-    onError: () => toast.error("Failed to suggest"),
-  });
-
-  const autoMove = useMutation({
-    mutationFn: async (taskId: string) => {
-      const res = await fetch(`/api/ai/cards/${taskId}/auto-move`, { method: "POST" });
-      if (!res.ok) throw new Error("Unable to auto-move");
-      return (await res.json()) as { move: boolean; targetColumnId: string | null };
-    },
-    onSuccess: async (data) => {
-      if (data.move && data.targetColumnId) toast.success("Card moved by AI"); else toast.message("No move suggested");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.board(boardId) });
-    },
-    onError: () => toast.error("Failed to auto-move"),
-  });
+  // Suggest/auto-move removed for initial rollout
 
   const summarizeNote = useMutation({
     mutationFn: async (taskId: string) => {
@@ -244,18 +224,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
     onError: () => toast.error("Failed to summarize note"),
   });
 
-  const quizFromNote = useMutation({
-    mutationFn: async (taskId: string) => {
-      const noteId = await ensureNote(taskId);
-      const res = await fetch(`/api/ai/notes/${noteId}/quiz`, { method: "POST" });
-      if (!res.ok) throw new Error("Unable to create quiz");
-      return (await res.json()) as { deckId: string; createdCards: number; quizId: string; questions: number };
-    },
-    onSuccess: (data) => {
-      toast.success(`Created ${data.createdCards} cards • ${data.questions} questions`, { description: `Deck ${data.deckId} • Quiz ${data.quizId}` });
-    },
-    onError: () => toast.error("Failed to create quiz"),
-  });
+  // Quiz removed for initial rollout
 
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over) return;
@@ -363,10 +332,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
                 tasks={board.tasks}
                 onEnrich={(taskId) => enrichTask.mutate(taskId)}
                 onSummary={(taskId) => summarizeNote.mutate(taskId)}
-                onQuiz={(taskId) => quizFromNote.mutate(taskId)}
                 onClassify={(taskId) => classifyTask.mutate(taskId)}
-                onSuggest={(taskId) => suggestTask.mutate(taskId)}
-                onAutoMove={(taskId) => autoMove.mutate(taskId)}
                 onOpen={(taskId) => {
                   try { router.push(`/boards/${boardId}/tasks/${taskId}`); } catch { setOpenTaskId(taskId); }
                 }}
@@ -411,10 +377,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
                     tasks={board.tasks}
                     onEnrich={(taskId) => enrichTask.mutate(taskId)}
                     onSummary={(taskId) => summarizeNote.mutate(taskId)}
-                    onQuiz={(taskId) => quizFromNote.mutate(taskId)}
                     onClassify={(taskId) => classifyTask.mutate(taskId)}
-                    onSuggest={(taskId) => suggestTask.mutate(taskId)}
-                    onAutoMove={(taskId) => autoMove.mutate(taskId)}
                     onOpen={(taskId) => {
                       try { router.push(`/boards/${boardId}/tasks/${taskId}`); } catch { setOpenTaskId(taskId); }
                     }}
@@ -458,17 +421,14 @@ type KanbanColumnProps = {
   
   onEnrich: (taskId: string) => void;
   onSummary: (taskId: string) => void;
-  onQuiz: (taskId: string) => void;
   onClassify: (taskId: string) => void;
-  onSuggest: (taskId: string) => void;
-  onAutoMove: (taskId: string) => void;
   onOpen: (taskId: string) => void;
   onCreateCard: (columnId: string, title: string, description?: string) => void;
   openTaskId?: string | null;
   onApplyMove?: (taskId: string, targetColumnId: string) => void;
 };
 
-function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard, onClassify, onSuggest, onAutoMove, onOpen, openTaskId, onApplyMove }: KanbanColumnProps) {
+function KanbanColumn({ column, tasks, onEnrich, onSummary, onCreateCard, onClassify, onOpen, openTaskId, onApplyMove }: KanbanColumnProps) {
   const [newOpen, setNewOpen] = useState(false);
   const isInProgress = (column.title ?? '').trim().toLowerCase() === 'in progress';
   const wipCount = column.taskIds.length;
@@ -502,7 +462,7 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onQuiz, onCreateCard
             <EmptyColumnHint columnTitle={column.title} />
           ) : (
             column.taskIds.map(taskId => (
-              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onQuiz={onQuiz} onClassify={onClassify} onSuggest={onSuggest} onAutoMove={onAutoMove} onOpen={onOpen} openTaskId={openTaskId} onApplyMove={onApplyMove} />
+              <SortableTask key={taskId} task={tasks[taskId]} columnId={column.id} onEnrich={onEnrich} onSummary={onSummary} onClassify={onClassify} onOpen={onOpen} openTaskId={openTaskId} onApplyMove={onApplyMove} />
             ))
           )}
         </ColumnSortableArea>
@@ -545,16 +505,13 @@ type SortableTaskProps = {
   columnId: string;
   onEnrich: (taskId: string) => void;
   onSummary: (taskId: string) => void;
-  onQuiz: (taskId: string) => void;
   onClassify: (taskId: string) => void;
-  onSuggest: (taskId: string) => void;
-  onAutoMove: (taskId: string) => void;
   onOpen: (taskId: string) => void;
   openTaskId?: string | null;
   onApplyMove?: (taskId: string, targetColumnId: string) => void;
 };
 
-function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify, onSuggest, onAutoMove, onOpen, openTaskId, onApplyMove }: SortableTaskProps) {
+function SortableTask({ task, columnId, onEnrich, onSummary, onClassify, onOpen, openTaskId, onApplyMove: _onApplyMove }: SortableTaskProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: task.id,
@@ -594,56 +551,32 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onQuiz, onClassify,
           <ActionButton title="AI: Enrich" onClick={(e) => { e.stopPropagation(); onEnrich(task.id); }}>
             <Wand2 className="size-4" />
           </ActionButton>
-          <ActionButton title="AI: Classify" onClick={(e) => { e.stopPropagation(); onClassify(task.id); }}>
+          <ActionButton title="AI: Categorize" onClick={(e) => { e.stopPropagation(); onClassify(task.id); }}>
             <Tag className="size-4" />
-          </ActionButton>
-          <ActionButton title="AI: Suggest next action" onClick={(e) => { e.stopPropagation(); onSuggest(task.id); }}>
-            <Lightbulb className="size-4" />
           </ActionButton>
           <ActionButton title="AI: Summary" onClick={(e) => { e.stopPropagation(); onSummary(task.id); }}>
             <FileText className="size-4" />
           </ActionButton>
-          <ActionButton title="AI: Quiz" onClick={(e) => { e.stopPropagation(); onQuiz(task.id); }}>
-            <GraduationCap className="size-4" />
-          </ActionButton>
-          <ActionButton title="AI: Auto-move" onClick={(e) => { e.stopPropagation(); onAutoMove(task.id); }}>
-            <MoveRight className="size-4" />
-          </ActionButton>
+          {/* Quiz, Suggest, Auto-move removed */}
         </div>
       </div>
-      {task.aiNextAction ? (
-        <p className="mt-2 text-xs text-primary/90 break-words leading-snug line-clamp-1">Next: {task.aiNextAction}</p>
-      ) : null}
+      
       {task.description ? (
         <p className="mt-2 text-xs text-muted-foreground leading-relaxed break-words whitespace-pre-wrap line-clamp-3">
           {task.description}
         </p>
       ) : null}
-      {(task.aiSuggestedPriority || task.aiSuggestedEstimateMin || task.aiSuggestedColumnId) ? (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
-          {task.aiSuggestedPriority ? (
-            <span className="rounded px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-300">AI: {task.aiSuggestedPriority}</span>
+      {task.primaryTopic || (task.topics && task.topics.length) ? (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+          {task.primaryTopic ? (
+            <span className="rounded px-2 py-0.5 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300">{task.primaryTopic}</span>
           ) : null}
-          {task.aiSuggestedEstimateMin ? (
-            <span className="rounded bg-muted px-2 py-0.5 text-foreground/80">≈ {task.aiSuggestedEstimateMin}m</span>
-          ) : null}
-          {task.aiSuggestedColumnId && task.aiSuggestedColumnId !== columnId ? (
-            <>
-              <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">→ suggested move</span>
-              {onApplyMove ? (
-                <button
-                  type="button"
-                  className="rounded bg-emerald-600/10 px-2 py-0.5 text-emerald-700 hover:bg-emerald-600/20 dark:text-emerald-300"
-                  onClick={(e) => { e.stopPropagation(); onApplyMove(task.id, task.aiSuggestedColumnId!); }}
-                >Apply</button>
-              ) : null}
-            </>
-          ) : null}
-          {typeof task.aiConfidence === 'number' ? (
-            <span className="rounded bg-indigo-500/10 px-2 py-0.5 text-indigo-700 dark:text-indigo-300">{Math.round(task.aiConfidence * 100)}%</span>
-          ) : null}
+          {(task.topics ?? []).filter(t => t !== task.primaryTopic).slice(0, 2).map((t) => (
+            <span key={t} className="rounded px-2 py-0.5 bg-muted text-foreground/80">{t}</span>
+          ))}
         </div>
       ) : null}
+      {/* AI chips removed for initial rollout */}
     </motion.div>
   );
 }

@@ -23,35 +23,21 @@ export async function POST(_req: Request, ctx: Ctx) {
   });
   if (!task) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-  // Prepare board columns context for the model
-  const boardColumns = task.board.columns.map((c) => ({ id: c.id, name: c.name }));
-
-  // Call classifier agent
+  // Call classifier agent (topics only)
   let result;
   try {
     result = await classifyTask({
       title: task.title,
       description: task.descriptionMarkdown || null,
-      boardId: task.boardId,
-      columnId: task.columnId,
-      userId,
-      boardColumns,
     });
   } catch (e: any) {
-    // Graceful fallback if model call fails (e.g., missing API key or network)
-    const fallback = {
-      suggestedColumnId: task.columnId,
-      suggestedPriority: task.priority,
-      suggestedEstimateMin: Math.max(15, (task.estimatedPomodoros ?? 1) * 25),
-      suggestedLabels: [],
-      confidence: 0.3,
-    } as const;
+    // Graceful fallback if model call fails
+    const fallback = { topics: ['General'], primaryTopic: 'General', confidence: 0.3 } as const;
     await prisma.task.update({
       where: { id: task.id },
       data: {
-        aiSuggestedColumnId: fallback.suggestedColumnId,
-        aiSuggestedPriority: fallback.suggestedPriority,
-        aiSuggestedEstimateMin: fallback.suggestedEstimateMin,
+        topics: fallback.topics,
+        primaryTopic: fallback.primaryTopic,
         aiState: "CLASSIFIED",
         aiConfidence: fallback.confidence,
       },
@@ -60,21 +46,20 @@ export async function POST(_req: Request, ctx: Ctx) {
     return NextResponse.json(fallback);
   }
 
-  // Persist classification
-  await prisma.task.update({
-    where: { id: task.id },
-    data: {
-      aiSuggestedColumnId: result.suggestedColumnId,
-      aiSuggestedPriority: result.suggestedPriority as any,
-      aiSuggestedEstimateMin: result.suggestedEstimateMin,
-      // Derive pomodoros from minutes if not set
-      estimatedPomodoros:
-        task.estimatedPomodoros ?? Math.max(1, Math.ceil(result.suggestedEstimateMin / 25)),
-      aiState: "CLASSIFIED",
-      aiConfidence: result.confidence,
-      tags: task.tags?.length ? task.tags : result.suggestedLabels,
-    },
-  });
+  // Persist topics only with graceful fallback if columns don't exist yet
+  const baseData: any = {
+    topics: (result as any).topics,
+    primaryTopic: (result as any).primaryTopic,
+    aiState: 'CLASSIFIED',
+    aiConfidence: result.confidence,
+  };
+
+  try {
+    await prisma.task.update({ where: { id: task.id }, data: baseData });
+  } catch (e: any) {
+    const msg = String(e?.message || "");
+    if (!/Unknown argument `topics`|Unknown argument `primaryTopic`/i.test(msg)) throw e;
+  }
 
   // Ensure we have at-least placeholder embeddings for this task
   await updateTaskEmbeddings({

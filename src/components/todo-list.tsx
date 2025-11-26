@@ -58,18 +58,7 @@ export function TodoList() {
     onError: () => toast.error("Failed to summarize note"),
   });
 
-  const quizFromNote = useMutation({
-    mutationFn: async (taskId: string) => {
-      const noteId = await ensureNote(taskId);
-      const res = await fetch(`/api/ai/notes/${noteId}/quiz`, { method: "POST" });
-      if (!res.ok) throw new Error("Unable to create quiz");
-      return (await res.json()) as { deckId: string; createdCards: number; quizId: string; questions: number };
-    },
-    onSuccess: (data) => {
-      toast.success(`Created ${data.createdCards} cards • ${data.questions} questions`, { description: `Deck ${data.deckId} • Quiz ${data.quizId}` });
-    },
-    onError: () => toast.error("Failed to create quiz"),
-  });
+  // Quiz generation removed for initial rollout
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -178,21 +167,7 @@ export function TodoList() {
                         )}
                         Summary
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => quizFromNote.mutate(todo.id)}
-                        disabled={quizFromNote.isPending}
-                        className="gap-2"
-                        title="AI: Create study material"
-                      >
-                        {quizFromNote.isPending ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <span className="size-4">🧠</span>
-                        )}
-                        Quiz
-                      </Button>
+                      
                       <Button
                         size="icon"
                         variant="destructive"

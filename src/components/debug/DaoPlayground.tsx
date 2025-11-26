@@ -169,6 +169,26 @@ export function DaoPlayground() {
 
   return (
     <div className="space-y-8">
+      <div className="rounded-md border border-border/70 bg-card/70 p-4 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground">Agents Overview</p>
+        <div className="mt-2 grid gap-2 md:grid-cols-2">
+          <div>
+            <p className="text-[11px] uppercase tracking-wider">Available</p>
+            <ul className="mt-1 list-disc pl-5">
+              <li>POST /api/ai/cards/[taskId]/classify – Categorize task topics</li>
+              <li>POST /api/ai/cards/[taskId]/enrich – Enrich description + subtasks</li>
+              <li>POST /api/ai/notes/[noteId]/summary – Summarize note</li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wider">Temporarily disabled for rollout</p>
+            <ul className="mt-1 list-disc pl-5">
+              <li>Plan, Todo Agent, Orchestrator, AI Report</li>
+              <li>Suggest next action, Auto-move, Quiz, Editor Generate</li>
+            </ul>
+          </div>
+        </div>
+      </div>
       <GemRewardPopup
         slug={rewardSlug}
         flavorText={rewardFlavor}

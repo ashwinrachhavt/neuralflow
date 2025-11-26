@@ -36,6 +36,8 @@ export async function GET(_req: Request, { params }: Ctx) {
     aiNextAction: (t as any).aiNextAction ?? null,
     aiState: (t as any).aiState ?? null,
     aiConfidence: (t as any).aiConfidence ?? null,
+    topics: (t as any).topics ?? null,
+    primaryTopic: (t as any).primaryTopic ?? null,
   }));
 
   const columnOrder = board.columns.map(c => c.id);

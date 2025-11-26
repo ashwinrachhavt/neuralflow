@@ -393,9 +393,10 @@ function CalendarPageInner() {
         ? `/api/calendar/events/${selectedEvent.id}`
         : '/api/calendar/events';
       const method = selectedEvent ? 'PUT' : 'POST';
-      // optimistic update
+      // optimistic update with temporary id for create; will be reconciled after POST
+      const tempId = selectedEvent?.id ?? Math.random().toString();
       const optimisticEvent = {
-        id: selectedEvent?.id ?? Math.random().toString(),
+        id: tempId,
         ...payload,
       };
       if (selectedEvent) {
@@ -413,6 +414,14 @@ function CalendarPageInner() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Unable to save event');
+      // On create, reconcile temp id with real id from server
+      if (method === 'POST') {
+        const data = await res.json().catch(() => null);
+        const realId = (data && (data.id as string)) || null;
+        if (realId) {
+          setEvents(prev => prev.map(ev => ev.id === tempId ? { ...ev, id: realId } : ev));
+        }
+      }
       /* keep modal open for auto-refresh */
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Failed to save event');

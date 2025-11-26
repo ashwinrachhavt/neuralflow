@@ -9,11 +9,14 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+    if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Not available in production' }, { status: 404 });
+    }
     try {
         const body = await req.json();
         const { taskId, taskTitle, taskDescription } = BodySchema.parse(body);
 
-        // Mock context for the agent
+        // Mock context for the agent (debug only)
         const ctx: any = {
             userId: "debug-user",
             generatedTasks: taskId ? [] : [{

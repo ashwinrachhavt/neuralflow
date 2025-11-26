@@ -22,7 +22,7 @@ export function CardContextSidebar({ taskId, relatedItems, className }: CardCont
     [
       { id: `${taskId}-note`, title: "Research notes", type: "note", meta: "Updated 2h ago" },
       { id: `${taskId}-tasks`, title: "Prep system design prompts", type: "task", meta: "3 subtasks" },
-      { id: `${taskId}-quiz`, title: "Flashcards: Kanban", type: "quiz", meta: "12 cards" },
+      // Quiz removed in initial rollout
       { id: `${taskId}-link`, title: "Product brief", type: "link", meta: "docs.notions.so" },
     ];
 

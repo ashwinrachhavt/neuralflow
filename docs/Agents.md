@@ -38,32 +38,33 @@ Code map
 
 ## 2) Agent inventory
 
-### 2.1 Brain Dump → Todos
+### 2.1 Initial rollout scope
 
-- Endpoint: `POST /api/ai/todo-agent`
-- File: `src/lib/ai/agents/todoAgent.ts`
-- Input: `{ brainDumpText?: string; quickTodoText?: string }`
-- Output: `{ tasks: [{ title, description?, estimatePomodoros?, priority, tags[] }], rationale? }`
-- Failure: robust JSON extraction; falls back to empty tasks to avoid breaking flows.
-- Typical use: paste a messy plan → show a preview list → create tasks on accept.
-
-### 2.2 Plan (Describe → Structured plan)
-
-- Endpoint: `POST /api/ai/plan`
-- File: `src/app/api/ai/plan/route.ts` (schema and system prompt inline)
-- Schema (Zod): `{ rationale: string, tasks: [{ title, description?, estimateMinutes, priority, kind (DEEP|SHALLOW) }] }`
-- Model: `gpt-4o-mini` via Vercel AI SDK `streamObject`.
-- Behavior: streams JSON; client renders incrementally.
+We keep the AI surface minimal for snappy UX:
+- Categorize (topics only)
+- Enrich
+- Summary
 
 ### 2.3 Card micro‑actions
 
 These operate on a specific Task and persist AI results back to the Task.
 
-- Classify
+- Categorize (topics only)
   - Endpoint: `POST /api/ai/cards/[taskId]/classify`
   - Agent: `src/lib/ai/agents/classifierAgent.ts`
-  - Output: `{ suggestedColumnId, suggestedPriority, suggestedEstimateMin, suggestedLabels[], confidence }`
-  - Side‑effects: updates `aiSuggested*`, `estimatedPomodoros` (derived), `aiState=CLASSIFIED`, ensures embeddings.
+  - Output: `{ topics[], primaryTopic, confidence }`
+  - Side‑effects: updates `topics[]`, `primaryTopic`, `aiState=CLASSIFIED`.
+
+#### Task Topics (for visualization & reporting)
+
+- Canonical list lives in `src/lib/ai/taxonomy.ts` (`TASK_TOPICS`). Classifier chooses up to 3 topics and one `primaryTopic`.
+- Topics: Planning & Strategy, Product Management, Coding & Development, DevOps & Infra, Bugfix & Debugging, QA & Testing, Design & UX, Writing & Documentation, Data & Analytics, Research & Learning, Communication & Meetings, Customer Support, Sales & Outreach, Marketing & Growth, Finance & Admin, Legal & Compliance, Operations & Maintenance, Security & Privacy, Personal & Wellness, Home & Errands, Career & Growth, General.
+- Schema fields persisted on Task: `topics: string[]`, `primaryTopic?: string`.
+
+Smart strategy to keep this useful (not busywork):
+- Use topics only where they unlock value: weekly report breakdowns, trend charts, focus/energy alignment, and "what’s creeping in" alerts (e.g., too many Admin tasks).
+- Keep it subtle in the UI (chips/filters). Avoid mandatory inputs—topics are auto‑inferred and editable.
+- Drive nudges: “You’ve done lots of Ops this week; want to schedule one deep Coding block tomorrow?”
 
 - Enrich
   - Endpoint: `POST /api/ai/cards/[taskId]/enrich`
@@ -71,16 +72,12 @@ These operate on a specific Task and persist AI results back to the Task.
   - Output: `{ descriptionMarkdown, subtasks: [{ title, estimateMin }], kind, confidence }`
   - Side‑effects: updates description, `aiSubtasks`, `aiSuggestedEstimateMin`, `estimatedPomodoros` (derived), `aiState=ENRICHED`.
 
-- Suggest next action
-  - Endpoint: `POST /api/ai/cards/[taskId]/suggest`
-  - Agent: `src/lib/ai/agents/suggestorAgent.ts`
-  - Output: `{ nextAction, shouldMove, suggestedColumnId?, confidence }`
-  - Side‑effects: updates `aiNextAction`, `aiSuggestedColumnId?`, `aiState=SUGGESTED`.
+  (Suggest/auto‑move disabled.)
 
 ### 2.4 Notes helpers (learning)
 
-- Summary: `POST /api/ai/notes/[noteId]/summary` – stub summarizer, returns `{ summary, bullets[] }`.
-- Quiz: `POST /api/ai/notes/[noteId]/quiz` – stub; intended to create deck/cards and return a quiz outline.
+- Summary: `POST /api/ai/notes/[noteId]/summary` – generates real summaries and bullets via the AI model.
+  (Quiz removed.)
 
 ### 2.5 Gamification lore (optional)
 

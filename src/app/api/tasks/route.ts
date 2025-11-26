@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getUserOr401, readJson } from '@/lib/api-helpers';
 import { prisma } from '@/lib/prisma';
+import { classifyTask } from '@/lib/ai/agents/classifierAgent';
 
 export async function POST(req: Request) {
   const user = await getUserOr401();
@@ -36,5 +37,22 @@ export async function POST(req: Request) {
       status: 'TODO',
     },
   });
+  // Auto-classify newly created task
+  try {
+    const result = await classifyTask({ title, description: descriptionMarkdown || null });
+    const baseData: any = {
+      topics: (result as any).topics,
+      primaryTopic: (result as any).primaryTopic,
+      aiState: 'CLASSIFIED',
+      aiConfidence: result.confidence,
+    };
+    try {
+      await prisma.task.update({ where: { id: task.id }, data: baseData });
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (!/Unknown argument `topics`|Unknown argument `primaryTopic`/i.test(msg)) throw e;
+    }
+  } catch (_e) { /* ignore */ }
+
   return NextResponse.json({ id: task.id });
 }

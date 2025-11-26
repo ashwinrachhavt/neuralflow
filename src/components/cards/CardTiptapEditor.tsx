@@ -88,7 +88,7 @@ export function CardTiptapEditor({ taskId: _taskId, initialContent, noteId, clas
     },
     editorProps: {
       attributes: {
-        class: "prose prose-slate dark:prose-invert max-w-none min-h-[320px] focus:outline-none",
+        class: "prose-lg md:prose-xl prose-slate dark:prose-invert max-w-none min-h-[480px] leading-7 focus:outline-none",
       },
     },
     editable: !!noteId,

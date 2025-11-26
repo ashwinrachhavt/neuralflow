@@ -40,6 +40,8 @@ export async function GET(_req: NextRequest, context: RouteContext) {
       priority: task.priority,
       estimatedPomodoros: task.estimatedPomodoros,
       dueDate: task.dueDate,
+      topics: (task as any).topics ?? [],
+      primaryTopic: (task as any).primaryTopic ?? null,
       column: task.column
         ? { id: task.column.id, title: task.column.name }
         : null,

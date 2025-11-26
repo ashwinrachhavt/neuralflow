@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  serena:
+    image: ghcr.io/oraios/serena:latest
+    container_name: serena-mcp
+    restart: unless-stopped
+    # Expose Serena HTTP/SSE + dashboard
+    ports:
+      - "24282:24282"
+    environment:
+      # Optional: select context for fewer tools when pairing with IDEs
+      - SERENA_CONTEXT=codex
+    command: ["serena", "start-mcp-server", "--transport", "http", "--port", "24282", "--context", "${SERENA_CONTEXT:-codex}"]
+    volumes:
+      # Mount the current project into the workspace for Serena's tools
+      - ./:/workspaces/projects/current
+    working_dir: /workspaces/projects/current
+

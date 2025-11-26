@@ -55,6 +55,7 @@ export const config = {
     "/profile/:path*",
     "/pomodoro/:path*",
     "/gamify/:path*",
+    // API and TRPC routes need Clerk middleware for auth() to work.
     "/(api|trpc)(.*)",
   ],
 };

@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 // import { CardDescriptionEditor } from "@/components/cards/CardDescriptionEditor";
 import { CardTiptapEditor } from "./CardTiptapEditor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CardChat } from "./CardChat";
+import { CardChainOfThought } from "./CardChainOfThought";
+import { ProjectSwitcher } from "@/components/projects/ProjectSwitcher";
 
 type Props = {
   taskId: string;
@@ -78,11 +81,19 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
                   {/* Header Actions */}
                   <div className="flex items-center justify-between border-b px-6 py-3">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1 hover:text-foreground cursor-pointer transition-colors">
-                        {data?.task.project?.title ?? "No Project"}
-                        <span className="text-muted-foreground/40">/</span>
-                        {data?.task.column?.title ?? "No Status"}
-                      </span>
+                      <ProjectSwitcher taskId={taskId} currentProject={data?.task.project ?? null} />
+                      <span className="text-muted-foreground/40">/</span>
+                      <span className="hover:text-foreground cursor-default transition-colors">{data?.task.column?.title ?? "No Status"}</span>
+                      {data?.task.primaryTopic || (data?.task.topics && data.task.topics.length) ? (
+                        <span className="ml-2 flex items-center gap-1">
+                          {data?.task.primaryTopic ? (
+                            <span className="rounded px-2 py-0.5 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300">{data.task.primaryTopic}</span>
+                          ) : null}
+                          {(data?.task.topics ?? []).filter(t => t !== data?.task.primaryTopic).slice(0, 1).map(t => (
+                            <span key={t} className="rounded px-2 py-0.5 bg-muted text-foreground/80">{t}</span>
+                          ))}
+                        </span>
+                      ) : null}
                     </div>
                     <div className="flex items-center gap-1">
                       <button className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors" onClick={() => onOpenFull?.(taskId)} title="Open as page">
@@ -199,27 +210,21 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
 
                             <div className="h-px w-full bg-border/40 mb-8" />
 
-                            {/* Comments Section */}
-                            <div className="space-y-6 pb-12">
-                              <h3 className="text-sm font-semibold text-foreground">Comments</h3>
-                              <div className="flex gap-3">
-                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                                  ME
-                                </div>
-                                <div className="flex-1">
-                                  <div className="relative">
-                                    <textarea
-                                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-foreground focus:outline-none min-h-[80px] resize-none"
-                                      placeholder="Add a comment..."
-                                    />
-                                    <div className="absolute bottom-2 right-2 flex items-center gap-2">
-                                      <button className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
-                                        <Sparkles className="size-3.5" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
+                            {/* Assistant Chat */}
+                            <div className="space-y-4 pb-8">
+                              <h3 className="text-sm font-semibold text-foreground">Assistant</h3>
+                              <CardChat
+                                taskId={taskId}
+                                cardContext={{
+                                  title: data.task.title,
+                                  descriptionMarkdown: data.task.descriptionMarkdown,
+                                  primaryTopic: (data.task as any).primaryTopic ?? null,
+                                  topics: (data.task as any).topics ?? [],
+                                  projectTitle: data.task.project?.title ?? null,
+                                  columnTitle: data.task.column?.title ?? null,
+                                }}
+                              />
+                              <CardChainOfThought taskId={taskId} />
                             </div>
                           </>
                         )}

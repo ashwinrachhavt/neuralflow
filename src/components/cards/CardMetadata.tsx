@@ -22,6 +22,8 @@ export type CardMetadataProps = {
     column?: { id: string; title: string } | null;
     project?: { id: string; title: string } | null;
     location?: string | null;
+    topics?: string[] | null;
+    primaryTopic?: string | null;
   };
   onPriorityChange?: (priority: TaskPriority) => void;
   className?: string;
@@ -82,6 +84,17 @@ export function CardMetadata({ task, onPriorityChange, className }: CardMetadata
             <Tag className="size-4" />
             {task.project.title}
           </Button>
+        ) : null}
+
+        {task.primaryTopic || (task.topics && task.topics.length) ? (
+          <div className="ml-1 flex items-center gap-1">
+            {task.primaryTopic ? (
+              <span className="rounded px-2 py-0.5 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-[10px]">{task.primaryTopic}</span>
+            ) : null}
+            {(task.topics ?? []).filter(t => t !== task.primaryTopic).slice(0, 2).map((t) => (
+              <span key={t} className="rounded px-2 py-0.5 bg-muted text-foreground/80 text-[10px]">{t}</span>
+            ))}
+          </div>
         ) : null}
       </div>
 

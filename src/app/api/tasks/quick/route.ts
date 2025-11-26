@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getUserOr401, readJson } from '@/lib/api-helpers';
 import { getOrCreateDefaultBoard } from '@/server/db/boards';
 import { prisma } from '@/lib/prisma';
+import { classifyTask } from '@/lib/ai/agents/classifierAgent';
 
 type Body = { title?: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE' };
 
@@ -32,5 +33,25 @@ export async function POST(req: Request) {
     },
     select: { id: true },
   });
+  // Auto-classify newly created task (best-effort, non-blocking on schema differences)
+  try {
+    const result = await classifyTask({
+      title,
+      description: descriptionMarkdown || null,
+    });
+    const baseData: any = {
+      topics: (result as any).topics,
+      primaryTopic: (result as any).primaryTopic,
+      aiState: 'CLASSIFIED',
+      aiConfidence: result.confidence,
+    };
+    try {
+      await prisma.task.update({ where: { id: task.id }, data: baseData });
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (!/Unknown argument `topics`|Unknown argument `primaryTopic`/i.test(msg)) throw e;
+    }
+  } catch (_e) { /* ignore */ }
+
   return NextResponse.json({ id: task.id });
 }

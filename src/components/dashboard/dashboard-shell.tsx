@@ -6,10 +6,11 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { RightRail } from "@/components/layout/right-rail";
 import { MiniCalendar } from "@/components/mini-calendar";
 import { QuickFilters, type FilterState } from "@/components/quick-filters";
+import { SmartSuggestions } from "@/components/suggestions/SmartSuggestions";
 import { TodayMain } from "@/components/dashboard/today";
 
 export function DashboardShell() {
-  const [filters, setFilters] = React.useState<FilterState>({ type: "all", priority: "all" });
+  const [filters, setFilters] = React.useState<FilterState>({ type: "all", priority: "all", topic: 'all' });
   return (
     <AppShell
       sidebar={<Sidebar />}
@@ -17,6 +18,7 @@ export function DashboardShell() {
         <RightRail>
           <MiniCalendar />
           <QuickFilters value={filters} onChange={setFilters} />
+          <SmartSuggestions />
         </RightRail>
       }
     >

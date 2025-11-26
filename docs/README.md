@@ -5,6 +5,7 @@ Start here for a guided map of the docs and code:
 - Product Requirements (MVP): `docs/PRD.md`
 - Technical Design (MVP): `docs/TechSpec.md`
 - AI Agents Guide: `docs/Agents.md`
+- Serena MCP integration: `docs/Serena.md`
 - Coding Agent Philosophy: `docs/CodingAgentPhilosophy.md`
 
 Related code

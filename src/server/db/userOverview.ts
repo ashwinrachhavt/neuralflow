@@ -42,7 +42,7 @@ export async function getUserOverview(userId: string) {
         },
         tasks: {
           orderBy: { createdAt: 'desc' },
-          take: 200,
+          take: 100,
           select: {
             id: true,
             title: true,
@@ -78,7 +78,7 @@ export async function getUserOverview(userId: string) {
       },
     }),
     prisma.calendarEvent.findMany({
-      where: { userId, startAt: { gte: now, lt: inSevenDays } },
+      where: { userId, startAt: { gte: now, lt: inSevenDays }, type: 'MEETING' },
       orderBy: { startAt: 'asc' },
       select: {
         id: true,
@@ -121,7 +121,7 @@ export async function getUserOverview(userId: string) {
     prisma.userStone.findMany({
       where: { userId },
       orderBy: { earnedAt: 'desc' },
-      take: 100,
+      take: 50,
       select: {
         id: true,
         stoneId: true,
@@ -137,7 +137,7 @@ export async function getUserOverview(userId: string) {
     prisma.userStoneProgress.findMany({
       where: { userId },
       orderBy: { updatedAt: 'desc' },
-      take: 100,
+      take: 50,
       select: {
         id: true,
         stoneId: true,

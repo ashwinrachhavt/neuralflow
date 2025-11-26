@@ -25,6 +25,8 @@ export type CardDetail = {
     dueDate?: string | null;
     column?: { id: string; title: string } | null;
     tags?: string[];
+    topics?: string[] | null;
+    primaryTopic?: string | null;
     project?: { id: string; title: string } | null;
     location?: string | null;
     aiSuggestedColumnId?: string | null;
@@ -65,6 +67,12 @@ export function useCards(boardId: string) {
 
 export function useCard(cardId: string) {
   return useQuery<CardDetail>({ queryKey: queryKeys.card(cardId), queryFn: () => getJSON(`/api/cards/${cardId}`), staleTime: 5000 });
+}
+
+// Projects
+export type ProjectSummary = { id: string; title: string };
+export function useProjects() {
+  return useQuery<ProjectSummary[]>({ queryKey: queryKeys.projects(), queryFn: () => getJSON('/api/projects'), staleTime: 10_000 });
 }
 
 // Notes APIs removed
@@ -209,6 +217,27 @@ export type UserOverview = {
 };
 export function useMyOverview() {
   return useQuery<UserOverview>({ queryKey: ['me','overview'], queryFn: () => getJSON('/api/me/overview'), staleTime: 5000 });
+}
+
+// Split ME endpoints (lightweight, parallelizable)
+export type BoardsSlim = {
+  boards: {
+    id: string;
+    title: string;
+    columns: { id: string; name: string; position: number }[];
+    tasks: { id: string; title: string; descriptionMarkdown: string | null; status: string; priority: 'LOW'|'MEDIUM'|'HIGH'|null; type?: string | null; columnId: string; projectId: string | null; docId: string | null; tags?: string[]; topics?: string[] | null; primaryTopic?: string | null; estimatedPomodoros?: number | null; dueDate?: string | null; createdAt: string; updatedAt: string }[];
+  }[];
+};
+export function useMyBoardsSlim() {
+  return useQuery<BoardsSlim>({ queryKey: ['me','boards'], queryFn: () => getJSON('/api/me/boards'), staleTime: 5_000 });
+}
+
+export type CalendarSlim = {
+  events: { id: string; title: string; type?: string; startAt: string; endAt: string; descriptionMarkdown?: string | null; relatedTaskId?: string | null; location?: string | null; tags?: string[] }[];
+  meetings: { id: string; title: string; startAt: string; endAt: string; descriptionMarkdown?: string | null }[];
+};
+export function useMyCalendar() {
+  return useQuery<CalendarSlim>({ queryKey: ['me','calendar'], queryFn: () => getJSON('/api/me/calendar'), staleTime: 30_000 });
 }
 // All-user todos (across boards)
 export type MyTodo = {

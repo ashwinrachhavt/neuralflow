@@ -144,8 +144,8 @@ Out of scope (present as stubs or later): Notion sync, weekly performance agent,
 
 ### 4.4 Notes (learning helpers)
 
-- Summary: `POST /api/ai/notes/[noteId]/summary` (stubbed summarizer for now).
-- Quiz: `POST /api/ai/notes/[noteId]/quiz` (stubbed; intended to create deck/cards and a quiz).
+- Summary: `POST /api/ai/notes/[noteId]/summary` (real summarizer; AI-generated summary + bullets).
+- Quiz: `POST /api/ai/notes/[noteId]/quiz` (creates deck + quiz and generates questions).
 
 ---
 

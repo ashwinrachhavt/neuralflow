@@ -19,7 +19,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed.ts",
-    "seed:ashwin": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed-ashwin.ts"
+    "seed:ashwin": "ts-node --transpile-only --project tsconfig.prisma-seed.json prisma/seed-ashwin.ts",
+    "serena:mcp:http": "uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context codex --transport http",
+    "serena:mcp:stdio": "uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context codex"
   },
   "pnpm": {
     "overrides": {

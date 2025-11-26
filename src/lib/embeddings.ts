@@ -14,6 +14,8 @@ export async function updateNoteEmbeddings({
   userId,
   contentMarkdown,
 }: UpdateNoteEmbeddingsInput) {
+  // Avoid creating dummy placeholder embeddings unless explicitly enabled for dev demos.
+  if (process.env.ENABLE_EMBEDDINGS_PLACEHOLDER !== '1') return;
   if (!contentMarkdown.trim()) {
     return;
   }
@@ -54,6 +56,8 @@ export async function updateTaskEmbeddings({
   title,
   descriptionMarkdown,
 }: UpdateTaskEmbeddingsInput) {
+  // Avoid creating dummy placeholder embeddings unless explicitly enabled for dev demos.
+  if (process.env.ENABLE_EMBEDDINGS_PLACEHOLDER !== '1') return;
   const text = `${title}\n\n${(descriptionMarkdown ?? '').trim()}`.trim();
   if (!text) return;
 
