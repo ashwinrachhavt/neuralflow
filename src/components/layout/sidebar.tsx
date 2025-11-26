@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 // Primary app navigation lives in the top navbar.
 const links = [
   { href: "/boards", label: "Board", icon: LayoutGrid },
+  { href: "/reports", label: "Reports", icon: LayoutGrid },
 ];
 
 export function Sidebar() {

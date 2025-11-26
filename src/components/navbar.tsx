@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Container } from "@/components/layout/container";
 import { ModeToggle } from "@/components/mode-toggle";
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
 
 const navLinks = [
   { href: "/dashboard", label: "Today" },
@@ -54,6 +55,7 @@ export function Navbar() {
             })}
           </nav>
           <div className="flex items-center gap-2">
+            <NotificationsBell />
             <ModeToggle />
             <SignedOut>
               <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">

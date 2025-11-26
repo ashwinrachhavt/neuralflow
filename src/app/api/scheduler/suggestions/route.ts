@@ -16,8 +16,8 @@ export async function GET() {
   const startOfDay = new Date(now); startOfDay.setHours(workStartHour,0,0,0);
   const endOfDay = new Date(now); endOfDay.setHours(21,0,0,0);
 
-  // Fetch today’s events and user tasks
-  const [events, tasks] = await Promise.all([
+  // Fetch today’s events and user tasks + recent learnings (30d)
+  const [events, tasks, recentLearnings] = await Promise.all([
     prisma.calendarEvent.findMany({
       where: { userId, startAt: { gte: startOfDay, lt: endOfDay } },
       orderBy: { startAt: 'asc' },
@@ -28,6 +28,10 @@ export async function GET() {
       select: { id: true, topics: true, primaryTopic: true },
       take: 300,
     }),
+    (async () => {
+      if (!((prisma as any).taskLearning)) return [] as { tags: string[] }[];
+      return await (prisma as any).taskLearning.findMany({ where: { userId, createdAt: { gte: new Date(Date.now() - 1000*60*60*24*30) } }, select: { tags: true } });
+    })(),
   ]);
 
   const free = computeFreeWindows(events.map(e => ({ startAt: e.startAt, endAt: e.endAt })), startOfDay, endOfDay, 20);
@@ -42,6 +46,10 @@ export async function GET() {
   }
 
   const suggestions: any[] = [];
+  // Encourage recently learned strengths via tags
+  const learnTagCounts: Record<string, number> = {};
+  for (const l of recentLearnings) (l.tags || []).forEach(t => { learnTagCounts[t] = (learnTagCounts[t] || 0) + 1; });
+  const boostedTopics = Object.entries(learnTagCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
   const gymPref = typeof prefs.gym === 'object' ? { enabled: !!prefs.gym.enabled, startHour: Number(prefs.gym.startHour ?? 19), endHour: Number(prefs.gym.endHour ?? 21), days: Array.isArray(prefs.gym.days) ? prefs.gym.days : [0,1,2,3,4,5,6] } : parseDefaultGymPrefs();
   if (gymPref.enabled) {
     const gym = computeGymSuggestion(now, free, gymPref);
@@ -52,7 +60,8 @@ export async function GET() {
   const nowHour = now.getHours();
   // In evening hours, prefer shallow suggestion over deep focus
   if (shallowPref.enabled && nowHour >= Number(shallowPref.startHour ?? 18)) {
-    const shallow = computeShallowSuggestion(now, free, Number(shallowPref.startHour ?? 18), { title: String(shallowPref.title || 'Vibe coding'), preferredTopics: Array.isArray(prefs.favoriteTopics) ? prefs.favoriteTopics : [], topicCounts });
+    const prefTopics = Array.isArray(prefs.favoriteTopics) ? prefs.favoriteTopics : [];
+    const shallow = computeShallowSuggestion(now, free, Number(shallowPref.startHour ?? 18), { title: String(shallowPref.title || 'Vibe coding'), preferredTopics: [...prefTopics, ...boostedTopics], topicCounts });
     if (shallow) suggestions.push(shallow);
   } else {
     const focus = computeFocusSuggestion(free, topicCounts);

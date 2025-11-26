@@ -24,13 +24,30 @@ export function PromptInputBody({ children }: { children: React.ReactNode }) { r
 export function PromptInputFooter({ children }: { children: React.ReactNode }) { return <div className="mt-2">{children}</div>; }
 export function PromptInputTools({ children }: { children: React.ReactNode }) { return <div className="flex items-center gap-2">{children}</div>; }
 
-export function PromptInputTextarea({ value, onChange }: { value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void }) {
+export function PromptInputTextarea({
+  value,
+  onChange,
+  onKeyDown,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  className?: string;
+}) {
   return (
     <textarea
-      className="flex-1 min-h-[96px] rounded-md border bg-background/70 px-3 py-2 text-sm leading-6 resize-y focus:outline-none"
+      className={cn(
+        "flex-1 w-full min-h-[72px] md:min-h-[104px] rounded-2xl border border-border/60 bg-background/80 px-3 py-2 text-sm leading-6 resize-y shadow-sm",
+        "focus:outline-none focus:ring-2 focus:ring-foreground/20 placeholder:text-muted-foreground/60",
+        className,
+      )}
       value={value}
       onChange={onChange}
-      placeholder="Write your request… (Shift+Enter for new line)"
+      onKeyDown={onKeyDown}
+      placeholder={placeholder ?? "Write your message… Enter to send • Shift+Enter for newline"}
     />
   );
 }

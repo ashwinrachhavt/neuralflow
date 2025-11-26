@@ -7,6 +7,12 @@
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   },
+  "crons": [
+    {
+      "path": "/api/cron/weekly-report",
+      "schedule": "0 9 * * 1" 
+    }
+  ],
   "git": {
     "deploymentEnabled": {
       "main": true,

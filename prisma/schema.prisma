@@ -39,6 +39,7 @@ model User {
 
   projects            Project[]
   reporterProfile     ReporterProfile?
+  taskLearnings       TaskLearning[]
 }
 
 model ReporterProfile {
@@ -164,11 +165,28 @@ model Task {
   pomodoroSessions PomodoroSession[]
   embeddings       Embedding[]       @relation("TaskToEmbeddings")
   calendarEvents   CalendarEvent[]   @relation("TaskToCalendarEvents")
+  learnings        TaskLearning[]
 
   @@index([boardId])
   @@index([columnId])
   @@index([status])
   @@index([docId])
+}
+
+model TaskLearning {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  summary   String
+  details   Json?
+  tags      String[] @default([])
+  confidence Float?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([taskId])
 }
 
 model Note {

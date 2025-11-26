@@ -44,6 +44,18 @@ export function SmartTodoChat() {
     setInput("");
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      const sendCombo = !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey;
+      const cmdSend = (e.metaKey || e.ctrlKey) && !e.shiftKey;
+      if (sendCombo || cmdSend) {
+        e.preventDefault();
+        handleSubmit();
+        return;
+      }
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {/* Chat column */}
@@ -102,7 +114,12 @@ export function SmartTodoChat() {
 
         <div className="p-4 border-t bg-muted/10">
           <div className="relative">
-            <PromptInputTextarea value={input} onChange={(e) => setInput(e.target.value)} />
+            <PromptInputTextarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Write a message… Enter to send • Shift+Enter for newline • Cmd/Ctrl+Enter to send"
+            />
             <div className="absolute bottom-2 right-2">
               <PromptInputSubmit onClick={handleSubmit} disabled={!input.trim() || status === 'streaming'} status={status} />
             </div>

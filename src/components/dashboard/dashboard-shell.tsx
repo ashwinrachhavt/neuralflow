@@ -8,6 +8,7 @@ import { MiniCalendar } from "@/components/mini-calendar";
 import { QuickFilters, type FilterState } from "@/components/quick-filters";
 import { SmartSuggestions } from "@/components/suggestions/SmartSuggestions";
 import { TodayMain } from "@/components/dashboard/today";
+import { NewReportCard } from "@/components/notifications/NewReportCard";
 
 export function DashboardShell() {
   const [filters, setFilters] = React.useState<FilterState>({ type: "all", priority: "all", topic: 'all' });
@@ -16,6 +17,7 @@ export function DashboardShell() {
       sidebar={<Sidebar />}
       rightRail={
         <RightRail>
+          <NewReportCard />
           <MiniCalendar />
           <QuickFilters value={filters} onChange={setFilters} />
           <SmartSuggestions />

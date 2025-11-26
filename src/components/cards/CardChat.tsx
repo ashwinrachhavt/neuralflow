@@ -43,6 +43,18 @@ export function CardChat({ taskId, cardContext }: { taskId: string; cardContext?
     setInput('');
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      const sendCombo = !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey;
+      const cmdSend = (e.metaKey || e.ctrlKey) && !e.shiftKey;
+      if (sendCombo || cmdSend) {
+        e.preventDefault();
+        handleSubmit();
+        return;
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-[500px] border rounded-xl overflow-hidden bg-background shadow-sm">
       {/* Header / Context */}
@@ -109,6 +121,8 @@ export function CardChat({ taskId, cardContext }: { taskId: string; cardContext?
           <PromptInputTextarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Write a message… Enter to send • Shift+Enter for newline • Cmd/Ctrl+Enter to send"
           />
           <div className="absolute bottom-2 right-2">
             <PromptInputSubmit

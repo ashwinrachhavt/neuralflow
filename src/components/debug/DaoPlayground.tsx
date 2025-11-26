@@ -57,6 +57,11 @@ export function DaoPlayground() {
   const [reportResult, setReportResult] = useState<any>(null);
   const [reportLoading, setReportLoading] = useState(false);
 
+  // Learning Agent (debug)
+  const [learningTaskId, setLearningTaskId] = useState("");
+  const [learningResult, setLearningResult] = useState<any>(null);
+  const [learningLoading, setLearningLoading] = useState(false);
+
   const fetchRecentTasks = async () => {
     try {
       const res = await fetch("/api/tasks/my?limit=5");
@@ -167,6 +172,22 @@ export function DaoPlayground() {
     }
   };
 
+  const runLearningAgent = async () => {
+    if (!learningTaskId.trim()) return toast.error('Enter a task id');
+    setLearningLoading(true);
+    try {
+      const res = await fetch('/api/ai/learning-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId: learningTaskId.trim() }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Failed');
+      setLearningResult(data.learning);
+      toast.success('Learning extracted');
+    } catch (e:any) {
+      toast.error(e.message || 'Failed');
+    } finally {
+      setLearningLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="rounded-md border border-border/70 bg-card/70 p-4 text-xs text-muted-foreground">
@@ -204,11 +225,12 @@ export function DaoPlayground() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[760px]">
           <TabsTrigger value="todo">Todo Agent</TabsTrigger>
           <TabsTrigger value="enricher">Enricher</TabsTrigger>
           <TabsTrigger value="gamify" onClick={fetchRecentTasks}>Gamify</TabsTrigger>
           <TabsTrigger value="reporter">Reporter</TabsTrigger>
+          <TabsTrigger value="learning">Learning</TabsTrigger>
         </TabsList>
 
         {/* TODO AGENT */}
@@ -254,6 +276,38 @@ export function DaoPlayground() {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* LEARNING AGENT (DEBUG) */}
+        <TabsContent value="learning" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Learning Agent</CardTitle>
+              <CardDescription>Extract a one-line learning with tags for a completed task (no persistence).</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Task ID</label>
+                <Input value={learningTaskId} onChange={(e)=>setLearningTaskId(e.target.value)} placeholder="cmid…" />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={runLearningAgent} disabled={learningLoading}>
+                  {learningLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Run Learning Agent
+                </Button>
+                <Button variant="outline" onClick={()=>{ setLearningResult(null); }}>Clear</Button>
+              </div>
+
+              {learningResult && (
+                <div className="rounded-md bg-muted p-4 overflow-auto">
+                  <div className="text-sm"><strong>Summary:</strong> {learningResult.summary}</div>
+                  {!!(learningResult.tags?.length) && (<div className="text-xs text-muted-foreground mt-1">Tags: {learningResult.tags.join(', ')}</div>)}
+                  {typeof learningResult.confidence === 'number' && (<div className="text-xs text-muted-foreground mt-1">Confidence: {Math.round(learningResult.confidence * 100)}%</div>)}
+                  <pre className="mt-3 text-xs">{JSON.stringify(learningResult, null, 2)}</pre>
                 </div>
               )}
             </CardContent>

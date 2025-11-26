@@ -26,7 +26,7 @@ async function runAnalyzerAgentInternal(input: {
     const { userId, period, start, end } = input;
 
     // 1. Fetch data
-    const [tasks, pomodoros, snapshots, gamification] = await Promise.all([
+    const [tasks, pomodoros, snapshots, gamification, learnings] = await Promise.all([
         prisma.task.findMany({
             where: {
                 board: { userId },
@@ -48,6 +48,7 @@ async function runAnalyzerAgentInternal(input: {
         prisma.userGamificationProfile.findUnique({
             where: { userId },
         }),
+        prisma.taskLearning.findMany({ where: { userId, createdAt: { gte: start, lte: end } }, select: { id: true, tags: true } }),
     ]);
 
     // 2. Compute aggregates
@@ -79,6 +80,7 @@ async function runAnalyzerAgentInternal(input: {
         pomodoros_total: pomodorosTotal,
         deep_work_pomodoros: deepWorkPomodoros,
         focus_minutes_total: focusMinutesTotal,
+        learnings_total: learnings.length,
         // Add more from snapshots if needed
         quiz_attempts: snapshots.reduce((acc, s) => acc + s.quizAttempts, 0),
         flashcards_reviewed: snapshots.reduce((acc, s) => acc + s.flashcardsReviewed, 0),
@@ -89,12 +91,16 @@ async function runAnalyzerAgentInternal(input: {
         aggregates["xp_total"] = gamification.xp;
     }
 
+    // Learning tag breakdown
+    const learnTagBreakdown: Record<string, number> = {};
+    for (const l of learnings) (l.tags || []).forEach(t => { learnTagBreakdown[t] = (learnTagBreakdown[t] || 0) + 1; });
+
     const metrics: AnalyzerMetricSummary = {
         period,
         startIso: start.toISOString(),
         endIso: end.toISOString(),
         aggregates,
-        tagBreakdown,
+        tagBreakdown: { ...(tagBreakdown || {}), ...(learnTagBreakdown || {}) },
     };
 
     // 3. Generate insights
