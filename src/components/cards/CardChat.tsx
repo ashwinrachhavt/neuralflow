@@ -1,12 +1,14 @@
 "use client";
 
 import * as React from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ModelSelector } from '@/components/ai-elements/model-selector';
-import { Loader2 } from 'lucide-react';
+import { useChat } from '@ai-sdk/react';
 
-type Msg = { role: 'user'|'assistant'; content: string };
+import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
+import { Message, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
+import { PromptInput, PromptInputTextarea, PromptInputSubmit, PromptInputFooter, PromptInputTools, PromptInputBody } from '@/components/ai-elements/prompt-input';
+import { ModelSelector } from '@/components/ai-elements/model-selector';
+import { CopyIcon, RefreshCcwIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type CardChatContext = {
   title: string;
@@ -18,80 +20,107 @@ type CardChatContext = {
 };
 
 export function CardChat({ taskId, cardContext }: { taskId: string; cardContext?: CardChatContext }) {
-  const [messages, setMessages] = React.useState<Msg[]>([]);
-  const [input, setInput] = React.useState('');
-  const [pending, setPending] = React.useState(false);
   const [model, setModel] = React.useState<string>(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('card-chat-model') || 'gpt-5.1';
-    return 'gpt-5.1';
+    if (typeof window !== 'undefined') return localStorage.getItem('card-chat-model') || 'gpt-4o';
+    return 'gpt-4o';
   });
 
-  async function send() {
-    const content = input.trim();
-    if (!content) return;
-    const next = [...messages, { role: 'user', content } as Msg];
-    setMessages(next);
+  const [input, setInput] = React.useState('');
+
+  // @ts-ignore - custom API endpoint not typed
+  const { messages, sendMessage, status, regenerate } = useChat({
+    api: `/api/ai/cards/${taskId}/chat`,
+    body: { model },
+    initialMessages: [],
+    streamProtocol: 'sse',
+  });
+
+  const handleSubmit = () => {
+    if (!input.trim()) return;
+    // Send as UI message with text part for SSE UI stream
+    // @ts-ignore - UI message shape is accepted by sendMessage
+    sendMessage({ role: 'user', parts: [{ type: 'text', text: input }] });
     setInput('');
-    setPending(true);
-    try {
-      const res = await fetch(`/api/ai/cards/${taskId}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: next, model }) });
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: String(data?.reply ?? '') }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Hmm, I cannot reply right now.' }]);
-    } finally {
-      setPending(false);
-    }
-  }
+  };
 
   return (
-    <div className="space-y-3">
-      {/* Context summary */}
-      {cardContext ? (
-        <div className="rounded-md border border-border/50 bg-card/50 p-3 text-xs">
-          <div className="mb-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-            {cardContext.projectTitle ? (
-              <span className="rounded px-2 py-0.5 bg-muted">{cardContext.projectTitle}</span>
-            ) : null}
-            {cardContext.columnTitle ? (
-              <span className="rounded px-2 py-0.5 bg-muted">{cardContext.columnTitle}</span>
-            ) : null}
-            {cardContext.primaryTopic ? (
-              <span className="rounded px-2 py-0.5 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300">{cardContext.primaryTopic}</span>
-            ) : null}
-            {(cardContext.topics || []).filter(t => t !== cardContext.primaryTopic).slice(0, 2).map((t) => (
-              <span key={t} className="rounded px-2 py-0.5 bg-muted text-foreground/80">{t}</span>
-            ))}
-          </div>
-          {cardContext.descriptionMarkdown ? (
-            <p className="line-clamp-3 text-muted-foreground">{cardContext.descriptionMarkdown}</p>
-          ) : null}
+    <div className="flex flex-col h-[500px] border rounded-xl overflow-hidden bg-background shadow-sm">
+      {/* Header / Context */}
+      <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/20">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Assistant</span>
+          {cardContext?.projectTitle && (
+            <>
+              <span>•</span>
+              <span>{cardContext.projectTitle}</span>
+            </>
+          )}
         </div>
-      ) : null}
+        <ModelSelector
+          value={model}
+          onChange={(v) => {
+            setModel(v);
+            try { localStorage.setItem('card-chat-model', v); } catch { /* ignore */ }
+          }}
+        />
+      </div>
 
-      <div className="flex items-center justify-end">
-        <ModelSelector value={model} onChange={(v) => { setModel(v); try { localStorage.setItem('card-chat-model', v); } catch { /* ignore */ } }} />
+      {/* Conversation Area */}
+      <div className="flex-1 overflow-hidden relative bg-background">
+        <Conversation className="h-full p-4">
+          <ConversationContent>
+            {messages.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground p-4">
+                <p className="text-sm">Ask me to refine the task, create a plan, or summarize context.</p>
+              </div>
+            ) : (
+              messages.map((msg) => {
+                // Extract text from parts array or fallback to content (for text stream)
+                const textParts = (msg as any).parts?.filter((p: any) => p.type === 'text').map((p: any) => p.text) || [];
+                const textContent = (textParts.length ? textParts.join('') : ((msg as any).content ?? '')) as string;
+
+                return (
+                  <Message key={msg.id} from={msg.role as 'user' | 'assistant'}>
+                    <MessageContent>
+                      <MessageResponse>{textContent}</MessageResponse>
+                    </MessageContent>
+                    {msg.role === 'assistant' && (
+                      <MessageActions>
+                        <MessageAction onClick={() => regenerate()} label="Retry">
+                          <RefreshCcwIcon className="size-3" />
+                        </MessageAction>
+                        <MessageAction onClick={() => navigator.clipboard.writeText(textContent)} label="Copy">
+                          <CopyIcon className="size-3" />
+                        </MessageAction>
+                      </MessageActions>
+                    )}
+                  </Message>
+                );
+              })
+            )}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
       </div>
-      <div className="max-h-[280px] overflow-auto rounded-md border border-border/50 bg-card/50 p-3 text-sm">
-        {messages.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Ask me to refine the task, create a plan, or summarize context.</p>
-        ) : (
-          <ul className="space-y-2">
-            {messages.map((m, i) => (
-              <li key={i} className={m.role === 'assistant' ? 'text-foreground' : 'text-muted-foreground'}>
-                <span className="text-[10px] uppercase tracking-wider mr-2 opacity-60">{m.role}</span>
-                <span>{m.content}</span>
-              </li>
-            ))}
-            {pending ? (
-              <li className="text-muted-foreground flex items-center gap-2"><Loader2 className="size-3 animate-spin" /> thinking…</li>
-            ) : null}
-          </ul>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Chat with this card…" onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }} />
-        <Button size="sm" onClick={() => send()} disabled={pending || !input.trim()}>{pending ? <Loader2 className="size-4 animate-spin" /> : 'Send'}</Button>
+
+      {/* Input Area */}
+      <div className="p-4 border-t bg-muted/10">
+        <div className="relative">
+          <PromptInputTextarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          <div className="absolute bottom-2 right-2">
+            <PromptInputSubmit
+              onClick={handleSubmit}
+              disabled={!input.trim() || status === 'streaming'}
+              status={status}
+            />
+          </div>
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>Enter to send, Shift+Enter for new line</span>
+        </div>
       </div>
     </div>
   );

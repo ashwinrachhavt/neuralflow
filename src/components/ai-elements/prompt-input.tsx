@@ -25,10 +25,16 @@ export function PromptInputFooter({ children }: { children: React.ReactNode }) {
 export function PromptInputTools({ children }: { children: React.ReactNode }) { return <div className="flex items-center gap-2">{children}</div>; }
 
 export function PromptInputTextarea({ value, onChange }: { value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void }) {
-  return <textarea className="flex-1 min-h-[40px] rounded border bg-transparent px-2 py-1 text-sm" value={value} onChange={onChange} placeholder="Type…" />;
+  return (
+    <textarea
+      className="flex-1 min-h-[96px] rounded-md border bg-background/70 px-3 py-2 text-sm leading-6 resize-y focus:outline-none"
+      value={value}
+      onChange={onChange}
+      placeholder="Write your request… (Shift+Enter for new line)"
+    />
+  );
 }
 
 export function PromptInputSubmit({ onClick, disabled, status }: { onClick: () => void; disabled?: boolean; status?: any }) {
   return <Button size="sm" onClick={onClick} disabled={disabled}>{status === 'submitting' ? '…' : 'Send'}</Button>;
 }
-

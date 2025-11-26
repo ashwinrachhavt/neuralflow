@@ -1,24 +1,31 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { streamText, convertToModelMessages } from 'ai';
+import { openai } from '@/lib/ai/client';
 import { getUserOr401 } from "@/lib/api-helpers";
-import { generateText } from "ai";
-import { openai } from "@/lib/ai/client";
+import { prisma } from "@/lib/prisma";
 
-type Ctx = { params: Promise<{ taskId: string }> };
+export const maxDuration = 30;
 
-export async function POST(req: Request, ctx: Ctx) {
-  const { taskId } = await ctx.params;
+export async function POST(req: Request, { params }: { params: Promise<{ taskId: string }> }) {
+  const { taskId } = await params;
   const user = await getUserOr401();
-  if (!(user as any).id) return user as unknown as NextResponse;
-  const userId = (user as any).id as string;
+  if (!(user as any).id) return new Response('Unauthorized', { status: 401 });
+  const userId = (user as any).id;
 
-  const body = await req.json().catch(() => ({}));
-  const messages = (body?.messages as { role: 'user'|'assistant', content: string }[] | undefined) ?? [];
-  const requestedModel = (body?.model as string | undefined) || null;
+  const body = (await req.json().catch(() => ({}))) as any;
+  const uiMessages = body?.messages ?? [];
+  const model = body?.model;
 
-  const task = await prisma.task.findFirst({ where: { id: taskId, board: { userId } }, select: { id: true, title: true, descriptionMarkdown: true, topics: true, primaryTopic: true } });
-  if (!task) return NextResponse.json({ message: 'Not found' }, { status: 404 });
-  const note = await prisma.note.findFirst({ where: { taskId: taskId }, select: { contentMarkdown: true } });
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, board: { userId } },
+    select: { id: true, title: true, descriptionMarkdown: true, topics: true, primaryTopic: true }
+  });
+
+  if (!task) return new Response('Not found', { status: 404 });
+
+  const note = await prisma.note.findFirst({
+    where: { taskId: taskId },
+    select: { contentMarkdown: true }
+  });
 
   const system = [
     'You are an assistant embedded in a Todo card. Keep replies short and actionable.',
@@ -34,22 +41,18 @@ export async function POST(req: Request, ctx: Ctx) {
     note?.contentMarkdown ? `Note: ${note.contentMarkdown.slice(0, 800)}` : '',
   ].filter(Boolean).join('\n');
 
-  const userTurn = messages[messages.length - 1]?.content || '';
+  const fullSystem = `${system}\n\nContext:\n${context}`;
 
-  try {
-    const safeModel = (() => {
-      const m = (requestedModel || '').trim();
-      if (!m) return 'gpt-4o-mini';
-      if (/^gpt-5/i.test(m)) return 'gpt-4.1';
-      return m;
-    })();
-    const { text } = await generateText({
-      model: openai(safeModel),
-      system,
-      prompt: [context, '', 'User:', userTurn].join('\n')
-    });
-    return NextResponse.json({ reply: text.trim() });
-  } catch (_e:any) {
-    return NextResponse.json({ reply: 'Unable to respond right now. Try again shortly.' }, { status: 200 });
-  }
+  const modelMessages = (Array.isArray(uiMessages) ? uiMessages : []).map((m: any) => {
+    const text = Array.isArray(m?.parts) ? m.parts.filter((p: any) => p?.type === 'text').map((p: any) => p.text).join('') : (m?.content ?? '');
+    return { role: m?.role ?? 'user', content: text } as any;
+  });
+
+  const result = streamText({
+    model: openai(model || 'gpt-4o'),
+    messages: modelMessages,
+    system: fullSystem,
+  });
+
+  return result.toUIMessageStreamResponse();
 }

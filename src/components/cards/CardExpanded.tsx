@@ -81,7 +81,7 @@ export function CardExpanded({ taskId, open, onClose }: CardExpandedProps) {
                   </ScrollArea>
                 </section>
 
-                <CardContextSidebar taskId={taskId} />
+                {/* Sidebar removed */}
               </Dialog.Panel>
             </Transition.Child>
           </div>

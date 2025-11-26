@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export type ThoughtStep = { id: string; label: string; description?: string; status?: 'complete'|'active'|'pending' };
 
-export function ChainOfThought({ defaultOpen = false, steps = [] as ThoughtStep[] }: { defaultOpen?: boolean; steps?: ThoughtStep[] }) {
+export function ChainOfThought({ defaultOpen = false, steps = [] as ThoughtStep[], showExtras = false }: { defaultOpen?: boolean; steps?: ThoughtStep[]; showExtras?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="rounded-lg border border-border/60 bg-card/70">
@@ -38,26 +38,30 @@ export function ChainOfThought({ defaultOpen = false, steps = [] as ThoughtStep[
                   </div>
                 ))}
               </div>
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <Search className="size-3.5" />
-                  Search results
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <Badge variant="secondary" className="text-[10px]">www.example.com</Badge>
-                  <Badge variant="secondary" className="text-[10px]">www.docs.example</Badge>
-                </div>
-              </div>
-              <div className="mt-3">
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <ImageIcon className="size-3.5" />
-                  Image
-                </div>
-                <div className="mt-1 overflow-hidden rounded-md border">
-                  <div className="h-32 w-full grid place-items-center text-xs text-muted-foreground bg-muted/40">Example image</div>
-                  <div className="border-t px-2 py-1 text-[10px] text-muted-foreground">Example generated image caption</div>
-                </div>
-              </div>
+              {showExtras ? (
+                <>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <Search className="size-3.5" />
+                      Search results
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge variant="secondary" className="text-[10px]">www.example.com</Badge>
+                      <Badge variant="secondary" className="text-[10px]">www.docs.example</Badge>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <ImageIcon className="size-3.5" />
+                      Image
+                    </div>
+                    <div className="mt-1 overflow-hidden rounded-md border">
+                      <div className="h-32 w-full grid place-items-center text-xs text-muted-foreground bg-muted/40">Example image</div>
+                      <div className="border-t px-2 py-1 text-[10px] text-muted-foreground">Example generated image caption</div>
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -81,4 +85,3 @@ export function ChainOfThoughtStep(props: { icon?: React.ReactNode; label?: stri
     </div>
   );
 }
-

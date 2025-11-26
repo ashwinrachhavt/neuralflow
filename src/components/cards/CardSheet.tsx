@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { CardTiptapEditor } from "./CardTiptapEditor";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CardChat } from "./CardChat";
-import { CardChainOfThought } from "./CardChainOfThought";
 import { ProjectSwitcher } from "@/components/projects/ProjectSwitcher";
 
 type Props = {
@@ -224,7 +223,6 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
                                   columnTitle: data.task.column?.title ?? null,
                                 }}
                               />
-                              <CardChainOfThought taskId={taskId} />
                             </div>
                           </>
                         )}
@@ -233,57 +231,8 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
 
                     {/* Sidebar (Right) */}
                     <div className="w-[320px] border-l border-border/40 bg-muted/5 p-6 hidden lg:block overflow-y-auto">
-                      {/* AI Context Section */}
-                      <div className="mb-8">
-                        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">AI Context</h3>
-                        <div className="rounded-lg border border-border/50 bg-background/50 p-4 shadow-sm">
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-purple-500">
-                            <Sparkles className="size-3.5" />
-                            Smart Cues
-                          </div>
-                          <p className="text-xs leading-relaxed text-muted-foreground">
-                            This space will surface embeddings, related notes, and system suggestions as we wire up the AI agents.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Related Section */}
-                      <div>
-                        <div className="mb-3 flex items-center justify-between">
-                          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Related</h3>
-                          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">4 items</span>
-                        </div>
-
-                        <div className="space-y-2">
-                          {/* Mock Related Items */}
-                          <div className="group flex cursor-pointer flex-col gap-1 rounded-md border border-transparent bg-muted/30 p-3 transition hover:border-border/50 hover:bg-background hover:shadow-sm">
-                            <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-                              <span className="text-muted-foreground">📄</span>
-                              Research notes
-                            </div>
-                            <div className="text-[10px] text-muted-foreground">Updated 2h ago</div>
-                          </div>
-
-                          <div className="group flex cursor-pointer flex-col gap-1 rounded-md border border-transparent bg-muted/30 p-3 transition hover:border-border/50 hover:bg-background hover:shadow-sm">
-                            <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-                              <span className="text-muted-foreground">✅</span>
-                              Prep system design prompts
-                            </div>
-                            <div className="text-[10px] text-muted-foreground">3 subtasks</div>
-                          </div>
-
-                          <div className="group flex cursor-pointer flex-col gap-1 rounded-md border border-transparent bg-muted/30 p-3 transition hover:border-border/50 hover:bg-background hover:shadow-sm">
-                            <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-                              <span className="text-muted-foreground">🔗</span>
-                              Product brief
-                            </div>
-                            <div className="text-[10px] text-muted-foreground">docs.notion.so</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* AI Dock (Moved to Sidebar for cleaner main view) */}
-                      <div className="mt-8 border-t border-border/40 pt-6">
+                      {/* AI Dock */}
+                      <div className="pt-2">
                         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</h3>
                         <CardAIDock taskId={taskId} />
                       </div>
