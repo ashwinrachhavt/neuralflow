@@ -25,7 +25,7 @@ export function parseFrontMatter(raw: string): { data: FrontMatter; content: str
   const content = raw.slice(end + 4).replace(/^\s*\n/, '');
   const data: FrontMatter = {};
   for (const line of header.split(/\r?\n/)) {
-    const m = line.match(/^([A-Za-z0-9_\-]+):\s*(.*)$/);
+    const m = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
     if (!m) continue;
     const key = m[1].trim();
     let val = m[2].trim();
@@ -52,4 +52,3 @@ export function extractWikiLinks(markdown: string): string[] {
 export function nowIso() {
   return new Date().toISOString();
 }
-

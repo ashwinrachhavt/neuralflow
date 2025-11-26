@@ -8,7 +8,6 @@ import { useCard } from "@/hooks/api";
 import { X } from "lucide-react";
 
 import { CardAIDock } from "./CardAIDock";
-import { CardContextSidebar } from "./CardContextSidebar";
 import { CardMetadata } from "./CardMetadata";
 import { CardTitleEditor } from "./CardTitleEditor";
 import { CardTiptapEditor } from "./CardTiptapEditor";

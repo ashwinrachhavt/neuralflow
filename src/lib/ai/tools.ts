@@ -36,7 +36,6 @@ export const getTools = async () => {
           boardId: board.id,
           columnId: todoColumn.id,
           title,
-          // @ts-expect-error runtime enum ok
           priority,
           status: "TODO",
         };

@@ -1,4 +1,4 @@
-import { stepCountIs, streamText, convertToModelMessages } from 'ai';
+import { stepCountIs, streamText } from 'ai';
 import { openai } from '@/lib/ai/client';
 import { getTools } from '@/lib/ai/tools';
 import { getUserOr401 } from '@/lib/api-helpers';

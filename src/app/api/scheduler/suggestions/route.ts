@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserOr401 } from "@/lib/api-helpers";
-import { computeFreeWindows, parseDefaultGymPrefs, computeGymSuggestion, computeFocusSuggestion, computeShallowSuggestion } from "@/lib/scheduler/engine";
+import { computeFreeWindows, parseDefaultGymPrefs, computeGymSuggestion, computeFocusSuggestion, computeShallowSuggestion, type GymPreference } from "@/lib/scheduler/engine";
 
 export async function GET() {
   const user = await getUserOr401();
@@ -48,10 +48,22 @@ export async function GET() {
   const suggestions: any[] = [];
   // Encourage recently learned strengths via tags
   const learnTagCounts: Record<string, number> = {};
-  for (const l of recentLearnings) (l.tags || []).forEach(t => { learnTagCounts[t] = (learnTagCounts[t] || 0) + 1; });
+  for (const l of recentLearnings) {
+    const tags = (l.tags ?? []) as string[];
+    tags.forEach((t: string) => {
+      learnTagCounts[t] = (learnTagCounts[t] || 0) + 1;
+    });
+  }
   const boostedTopics = Object.entries(learnTagCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
-  const gymPref = typeof prefs.gym === 'object' ? { enabled: !!prefs.gym.enabled, startHour: Number(prefs.gym.startHour ?? 19), endHour: Number(prefs.gym.endHour ?? 21), days: Array.isArray(prefs.gym.days) ? prefs.gym.days : [0,1,2,3,4,5,6] } : parseDefaultGymPrefs();
-  if (gymPref.enabled) {
+  const gymEnabled = typeof prefs.gym === 'object' ? !!prefs.gym.enabled : true;
+  const gymPref: GymPreference = typeof prefs.gym === 'object'
+    ? {
+        dayOfWeek: Array.isArray(prefs.gym.days) ? (prefs.gym.days as number[]) : [0,1,2,3,4,5,6],
+        startHour: Number(prefs.gym.startHour ?? 19),
+        endHour: Number(prefs.gym.endHour ?? 21),
+      }
+    : parseDefaultGymPrefs();
+  if (gymEnabled) {
     const gym = computeGymSuggestion(now, free, gymPref);
     if (gym) suggestions.push(gym);
   }

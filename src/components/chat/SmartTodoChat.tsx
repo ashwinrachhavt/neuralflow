@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse, MessageActions, MessageAction } from "@/components/ai-elements/message";
 import { PromptInputTextarea, PromptInputSubmit } from "@/components/ai-elements/prompt-input";
@@ -15,7 +16,9 @@ export function SmartTodoChat() {
   const [showReasoning, setShowReasoning] = React.useState(false);
 
   // General chat endpoint that includes TODO context + tools
-  const { messages, sendMessage, status, regenerate } = useChat({ api: "/api/chat", streamProtocol: 'sse' });
+  const { messages, sendMessage, status, regenerate } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
+  });
 
   const { data, isLoading } = useMyTodos('TODO');
   const todos: MyTodo[] = data?.tasks ?? [];
@@ -27,7 +30,7 @@ export function SmartTodoChat() {
     if (!hasAny) return [];
     const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
     const lastText = (lastAssistant as any)?.parts?.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('') || '';
-    const applied = /\bmarked as done\b|\btask\s*\"?.+\"?\s*created\b|\bcreated\s+task\b|\badded\s+to\s+board\b|\bcompleted\b/i.test(lastText);
+    const applied = /\bmarked as done\b|\btask\s*"?.+"?\s*created\b|\bcreated\s+task\b|\badded\s+to\s+board\b|\bcompleted\b/i.test(lastText);
     return [
       { id: '1', label: 'Understand request', status: status === 'streaming' ? 'active' : 'complete' },
       { id: '2', label: 'Review current todos', status: todos.length ? 'complete' : 'pending' },
@@ -39,7 +42,6 @@ export function SmartTodoChat() {
   const handleSubmit = () => {
     if (!input.trim()) return;
     // Send UI message with text part for SSE UI stream
-    // @ts-ignore sendMessage accepts a UIMessage
     sendMessage({ role: 'user', parts: [{ type: 'text', text: input }] });
     setInput("");
   };

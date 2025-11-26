@@ -36,7 +36,8 @@ export async function POST(_req: Request, ctx: Ctx) {
     await prisma.task.update({
       where: { id: task.id },
       data: {
-        topics: fallback.topics,
+        // Prisma expects a mutable array or `{ set: string[] }`
+        topics: Array.from(fallback.topics),
         primaryTopic: fallback.primaryTopic,
         aiState: "CLASSIFIED",
         aiConfidence: fallback.confidence,

@@ -70,12 +70,12 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
             <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 translate-y-4 scale-95" enterTo="opacity-100 translate-y-0 scale-100" leave="ease-in duration-150" leaveFrom="opacity-100 translate-y-0 scale-100" leaveTo="opacity-0 translate-y-4 scale-95">
-              <DialogPanel as={motion.div}
-                layoutId={`${layoutIdBase}card-${taskId}`}
-                className="w-full max-w-5xl overflow-hidden rounded-xl border border-border/40 bg-background shadow-2xl"
-                // @ts-expect-error - Framer motion types conflict with Headless UI
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              >
+              <DialogPanel as="div">
+                <motion.div
+                  layoutId={`${layoutIdBase}card-${taskId}`}
+                  className="w-full max-w-5xl overflow-hidden rounded-xl border border-border/40 bg-background shadow-2xl"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                >
                 <div className="flex h-[85vh] flex-col bg-background shadow-xl">
                   {/* Header Actions */}
                   <div className="flex items-center justify-between border-b px-6 py-3">
@@ -239,6 +239,7 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
                     </div>
                   </div>
                 </div>
+                </motion.div>
               </DialogPanel>
             </Transition.Child>
           </div>

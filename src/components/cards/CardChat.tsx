@@ -2,13 +2,14 @@
 
 import * as React from 'react';
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
 import { Message, MessageContent, MessageResponse, MessageActions, MessageAction } from '@/components/ai-elements/message';
-import { PromptInput, PromptInputTextarea, PromptInputSubmit, PromptInputFooter, PromptInputTools, PromptInputBody } from '@/components/ai-elements/prompt-input';
+import { PromptInputTextarea, PromptInputSubmit } from '@/components/ai-elements/prompt-input';
 import { ModelSelector } from '@/components/ai-elements/model-selector';
 import { CopyIcon, RefreshCcwIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+//
 
 type CardChatContext = {
   title: string;
@@ -27,18 +28,16 @@ export function CardChat({ taskId, cardContext }: { taskId: string; cardContext?
 
   const [input, setInput] = React.useState('');
 
-  // @ts-ignore - custom API endpoint not typed
   const { messages, sendMessage, status, regenerate } = useChat({
-    api: `/api/ai/cards/${taskId}/chat`,
-    body: { model },
-    initialMessages: [],
-    streamProtocol: 'sse',
+    transport: new DefaultChatTransport({
+      api: `/api/ai/cards/${taskId}/chat`,
+      body: () => ({ model }),
+    }),
   });
 
   const handleSubmit = () => {
     if (!input.trim()) return;
     // Send as UI message with text part for SSE UI stream
-    // @ts-ignore - UI message shape is accepted by sendMessage
     sendMessage({ role: 'user', parts: [{ type: 'text', text: input }] });
     setInput('');
   };

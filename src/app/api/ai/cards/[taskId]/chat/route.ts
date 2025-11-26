@@ -1,4 +1,4 @@
-import { streamText, convertToModelMessages } from 'ai';
+import { streamText } from 'ai';
 import { openai } from '@/lib/ai/client';
 import { getUserOr401 } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
