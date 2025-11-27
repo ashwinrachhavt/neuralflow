@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { useSearchParams } from 'next/navigation';
+import { QuickAIAction } from '@/components/ai-assistant/QuickAIAction';
 
 const startHour = 0;
 const endHour = 24;
@@ -500,6 +501,16 @@ function CalendarPageInner() {
           <Button size="sm" onClick={() => openCreateModal()}>
             + Add block
           </Button>
+          <QuickAIAction
+            title="Calendar AI Assistant"
+            description="Ask me about your schedule, find free time, or analyze your calendar."
+            suggestedPrompts={[
+              "What's my busiest day this week?",
+              "Show my focus blocks",
+              "Find 2-hour slots for deep work",
+              "How many meetings do I have?",
+            ]}
+          />
         </div>
       </header>
 
@@ -529,183 +540,183 @@ function CalendarPageInner() {
       </section>
 
       <Tooltip.Provider>
-      <Card className="space-y-3">
-        <CardHeader className="border-b border-border/60 bg-background/80">
-          <div className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))]">
-            <div className="px-3 text-xs text-muted-foreground">Times</div>
-            {weekDays.map((day) => (
-              <div
-                key={day.toISOString()}
-                className="px-3 py-2 text-sm font-semibold"
-              >
-                <div>{formatDayLabel(day)}</div>
-                <div className="text-[11px] text-muted-foreground">
-                  {day.toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {error ? (
-            <div className="grid h-40 place-items-center border border-dashed border-destructive/60 text-sm text-destructive">
-              {error}
-            </div>
-          ) : null}
-          <div className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))]">
-            <div className="flex flex-col">
-              {Array.from({ length: endHour - startHour }).map((_, index) => (
+        <Card className="space-y-3">
+          <CardHeader className="border-b border-border/60 bg-background/80">
+            <div className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))]">
+              <div className="px-3 text-xs text-muted-foreground">Times</div>
+              {weekDays.map((day) => (
                 <div
-                  key={index}
-                  className="flex h-[52px] items-start justify-end pr-2 text-[11px] text-muted-foreground"
+                  key={day.toISOString()}
+                  className="px-3 py-2 text-sm font-semibold"
                 >
-                  {`${(startHour + index) % 24}:00`}
+                  <div>{formatDayLabel(day)}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {day.toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </div>
                 </div>
               ))}
             </div>
-            {weekDays.map((day, index) => {
-              const group = groupedByDay.get(day.toDateString()) ?? [];
-              return (
-                <div
-                  key={day.toISOString()}
-                  className="relative min-h-[calc(14*52px)] border-l border-border/60 bg-background/90"
-                  style={{ height: `${containerHeight}px` }}
-                  onMouseDown={(e) => startDragCreate(day, index, e)}
-                >
-                  {Array.from({ length: endHour - startHour }).map(
-                    (_, index) => (
-                      <span
-                        key={`${day.toISOString()}-${index}`}
-                        className="pointer-events-none absolute left-0 right-0 border-t border-border/60"
-                        style={{ top: `${index * hourHeight}px` }}
-                      />
-                    )
-                  )}
-                  {/* Drag selection overlay */}
-                  {dragging && dragDayIndex === index ? (() => {
-                    const startMin = Math.min(dragStartMin, dragCurrentMin);
-                    const endMin = Math.max(dragStartMin, dragCurrentMin);
-                    const top = (startMin / visibleMinutes) * containerHeight;
-                    const height = Math.max(((endMin - startMin) / visibleMinutes) * containerHeight, 8);
-                    return (
-                      <div
-                        className="pointer-events-none absolute left-1 right-1 rounded-md border border-primary/40 bg-primary/20"
-                        style={{ top, height }}
-                      />
-                    );
-                  })() : null}
-
-                  {group.map((event) => {
-                    // Use local wall time directly for placement
-                    const start = new Date(event.startAt);
-                    const end = new Date(event.endAt);
-                    const startMinutes = start.getHours() * 60 + start.getMinutes() - startHour * 60;
-                    const endMinutes = end.getHours() * 60 + end.getMinutes() - startHour * 60;
-                    const clippedStart = Math.max(0, startMinutes);
-                    const clippedEnd = Math.min(visibleMinutes, endMinutes);
-                    if (clippedEnd <= clippedStart) return null;
-                    const top = (clippedStart / visibleMinutes) * containerHeight;
-                    const height = Math.max(((clippedEnd - clippedStart) / visibleMinutes) * containerHeight, 30);
-                    const timeRange = `${formatTime(start)} – ${formatTime(end)}`;
-                    const startLabel = `${formatTime(start)}`;
-                    const endLabel = `${formatTime(end)}`;
-                    const isCompact = compact || height < 42;
-                    const isUltraCompact = compact ? height < 32 : height < 28;
-                    const headerSize = compact ? 'text-[9px]' : 'text-[10px]';
-                    const titleCompactSize = compact ? 'text-[10px]' : 'text-[11px]';
-                    const titleRegularSize = compact ? 'text-[12px]' : 'text-sm';
-                    const dateLabel = start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-                    const isExpanded = height >= 96;
-                    return (
-                      <Tooltip.Root delayDuration={200} key={event.id}>
-                        <Tooltip.Trigger asChild>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditModal(event);
-                            }}
-                            className={cn(
-                              'absolute left-1 right-1 overflow-hidden rounded-md border border-dashed text-left text-xs transition',
-                              compact ? 'p-1' : 'p-1.5',
-                              EVENT_STYLES[event.type].border,
-                              EVENT_STYLES[event.type].bg,
-                              'text-foreground'
-                            )}
-                            style={{ top, height }}
-                          >
-                        {/* left accent bar for quick recognition */}
+          </CardHeader>
+          <CardContent className="p-0">
+            {error ? (
+              <div className="grid h-40 place-items-center border border-dashed border-destructive/60 text-sm text-destructive">
+                {error}
+              </div>
+            ) : null}
+            <div className="grid grid-cols-[4rem_repeat(7,minmax(0,1fr))]">
+              <div className="flex flex-col">
+                {Array.from({ length: endHour - startHour }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="flex h-[52px] items-start justify-end pr-2 text-[11px] text-muted-foreground"
+                  >
+                    {`${(startHour + index) % 24}:00`}
+                  </div>
+                ))}
+              </div>
+              {weekDays.map((day, index) => {
+                const group = groupedByDay.get(day.toDateString()) ?? [];
+                return (
+                  <div
+                    key={day.toISOString()}
+                    className="relative min-h-[calc(14*52px)] border-l border-border/60 bg-background/90"
+                    style={{ height: `${containerHeight}px` }}
+                    onMouseDown={(e) => startDragCreate(day, index, e)}
+                  >
+                    {Array.from({ length: endHour - startHour }).map(
+                      (_, index) => (
                         <span
-                          className={cn('absolute inset-y-0 left-0 w-1 rounded-l-md', EVENT_STYLES[event.type].accent)}
-                          aria-hidden
+                          key={`${day.toISOString()}-${index}`}
+                          className="pointer-events-none absolute left-0 right-0 border-t border-border/60"
+                          style={{ top: `${index * hourHeight}px` }}
                         />
-                        {isUltraCompact ? (
-                          // Very small blocks: show time only
-                          <div className={cn('flex h-full items-center justify-center leading-none text-foreground/80', headerSize)}>
-                            <span>{timeRange}</span>
-                          </div>
-                        ) : isExpanded ? (
-                          // Tall blocks: distribute content vertically for better use of space
-                          <div className="flex h-full flex-col">
-                            <div className={cn('flex items-center justify-between uppercase tracking-wide leading-none text-foreground/70', headerSize)}>
-                              <span className="truncate pr-1">{typeLabels[event.type]}</span>
-                              <span className="shrink-0 text-foreground/60">{startLabel}</span>
-                            </div>
-                            <div className="flex-1 grid place-items-center px-1">
-                              <div className={cn('w-full text-center font-semibold leading-snug break-words text-foreground', compact ? 'text-[12px]' : 'text-[13px]')}>
-                                {event.title}
-                              </div>
-                            </div>
-                            <div className={cn('mt-auto flex items-center justify-end leading-none text-foreground/60', headerSize)}>
-                              <span>{endLabel}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          // Regular/compact blocks
-                          <>
-                            <div className={cn('flex items-center justify-between uppercase tracking-wide leading-none text-foreground/70', headerSize)}>
-                              <span className="truncate pr-1">{typeLabels[event.type]}</span>
-                              <span className="shrink-0 text-foreground/60">{timeRange}</span>
-                            </div>
-                            {!isCompact ? (
-                              <div className={cn('mt-1 font-semibold leading-tight line-clamp-2 text-foreground', titleRegularSize)}>
-                                {event.title}
-                              </div>
-                            ) : (
-                              <div className={cn('mt-0.5 font-medium leading-tight line-clamp-1 text-foreground', titleCompactSize)}>
-                                {event.title}
-                              </div>
-                            )}
-                          </>
-                        )}
-                          </button>
-                        </Tooltip.Trigger>
-                        <Tooltip.Content side="top" align="center" className="z-50 rounded-md border border-border/60 bg-background/95 px-3 py-2 text-xs shadow-md">
-                          <div className="font-semibold text-foreground">{event.title}</div>
-                          <div className="text-foreground/70">{dateLabel} • {timeRange}</div>
-                          {event.location ? (
-                            <div className="text-foreground/70">📍 {event.location}</div>
-                          ) : null}
-                          <div className="mt-1 text-[10px] uppercase tracking-wide text-foreground/60">{typeLabels[event.type]}</div>
-                          <Tooltip.Arrow className="fill-background" />
-                        </Tooltip.Content>
-                      </Tooltip.Root>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-          {loading ? (
-            <div className="px-4 py-3 text-sm text-muted-foreground">
-              Loading events…
+                      )
+                    )}
+                    {/* Drag selection overlay */}
+                    {dragging && dragDayIndex === index ? (() => {
+                      const startMin = Math.min(dragStartMin, dragCurrentMin);
+                      const endMin = Math.max(dragStartMin, dragCurrentMin);
+                      const top = (startMin / visibleMinutes) * containerHeight;
+                      const height = Math.max(((endMin - startMin) / visibleMinutes) * containerHeight, 8);
+                      return (
+                        <div
+                          className="pointer-events-none absolute left-1 right-1 rounded-md border border-primary/40 bg-primary/20"
+                          style={{ top, height }}
+                        />
+                      );
+                    })() : null}
+
+                    {group.map((event) => {
+                      // Use local wall time directly for placement
+                      const start = new Date(event.startAt);
+                      const end = new Date(event.endAt);
+                      const startMinutes = start.getHours() * 60 + start.getMinutes() - startHour * 60;
+                      const endMinutes = end.getHours() * 60 + end.getMinutes() - startHour * 60;
+                      const clippedStart = Math.max(0, startMinutes);
+                      const clippedEnd = Math.min(visibleMinutes, endMinutes);
+                      if (clippedEnd <= clippedStart) return null;
+                      const top = (clippedStart / visibleMinutes) * containerHeight;
+                      const height = Math.max(((clippedEnd - clippedStart) / visibleMinutes) * containerHeight, 30);
+                      const timeRange = `${formatTime(start)} – ${formatTime(end)}`;
+                      const startLabel = `${formatTime(start)}`;
+                      const endLabel = `${formatTime(end)}`;
+                      const isCompact = compact || height < 42;
+                      const isUltraCompact = compact ? height < 32 : height < 28;
+                      const headerSize = compact ? 'text-[9px]' : 'text-[10px]';
+                      const titleCompactSize = compact ? 'text-[10px]' : 'text-[11px]';
+                      const titleRegularSize = compact ? 'text-[12px]' : 'text-sm';
+                      const dateLabel = start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+                      const isExpanded = height >= 96;
+                      return (
+                        <Tooltip.Root delayDuration={200} key={event.id}>
+                          <Tooltip.Trigger asChild>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditModal(event);
+                              }}
+                              className={cn(
+                                'absolute left-1 right-1 overflow-hidden rounded-md border border-dashed text-left text-xs transition',
+                                compact ? 'p-1' : 'p-1.5',
+                                EVENT_STYLES[event.type].border,
+                                EVENT_STYLES[event.type].bg,
+                                'text-foreground'
+                              )}
+                              style={{ top, height }}
+                            >
+                              {/* left accent bar for quick recognition */}
+                              <span
+                                className={cn('absolute inset-y-0 left-0 w-1 rounded-l-md', EVENT_STYLES[event.type].accent)}
+                                aria-hidden
+                              />
+                              {isUltraCompact ? (
+                                // Very small blocks: show time only
+                                <div className={cn('flex h-full items-center justify-center leading-none text-foreground/80', headerSize)}>
+                                  <span>{timeRange}</span>
+                                </div>
+                              ) : isExpanded ? (
+                                // Tall blocks: distribute content vertically for better use of space
+                                <div className="flex h-full flex-col">
+                                  <div className={cn('flex items-center justify-between uppercase tracking-wide leading-none text-foreground/70', headerSize)}>
+                                    <span className="truncate pr-1">{typeLabels[event.type]}</span>
+                                    <span className="shrink-0 text-foreground/60">{startLabel}</span>
+                                  </div>
+                                  <div className="flex-1 grid place-items-center px-1">
+                                    <div className={cn('w-full text-center font-semibold leading-snug break-words text-foreground', compact ? 'text-[12px]' : 'text-[13px]')}>
+                                      {event.title}
+                                    </div>
+                                  </div>
+                                  <div className={cn('mt-auto flex items-center justify-end leading-none text-foreground/60', headerSize)}>
+                                    <span>{endLabel}</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                // Regular/compact blocks
+                                <>
+                                  <div className={cn('flex items-center justify-between uppercase tracking-wide leading-none text-foreground/70', headerSize)}>
+                                    <span className="truncate pr-1">{typeLabels[event.type]}</span>
+                                    <span className="shrink-0 text-foreground/60">{timeRange}</span>
+                                  </div>
+                                  {!isCompact ? (
+                                    <div className={cn('mt-1 font-semibold leading-tight line-clamp-2 text-foreground', titleRegularSize)}>
+                                      {event.title}
+                                    </div>
+                                  ) : (
+                                    <div className={cn('mt-0.5 font-medium leading-tight line-clamp-1 text-foreground', titleCompactSize)}>
+                                      {event.title}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </button>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content side="top" align="center" className="z-50 rounded-md border border-border/60 bg-background/95 px-3 py-2 text-xs shadow-md">
+                            <div className="font-semibold text-foreground">{event.title}</div>
+                            <div className="text-foreground/70">{dateLabel} • {timeRange}</div>
+                            {event.location ? (
+                              <div className="text-foreground/70">📍 {event.location}</div>
+                            ) : null}
+                            <div className="mt-1 text-[10px] uppercase tracking-wide text-foreground/60">{typeLabels[event.type]}</div>
+                            <Tooltip.Arrow className="fill-background" />
+                          </Tooltip.Content>
+                        </Tooltip.Root>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
-          ) : null}
-        </CardContent>
-      </Card>
+            {loading ? (
+              <div className="px-4 py-3 text-sm text-muted-foreground">
+                Loading events…
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
       </Tooltip.Provider>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

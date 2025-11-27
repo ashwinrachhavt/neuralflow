@@ -29,7 +29,11 @@ export async function POST(_req: Request, ctx: Ctx) {
   const board = await prisma.board.findFirst({ where: { id: boardId, userId: (user as any).id }, select: { id: true } });
   if (!board) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
-  const existing = await prisma.column.findMany({ where: { boardId }, orderBy: { position: 'asc' }, select: { id: true, name: true, position: true } });
+  const existing: { id: string; name: string; position: number }[] = await prisma.column.findMany({
+    where: { boardId },
+    orderBy: { position: 'asc' },
+    select: { id: true, name: true, position: true },
+  });
 
   const byKey: Record<string, { id: string; name: string; position: number } | undefined> = {} as any;
   for (const c of existing) {
@@ -38,7 +42,10 @@ export async function POST(_req: Request, ctx: Ctx) {
   }
 
   // Create any missing
-  const maxPos = existing.reduce((m, c) => Math.max(m, c.position), -1);
+  let maxPos = -1;
+  for (const c of existing) {
+    if (c.position > maxPos) maxPos = c.position;
+  }
   let pos = maxPos + 1;
   for (const std of STANDARD) {
     if (!byKey[std.key]) {
@@ -72,4 +79,3 @@ export async function POST(_req: Request, ctx: Ctx) {
     columns: STANDARD.map(s => ({ key: s.key, id: byKey[s.key]!.id })),
   });
 }
-

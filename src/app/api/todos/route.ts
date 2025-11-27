@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     const boardRes = await getOrCreateDefaultBoard((user as any).id);
     if (!boardRes.ok) return NextResponse.json({ message: 'Failed to resolve board' }, { status: 500 });
     const board = boardRes.value;
-    const todoColumn = board.columns.find((c) => c.name.toLowerCase().includes('todo')) ?? board.columns[0];
+    const todoColumn = board.columns.find((c: any) => c.name.toLowerCase().includes('todo')) ?? board.columns[0];
     tasks = await prisma.task.findMany({
       where: { boardId: board.id, columnId: todoColumn.id },
       orderBy: { updatedAt: 'desc' },
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
     if (!boardRes.ok) return NextResponse.json({ message: 'Failed to resolve board' }, { status: 500 });
     const board = boardRes.value;
     boardId = board.id;
-    const todoColumn = board.columns.find((c) => c.name.toLowerCase().includes('todo')) ?? board.columns[0];
+    const todoColumn = board.columns.find((c: any) => c.name.toLowerCase().includes('todo')) ?? board.columns[0];
     columnId = todoColumn.id;
   }
 

@@ -8,7 +8,9 @@ import { toast } from "sonner";
 
 type Suggestion =
   | { id: string; kind: 'GYM_REMINDER'; title: string; startAt: string; endAt: string }
-  | { id: string; kind: 'FOCUS_SESSION'; title: string; startAt: string; endAt: string; topic?: string };
+  | { id: string; kind: 'FOCUS_SESSION'; title: string; startAt: string; endAt: string; topic?: string }
+  | { id: string; kind: 'SHALLOW_SESSION'; title: string; startAt: string; endAt: string; topic?: string }
+  | { id: string; kind: 'LOG_HOURS'; title: string; startAt: string; endAt: string; project?: string };
 
 export function SmartSuggestions() {
   const qc = useQueryClient();
@@ -22,9 +24,15 @@ export function SmartSuggestions() {
 
   async function accept(s: Suggestion) {
     try {
+      const isFocus = s.kind === 'FOCUS_SESSION' || s.kind === 'SHALLOW_SESSION';
+      const isLog = s.kind === 'LOG_HOURS';
+      const eventType = isFocus ? 'FOCUS' : 'PERSONAL';
+      const tags = [] as string[];
+      if ('topic' in s && s.topic) tags.push(s.topic);
+      if (isLog) tags.push('log','vibe');
       const res = await fetch('/api/calendar/events', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: s.title, type: s.kind === 'GYM_REMINDER' ? 'PERSONAL' : 'FOCUS', startAt: s.startAt, endAt: s.endAt, tags: s.kind === 'FOCUS_SESSION' && s.topic ? [s.topic] : [] }),
+        body: JSON.stringify({ title: s.title, type: eventType, startAt: s.startAt, endAt: s.endAt, tags }),
       });
       if (!res.ok) throw new Error('Failed to schedule');
       setLocal(prev => prev.filter(x => x.id !== s.id));
@@ -65,4 +73,3 @@ export function SmartSuggestions() {
     </Card>
   );
 }
-

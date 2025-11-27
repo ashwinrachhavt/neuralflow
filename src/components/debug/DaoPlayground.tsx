@@ -62,6 +62,11 @@ export function DaoPlayground() {
   const [learningResult, setLearningResult] = useState<any>(null);
   const [learningLoading, setLearningLoading] = useState(false);
 
+  // Prisma Agent State
+  const [prismaPrompt, setPrismaPrompt] = useState("");
+  const [prismaResult, setPrismaResult] = useState<any>(null);
+  const [prismaLoading, setPrismaLoading] = useState(false);
+
   const fetchRecentTasks = async () => {
     try {
       const res = await fetch("/api/tasks/my?limit=5");
@@ -181,10 +186,30 @@ export function DaoPlayground() {
       if (!res.ok) throw new Error(data?.message || 'Failed');
       setLearningResult(data.learning);
       toast.success('Learning extracted');
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error(e.message || 'Failed');
     } finally {
       setLearningLoading(false);
+    }
+  };
+
+  const runPrismaAgent = async () => {
+    if (!prismaPrompt.trim()) return toast.error("Enter a prompt");
+    setPrismaLoading(true);
+    try {
+      const res = await fetch("/api/ai/prisma-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prismaPrompt }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      setPrismaResult(data);
+      toast.success("Agent finished!");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setPrismaLoading(false);
     }
   };
 
@@ -231,6 +256,7 @@ export function DaoPlayground() {
           <TabsTrigger value="gamify" onClick={fetchRecentTasks}>Gamify</TabsTrigger>
           <TabsTrigger value="reporter">Reporter</TabsTrigger>
           <TabsTrigger value="learning">Learning</TabsTrigger>
+          <TabsTrigger value="prisma">Prisma Tools</TabsTrigger>
         </TabsList>
 
         {/* TODO AGENT */}
@@ -292,14 +318,14 @@ export function DaoPlayground() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Task ID</label>
-                <Input value={learningTaskId} onChange={(e)=>setLearningTaskId(e.target.value)} placeholder="cmid…" />
+                <Input value={learningTaskId} onChange={(e) => setLearningTaskId(e.target.value)} placeholder="cmid…" />
               </div>
               <div className="flex gap-2">
                 <Button onClick={runLearningAgent} disabled={learningLoading}>
                   {learningLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Run Learning Agent
                 </Button>
-                <Button variant="outline" onClick={()=>{ setLearningResult(null); }}>Clear</Button>
+                <Button variant="outline" onClick={() => { setLearningResult(null); }}>Clear</Button>
               </div>
 
               {learningResult && (
@@ -308,6 +334,47 @@ export function DaoPlayground() {
                   {!!(learningResult.tags?.length) && (<div className="text-xs text-muted-foreground mt-1">Tags: {learningResult.tags.join(', ')}</div>)}
                   {typeof learningResult.confidence === 'number' && (<div className="text-xs text-muted-foreground mt-1">Confidence: {Math.round(learningResult.confidence * 100)}%</div>)}
                   <pre className="mt-3 text-xs">{JSON.stringify(learningResult, null, 2)}</pre>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* PRISMA AGENT */}
+        <TabsContent value="prisma" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Prisma Tool Agent</CardTitle>
+              <CardDescription>Interact with your database using natural language (create tasks, query stats, etc.).</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Prompt</label>
+                <Textarea
+                  value={prismaPrompt}
+                  onChange={(e) => setPrismaPrompt(e.target.value)}
+                  placeholder="E.g., 'Create a high priority task to buy milk', 'Show my todo tasks', 'How many tasks are done?'"
+                  className="min-h-[100px]"
+                />
+              </div>
+              <Button onClick={runPrismaAgent} disabled={prismaLoading}>
+                {prismaLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Run Agent
+              </Button>
+
+              {prismaResult && (
+                <div className="mt-4 space-y-4">
+                  <div className="rounded-md border p-4">
+                    <h3 className="font-medium mb-2">Response</h3>
+                    <p className="text-sm whitespace-pre-wrap">{prismaResult.context?.meta?.taskManagerResult}</p>
+                  </div>
+
+                  {prismaResult.debug?.toolCalls?.length > 0 && (
+                    <div className="rounded-md bg-muted p-4 overflow-auto max-h-[400px]">
+                      <h3 className="font-medium text-xs mb-2 uppercase text-muted-foreground">Tool Calls</h3>
+                      <pre className="text-xs">{JSON.stringify(prismaResult.debug.toolCalls, null, 2)}</pre>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

@@ -7,8 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+// Daily AI Insights removed from Dashboard
 
-type BoardTask = { id: string; title: string; descriptionMarkdown?: string | null; columnId: string; priority?: 'LOW'|'MEDIUM'|'HIGH'|null; estimatedPomodoros?: number|null; tags?: string[]|null; topics?: string[]|null; primaryTopic?: string|null; aiPlanned?: boolean|null; status?: string };
+type BoardTask = { id: string; title: string; descriptionMarkdown?: string | null; columnId: string; priority?: 'LOW' | 'MEDIUM' | 'HIGH' | null; estimatedPomodoros?: number | null; tags?: string[] | null; topics?: string[] | null; primaryTopic?: string | null; aiPlanned?: boolean | null; status?: string };
 
 function Section({ title, children }: React.PropsWithChildren<{ title: string }>) {
   return (
@@ -19,10 +20,25 @@ function Section({ title, children }: React.PropsWithChildren<{ title: string }>
   );
 }
 
-export function TodayMain({ filters }: { filters: { type?: 'deep'|'shallow'|'all', priority?: 'P1'|'P2'|'P3'|'all', topic?: string | 'all' } }) {
+export function TodayMain({ filters }: { filters: { type?: 'deep' | 'shallow' | 'all', priority?: 'P1' | 'P2' | 'P3' | 'all', topic?: string | 'all' } }) {
   const boardsQ = useMyBoardsSlim();
   const calQ = useMyCalendar();
   const qc = useQueryClient();
+  const [workWindow, setWorkWindow] = React.useState<{ start: number; end: number }>({ start: 9, end: 17 });
+
+  // Load scheduler preferences to respect work hours in UI focus windows
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/scheduler/prefs');
+        if (!res.ok) return;
+        const data = await res.json();
+        const start = Number(data?.prefs?.workStartHour ?? 9);
+        const end = Number(data?.prefs?.workEndHour ?? 17);
+        setWorkWindow({ start, end });
+      } catch { /* noop */ }
+    })();
+  }, []);
 
   const tasks: BoardTask[] = React.useMemo(() => {
     if (!boardsQ.data?.boards) return [];
@@ -67,7 +83,7 @@ export function TodayMain({ filters }: { filters: { type?: 'deep'|'shallow'|'all
 
   // Upcoming events/meetings (next 7 days already filtered server-side). Show next 3.
   const nextEvents = React.useMemo(() => {
-    const ev = (calQ.data?.events ?? []) as Array<{ id: string; title: string; startAt: string; endAt: string; type?: string } >;
+    const ev = (calQ.data?.events ?? []) as Array<{ id: string; title: string; startAt: string; endAt: string; type?: string }>;
     const meetings = (calQ.data?.meetings ?? []) as Array<{ id: string; title: string; startAt: string; endAt: string }>;
     const combined = [
       ...ev.map(e => ({ id: e.id, title: e.title, startAt: new Date(e.startAt), endAt: new Date(e.endAt), kind: e.type || 'FOCUS' })),
@@ -92,7 +108,8 @@ export function TodayMain({ filters }: { filters: { type?: 'deep'|'shallow'|'all
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(now);
-    endOfDay.setHours(21, 0, 0, 0); // Soft day end at 9 PM for healthier defaults
+    // Cap focus windows to configured work day end
+    endOfDay.setHours(workWindow.end, 0, 0, 0);
 
     const ev = (calQ.data?.events ?? []) as Array<{ id: string; title: string; startAt: string; endAt: string; type?: string }>;
     const meetings = (calQ.data?.meetings ?? []) as Array<{ id: string; title: string; startAt: string; endAt: string }>;
@@ -119,7 +136,7 @@ export function TodayMain({ filters }: { filters: { type?: 'deep'|'shallow'|'all
       windows.push({ start: new Date(cursor), end: new Date(endOfDay) });
     }
     return windows.slice(0, 3);
-  }, [calQ.data]);
+  }, [calQ.data, workWindow.end]);
 
   async function scheduleFocus25(windowStart: Date, windowEnd: Date) {
     const now = new Date();
@@ -143,7 +160,7 @@ export function TodayMain({ filters }: { filters: { type?: 'deep'|'shallow'|'all
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success('Scheduled 25m focus block');
-      await qc.invalidateQueries({ queryKey: ['me','calendar'] });
+      await qc.invalidateQueries({ queryKey: ['me', 'calendar'] });
     } catch (_e) {
       toast.error('Failed to schedule');
     }

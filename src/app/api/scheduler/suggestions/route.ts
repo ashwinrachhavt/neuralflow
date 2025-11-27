@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserOr401 } from "@/lib/api-helpers";
-import { computeFreeWindows, parseDefaultGymPrefs, computeGymSuggestion, computeFocusSuggestion, computeShallowSuggestion, type GymPreference } from "@/lib/scheduler/engine";
+import { computeFreeWindows } from "@/lib/scheduler/engine";
+import { defaultRules, runRules, type SchedulerPrefs } from "@/lib/scheduler/rules-engine";
 
 export async function GET() {
   const user = await getUserOr401();
@@ -11,8 +12,9 @@ export async function GET() {
   const now = new Date();
   // Load user preferences from ReporterProfile.trendNotes.schedulerPrefs (fallback to env/defaults)
   const profile = await prisma.reporterProfile.findUnique({ where: { userId: (user as any).id as string }, select: { trendNotes: true } });
-  const prefs = (profile?.trendNotes as any)?.schedulerPrefs || {};
+  const prefs = ((profile?.trendNotes as any)?.schedulerPrefs || {}) as SchedulerPrefs;
   const workStartHour = Number(prefs.workStartHour ?? process.env.WORK_START_HOUR ?? 9);
+  const endWorkHour = Number((prefs as any).workEndHour ?? process.env.WORK_END_HOUR ?? 17);
   const startOfDay = new Date(now); startOfDay.setHours(workStartHour,0,0,0);
   const endOfDay = new Date(now); endOfDay.setHours(21,0,0,0);
 
@@ -45,7 +47,6 @@ export async function GET() {
     for (const x of tops) topicCounts[x] = (topicCounts[x] || 0) + 1;
   }
 
-  const suggestions: any[] = [];
   // Encourage recently learned strengths via tags
   const learnTagCounts: Record<string, number> = {};
   for (const l of recentLearnings) {
@@ -55,30 +56,14 @@ export async function GET() {
     });
   }
   const boostedTopics = Object.entries(learnTagCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
-  const gymEnabled = typeof prefs.gym === 'object' ? !!prefs.gym.enabled : true;
-  const gymPref: GymPreference = typeof prefs.gym === 'object'
-    ? {
-        dayOfWeek: Array.isArray(prefs.gym.days) ? (prefs.gym.days as number[]) : [0,1,2,3,4,5,6],
-        startHour: Number(prefs.gym.startHour ?? 19),
-        endHour: Number(prefs.gym.endHour ?? 21),
-      }
-    : parseDefaultGymPrefs();
-  if (gymEnabled) {
-    const gym = computeGymSuggestion(now, free, gymPref);
-    if (gym) suggestions.push(gym);
-  }
-  // Evening shallow preference
-  const shallowPref = prefs.shallow || { enabled: true, startHour: 18, title: 'Vibe coding' };
-  const nowHour = now.getHours();
-  // In evening hours, prefer shallow suggestion over deep focus
-  if (shallowPref.enabled && nowHour >= Number(shallowPref.startHour ?? 18)) {
-    const prefTopics = Array.isArray(prefs.favoriteTopics) ? prefs.favoriteTopics : [];
-    const shallow = computeShallowSuggestion(now, free, Number(shallowPref.startHour ?? 18), { title: String(shallowPref.title || 'Vibe coding'), preferredTopics: [...prefTopics, ...boostedTopics], topicCounts });
-    if (shallow) suggestions.push(shallow);
-  } else {
-    const focus = computeFocusSuggestion(free, topicCounts);
-    if (focus) suggestions.push(focus);
-  }
+  const suggestions = runRules(defaultRules(), {
+    now,
+    userId,
+    free,
+    topicCounts,
+    boostedTopics,
+    prefs,
+  });
 
   return NextResponse.json({ suggestions });
 }

@@ -57,7 +57,8 @@ export async function GET(_req: NextRequest, context: RouteContext) {
       location: task.calendarEvents?.[0]?.location ?? null,
       suggestedColumn: (task as any).aiSuggestedColumnId
         ? (() => {
-            const c = task.board?.columns?.find((x) => x.id === (task as any).aiSuggestedColumnId);
+            const columns = (task.board?.columns ?? []) as Array<{ id: string; name: string }>;
+            const c = columns.find((x) => x.id === (task as any).aiSuggestedColumnId);
             return c ? { id: c.id, title: c.name } : null;
           })()
         : null,

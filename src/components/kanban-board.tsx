@@ -6,7 +6,10 @@ import { motion } from "framer-motion";
 import {
   DndContext,
   DragEndEvent,
+  DragStartEvent,
   PointerSensor,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
   useDroppable,
   useSensor,
   useSensors,
@@ -105,6 +108,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   const [openTaskId, setOpenTaskId] = useState<string | null>(null); // fallback when routing not available
   const [showHidden, setShowHidden] = useState(false);
   const [standardEnsured, setStandardEnsured] = useState(false);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
   // Hydrate board from API
   useEffect(() => {
@@ -226,6 +230,14 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
 
   // Quiz removed for initial rollout
 
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    const id = active?.id?.toString?.();
+    if (!id) return;
+    if (active?.data?.current?.type === "task" || !(active?.data?.current?.type)) {
+      setActiveTaskId(id);
+    }
+  };
+
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over) return;
 
@@ -271,7 +283,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
   };
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={(evt) => { try { handleDragEnd(evt); } finally { setActiveTaskId(null); } }}>
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={async () => {
@@ -411,6 +423,41 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
       {openTaskId ? (
         <CardSheet taskId={openTaskId} open={true} onClose={() => setOpenTaskId(null)} onOpenFull={(id) => (window.location.href = `/tasks/${id}`)} />
       ) : null}
+
+      {/* Drag overlay for smooth lane transitions */}
+      <DragOverlay
+        dropAnimation={{
+          duration: 250,
+          easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          sideEffects: defaultDropAnimationSideEffects({
+            styles: { active: { opacity: '0.2' } },
+          }),
+        }}
+      >
+        {(() => {
+          const t = activeTaskId ? board.tasks[activeTaskId] : undefined;
+          return t ? (
+            <div className="pointer-events-none select-none">
+              <motion.div className="rounded-lg border border-border bg-background/95 p-3 text-left shadow-2xl">
+                <h3 className="font-medium text-sm break-words leading-tight line-clamp-2">{t.title}</h3>
+                {t.description ? (
+                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed break-words whitespace-pre-wrap line-clamp-3">{t.description}</p>
+                ) : null}
+                {t.primaryTopic || (t.topics && t.topics.length) ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+                    {t.primaryTopic ? (
+                      <span className="rounded px-2 py-0.5 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300">{t.primaryTopic}</span>
+                    ) : null}
+                    {(t.topics ?? []).filter(x => x !== t.primaryTopic).slice(0, 2).map(x => (
+                      <span key={x} className="rounded px-2 py-0.5 bg-muted text-foreground/80">{x}</span>
+                    ))}
+                  </div>
+                ) : null}
+              </motion.div>
+            </div>
+          ) : null;
+        })()}
+      </DragOverlay>
     </DndContext>
   );
 }
@@ -489,7 +536,7 @@ function ColumnSortableArea({ columnId, taskIds, children }: ColumnSortableAreaP
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-[120px] flex-col gap-2",
+          "flex min-h-[120px] flex-col gap-2 transition-colors duration-200",
           isOver && "rounded-lg border border-dashed border-primary/40 bg-primary/5",
         )}
         data-column-id={columnId}
@@ -516,11 +563,12 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onClassify, onOpen,
     useSortable({
       id: task.id,
       data: { type: "task", columnId },
+      animateLayoutChanges: () => true,
     });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition || 'transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1)',
   } satisfies React.CSSProperties;
 
   const isOpened = openTaskId === task.id;
@@ -532,8 +580,8 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onClassify, onOpen,
       {...attributes}
       {...listeners}
       className={cn(
-        "rounded-lg border border-border bg-background/90 p-3 text-left shadow-sm",
-        isDragging && "opacity-60",
+        "rounded-lg border border-border bg-background/90 p-3 text-left shadow-sm will-change-transform",
+        isDragging && "opacity-70 ring-2 ring-primary/30 shadow-lg",
         isOpened && "invisible",
       )}
       onClick={(e) => {

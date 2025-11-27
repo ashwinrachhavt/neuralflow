@@ -5,7 +5,8 @@ export type GymPreference = { dayOfWeek: number[]; startHour: number; endHour: n
 export type Suggestion =
   | { id: string; kind: 'GYM_REMINDER'; title: string; startAt: string; endAt: string }
   | { id: string; kind: 'FOCUS_SESSION'; title: string; startAt: string; endAt: string; topic?: string }
-  | { id: string; kind: 'SHALLOW_SESSION'; title: string; startAt: string; endAt: string; topic?: string };
+  | { id: string; kind: 'SHALLOW_SESSION'; title: string; startAt: string; endAt: string; topic?: string }
+  | { id: string; kind: 'LOG_HOURS'; title: string; startAt: string; endAt: string; project?: string };
 
 export function computeFreeWindows(
   events: { startAt: Date; endAt: Date }[],

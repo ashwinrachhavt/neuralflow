@@ -13,8 +13,8 @@ export async function GET() {
     prisma.userStoneProgress.findMany({ where: { userId: (user as any).id } }),
   ]);
   const items = stones.map((s) => {
-    const p = progress.find((x) => x.stoneId === s.id);
-    const count = owned.filter((o) => o.stoneId === s.id).length;
+    const p = progress.find((x: any) => x.stoneId === s.id);
+    const count = owned.filter((o: any) => o.stoneId === s.id).length;
     return {
       id: s.id,
       slug: s.slug,
@@ -27,4 +27,3 @@ export async function GET() {
   });
   return NextResponse.json({ items });
 }
-

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   });
 
   const todoSummary = tasks
-    .map((t, i) => `${i + 1}. (${t.id}) [${t.priority}] ${t.title}${t.estimatedPomodoros ? ` (${t.estimatedPomodoros} pom)` : ''} — ${t.status}`)
+    .map((t: any, i: number) => `${i + 1}. (${t.id}) [${t.priority}] ${t.title}${t.estimatedPomodoros ? ` (${t.estimatedPomodoros} pom)` : ''} — ${t.status}`)
     .join('\n');
 
   const system = [

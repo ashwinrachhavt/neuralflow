@@ -1,4 +1,4 @@
-import type { QuestionType, TaskPriority } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 export const TASK_TYPES = [
   "DEEP_WORK",
@@ -28,7 +28,7 @@ export interface PlannedTaskSummary {
   descriptionMarkdown: string;
   type: TaskType;
   storyPoints: number;
-  priority: TaskPriority;
+  priority: Prisma.TaskPriority;
   dueDate?: string;
   tags?: string[];
 }
@@ -62,7 +62,7 @@ export interface FlashcardAgentResult {
 }
 
 export interface QuizAgentQuestion {
-  type: QuestionType;
+  type: Prisma.QuestionType;
   promptMarkdown: string;
   options?: string[];
   correctAnswer?: string | string[];

@@ -4,17 +4,21 @@ import { getUserOr401 } from "@/lib/api-helpers";
 
 type Prefs = {
   workStartHour: number;
+  workEndHour?: number;
   gym: { enabled: boolean; startHour: number; endHour: number; days: number[] };
   shallow?: { enabled: boolean; startHour: number; title?: string };
   favoriteTopics: string[];
+  vibeProjects?: string[];
 };
 
 function defaults(): Prefs {
   return {
     workStartHour: Number(process.env.WORK_START_HOUR ?? 9),
+    workEndHour: Number(process.env.WORK_END_HOUR ?? 17),
     gym: { enabled: true, startHour: 19, endHour: 21, days: [0,1,2,3,4,5,6] },
     shallow: { enabled: true, startHour: 18, title: 'Vibe coding' },
     favoriteTopics: [],
+    vibeProjects: [],
   };
 }
 

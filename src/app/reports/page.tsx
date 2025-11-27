@@ -2,13 +2,20 @@ import { PageShell } from "@/components/layout/page-shell";
 export const dynamic = 'force-dynamic';
 
 async function fetchWeekly() {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${base}/api/reports/weekly/list`, { cache: 'no-store' });
-  return res.json().catch(() => ({ items: [] })) as Promise<{ items: { id: string; createdAt: string; summary: string; highlights?: string[]; sentiment?: string }[] }>;
+  try {
+    const res = await fetch(`/api/reports/weekly/list`, { cache: 'no-store' });
+    if (!res.ok) return { items: [] } as any;
+    const data = await res.json().catch(() => ({ items: [] }));
+    if (!data || !Array.isArray(data.items)) return { items: [] } as any;
+    return data as { items: { id: string; createdAt: string; summary: string; highlights?: string[]; sentiment?: string }[] };
+  } catch {
+    return { items: [] } as any;
+  }
 }
 
 export default async function ReportsPage() {
-  const { items } = await fetchWeekly();
+  const data = await fetchWeekly();
+  const items = Array.isArray((data as any)?.items) ? (data as any).items : [];
   return (
     <PageShell>
       <div className="mb-6">

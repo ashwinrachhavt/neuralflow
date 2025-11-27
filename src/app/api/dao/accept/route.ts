@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserOr401, readJson } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDefaultBoard } from "@/server/db/boards";
-import { TaskType } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 type TaskDTO = {
   title: string;
@@ -56,7 +56,11 @@ export async function POST(req: Request) {
     aiPlanned: true,
     fromBrainDump: true,
     source: "orchestrator",
-    type: t.kind === 'DEEP' ? TaskType.DEEP_WORK : t.kind === 'SHALLOW' ? TaskType.SHALLOW_WORK : undefined,
+    type: (t.kind === 'DEEP'
+      ? 'DEEP_WORK'
+      : t.kind === 'SHALLOW'
+      ? 'SHALLOW_WORK'
+      : undefined) as Prisma.TaskType | undefined,
   }));
 
   const result = await prisma.task.createMany({ data });

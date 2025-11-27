@@ -19,8 +19,8 @@ export async function GET() {
   const level = 1 + Math.floor((profile?.xp ?? 0) / 100);
   const earned = owned.map((e) => ({ slug: e.stone.slug, name: e.stone.name, rarity: e.stone.rarity, image: e.stone.imagePath, earnedAt: e.earnedAt.toISOString(), lore: e.note }));
   const catalog = stones.map((s) => {
-    const p = progress.find((x) => x.stoneId === s.id);
-    const earnedCount = owned.filter((o) => o.stoneId === s.id).length;
+    const p = progress.find((x: any) => x.stoneId === s.id);
+    const earnedCount = owned.filter((o: any) => o.stoneId === s.id).length;
     return { slug: s.slug, name: s.name, rarity: s.rarity, theme: s.description, image: s.imagePath, shards: { current: p?.currentShards ?? 0, target: p?.targetShards ?? 10 }, earnedCount };
   });
 
@@ -36,4 +36,3 @@ export async function GET() {
     earned,
   });
 }
-

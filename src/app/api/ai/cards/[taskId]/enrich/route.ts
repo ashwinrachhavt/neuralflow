@@ -21,7 +21,7 @@ export async function POST(_req: Request, ctx: Ctx) {
   if (!task) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
   // Fetch a few recent tasks for context
-  const recent = await prisma.task.findMany({
+  const recent: { id: string; title: string; descriptionMarkdown: string | null }[] = await prisma.task.findMany({
     where: { boardId: task.boardId },
     orderBy: { updatedAt: "desc" },
     take: 5,
@@ -33,7 +33,11 @@ export async function POST(_req: Request, ctx: Ctx) {
     result = await enrichTask({
       title: task.title,
       descriptionMarkdown: task.descriptionMarkdown || null,
-      userRecentTasks: recent.map((t) => ({ id: t.id, title: t.title, description: t.descriptionMarkdown || "" })),
+      userRecentTasks: recent.map((t: { id: string; title: string; descriptionMarkdown: string | null }) => ({
+        id: t.id,
+        title: t.title,
+        description: t.descriptionMarkdown || "",
+      })),
     });
   } catch (e: any) {
     const fallback = {

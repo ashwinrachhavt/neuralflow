@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useMarkDone, useMyTodos } from "@/hooks/api";
+import { QuickAIAction } from "@/components/ai-assistant/QuickAIAction";
 
 export function TodosMinimal() {
   const qc = useQueryClient();
@@ -17,8 +18,8 @@ export function TodosMinimal() {
   const upcoming = tasks.filter((t: any) => !t.aiPlanned);
 
   const [quick, setQuick] = useState("");
-  const [newType, setNewType] = useState<'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|undefined>(undefined);
-  const [newPriority, setNewPriority] = useState<'LOW'|'MEDIUM'|'HIGH'|undefined>('MEDIUM');
+  const [newType, setNewType] = useState<'DEEP_WORK' | 'SHALLOW_WORK' | 'LEARNING' | 'SHIP' | 'MAINTENANCE' | undefined>(undefined);
+  const [newPriority, setNewPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | undefined>('MEDIUM');
   const markDone = useMarkDone();
   const addQuick = useMutation({
     mutationFn: async (payload: { title: string; type?: string; priority?: string }) => {
@@ -27,16 +28,28 @@ export function TodosMinimal() {
       return await res.json();
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
+      await qc.invalidateQueries({ queryKey: ['my-todos', 'TODO'] });
       setQuick("");
     }
   });
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <header className="mb-4">
-        <h1 className="text-2xl font-semibold">Todos</h1>
-        <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+      <header className="mb-4 flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Todos</h1>
+          <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        </div>
+        <QuickAIAction
+          title="Task AI Assistant"
+          description="Ask me to find tasks, prioritize work, or get insights."
+          suggestedPrompts={[
+            "What should I work on next?",
+            "Show my high priority tasks",
+            "How many tasks do I have?",
+            "Find tasks tagged 'deep'",
+          ]}
+        />
       </header>
 
       <div className="mb-4 space-y-2">
@@ -99,71 +112,71 @@ export function TodosMinimal() {
       </div>
 
       {!(isLoading || tasks.length === 0) ? (
-      <div className="rounded-xl border border-border/60 bg-muted/15 p-3">
-        {isLoading ? (
-          <ul className="divide-y divide-border/50">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <li key={i} className="py-2">
-                <div className="flex items-center justify-between gap-3 px-1">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="h-4 w-4 rounded border border-border/70" />
-                    <span className="h-4 w-48 animate-pulse rounded bg-foreground/10" />
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <span className="h-4 w-10 animate-pulse rounded bg-foreground/10" />
-                    <span className="h-4 w-14 animate-pulse rounded bg-foreground/10" />
-                    <span className="h-4 w-8 animate-pulse rounded bg-foreground/10" />
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : aiPlanned.length > 0 ? (
-          <section>
-            <h2 className="mb-2 text-sm font-semibold text-muted-foreground">AI Planned</h2>
+        <div className="rounded-xl border border-border/60 bg-muted/15 p-3">
+          {isLoading ? (
             <ul className="divide-y divide-border/50">
-            {aiPlanned.map((t) => (
-              <li key={t.id} className="py-0.5">
-                <TodoRow
-                  id={t.id}
-                  title={t.title}
-                  tags={t.tags ?? []}
-                  priority={t.priority ?? "MEDIUM"}
-                  minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined}
-                  location={t.location ?? undefined}
-                  onDone={async () => {
-                    await markDone.mutateAsync(t.id);
-                    await qc.invalidateQueries({ queryKey: ["my-todos","TODO"] });
-                  }}
-                />
-              </li>
-            ))}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="py-2">
+                  <div className="flex items-center justify-between gap-3 px-1">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="h-4 w-4 rounded border border-border/70" />
+                      <span className="h-4 w-48 animate-pulse rounded bg-foreground/10" />
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="h-4 w-10 animate-pulse rounded bg-foreground/10" />
+                      <span className="h-4 w-14 animate-pulse rounded bg-foreground/10" />
+                      <span className="h-4 w-8 animate-pulse rounded bg-foreground/10" />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : aiPlanned.length > 0 ? (
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-muted-foreground">AI Planned</h2>
+              <ul className="divide-y divide-border/50">
+                {aiPlanned.map((t) => (
+                  <li key={t.id} className="py-0.5">
+                    <TodoRow
+                      id={t.id}
+                      title={t.title}
+                      tags={t.tags ?? []}
+                      priority={t.priority ?? "MEDIUM"}
+                      minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined}
+                      location={t.location ?? undefined}
+                      onDone={async () => {
+                        await markDone.mutateAsync(t.id);
+                        await qc.invalidateQueries({ queryKey: ["my-todos", "TODO"] });
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <section className={aiPlanned.length > 0 ? 'mt-4' : ''}>
+            {aiPlanned.length > 0 ? (<h2 className="mb-2 text-sm font-semibold text-muted-foreground">Upcoming</h2>) : null}
+            <ul className="divide-y divide-border/50">
+              {isLoading ? null : upcoming.map((t) => (
+                <li key={t.id} className="py-0.5">
+                  <TodoRow
+                    id={t.id}
+                    title={t.title}
+                    tags={t.tags ?? []}
+                    priority={t.priority ?? "MEDIUM"}
+                    minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined}
+                    location={t.location ?? undefined}
+                    onDone={async () => {
+                      await markDone.mutateAsync(t.id);
+                      await qc.invalidateQueries({ queryKey: ["my-todos", "TODO"] });
+                    }}
+                  />
+                </li>
+              ))}
             </ul>
           </section>
-        ) : null}
-
-        <section className={aiPlanned.length > 0 ? 'mt-4' : ''}>
-          {aiPlanned.length > 0 ? (<h2 className="mb-2 text-sm font-semibold text-muted-foreground">Upcoming</h2>) : null}
-          <ul className="divide-y divide-border/50">
-          {isLoading ? null : upcoming.map((t) => (
-            <li key={t.id} className="py-0.5">
-              <TodoRow
-                id={t.id}
-                title={t.title}
-                tags={t.tags ?? []}
-                priority={t.priority ?? "MEDIUM"}
-                minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined}
-                location={t.location ?? undefined}
-                onDone={async () => {
-                  await markDone.mutateAsync(t.id);
-                  await qc.invalidateQueries({ queryKey: ["my-todos","TODO"] });
-                }}
-              />
-            </li>
-          ))}
-          </ul>
-        </section>
-      </div>
+        </div>
       ) : null}
     </div>
   );

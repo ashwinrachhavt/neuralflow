@@ -15,12 +15,11 @@ export async function GET() {
   });
 
   const items = runs
-    .map(r => r.outputs.map(o => ({ id: r.id, createdAt: r.createdAt, payload: o.payload as any })))
+    .map((r: any) => r.outputs.map((o: any) => ({ id: r.id, createdAt: r.createdAt, payload: o.payload as any })))
     .flat()
     .filter(Boolean)
-    .map(r => ({ id: r.id, createdAt: r.createdAt, summary: r.payload.summary, highlights: r.payload.highlights, sentiment: r.payload.sentiment }))
+    .map((r: any) => ({ id: r.id, createdAt: r.createdAt, summary: r.payload.summary, highlights: r.payload.highlights, sentiment: r.payload.sentiment }))
     .slice(0, 10);
 
   return NextResponse.json({ items });
 }
-

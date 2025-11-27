@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink, FileText, ListChecks } from "lucide-react";
-import type { Prisma, TaskStatus } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { PageShell } from "@/components/layout/page-shell";
@@ -286,7 +286,7 @@ function deriveProjectStatus(tasks: ProjectWithTasks["tasks"]) {
   return "Planned";
 }
 
-function formatStatus(status: TaskStatus) {
+function formatStatus(status: Prisma.TaskStatus) {
   switch (status) {
     case "IN_PROGRESS":
       return "In progress";

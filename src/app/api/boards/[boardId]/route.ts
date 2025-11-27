@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: Ctx) {
   if (!board) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
   const raw = await listByBoard(board.id);
-  const tasks = raw.map(t => ({
+  const tasks = raw.map((t: any) => ({
     id: t.id,
     title: t.title,
     descriptionMarkdown: t.descriptionMarkdown,
@@ -40,12 +40,14 @@ export async function GET(_req: Request, { params }: Ctx) {
     primaryTopic: (t as any).primaryTopic ?? null,
   }));
 
-  const columnOrder = board.columns.map(c => c.id);
-  const columnsMap = Object.fromEntries(board.columns.map(c => [c.id, { id: c.id, name: c.name, position: c.position, taskIds: [] as string[] }]));
+  const columnOrder = board.columns.map((c: any) => c.id);
+  const columnsMap = Object.fromEntries(
+    board.columns.map((c: any) => [c.id, { id: c.id, name: c.name, position: c.position, taskIds: [] as string[] }])
+  );
   for (const t of tasks) {
     const col = columnsMap[t.columnId];
     if (col) col.taskIds.push(t.id);
   }
-  const tasksMap = Object.fromEntries(tasks.map(t => [t.id, t]));
+  const tasksMap = Object.fromEntries(tasks.map((t: any) => [t.id, t]));
   return NextResponse.json({ board: { id: board.id, title: board.title, columnOrder, columns: columnsMap, tasks: tasksMap } });
 }
