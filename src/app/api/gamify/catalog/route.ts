@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   await gamificationEngine.ensureCatalog();
   const stones = await prisma.stoneDefinition.findMany({ orderBy: { name: "asc" } });
-  const catalog = stones.map((s) => ({
+  const catalog = stones.map((s: any) => ({
     slug: s.slug,
     name: s.name,
     rarity: s.rarity,
@@ -14,4 +14,3 @@ export async function GET() {
   }));
   return NextResponse.json({ catalog });
 }
-

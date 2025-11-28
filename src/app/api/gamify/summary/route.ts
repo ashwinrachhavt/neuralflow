@@ -17,8 +17,8 @@ export async function GET() {
   ]);
 
   const level = 1 + Math.floor((profile?.xp ?? 0) / 100);
-  const recent = earned.map((e) => ({ slug: e.stone.slug, name: e.stone.name, earnedAt: e.earnedAt.toISOString(), image: e.stone.imagePath }));
-  const prog = stones.map((s) => {
+  const recent = earned.map((e: any) => ({ slug: e.stone.slug, name: e.stone.name, earnedAt: e.earnedAt.toISOString(), image: e.stone.imagePath }));
+  const prog = stones.map((s: any) => {
     const p = progress.find((x: any) => x.stoneId === s.id);
     return { slug: s.slug, name: s.name, image: s.imagePath, currentShards: p?.currentShards ?? 0, targetShards: p?.targetShards ?? 10 };
   });

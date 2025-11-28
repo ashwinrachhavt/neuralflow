@@ -100,7 +100,6 @@ Always reply with a short natural-language summary of what you did or the data y
             system: systemPrompt,
             prompt: input,
             tools: prismaTools,
-            maxSteps: 5, // Allow multi-step interactions (e.g. find board -> create task)
         });
 
         // Build a guaranteed natural-language summary if the model didn't produce one

@@ -1,6 +1,8 @@
 import { PageShell } from "@/components/layout/page-shell";
 export const dynamic = 'force-dynamic';
 
+type ReportItem = { id: string; createdAt: string; summary: string; highlights?: string[]; sentiment?: string };
+
 async function fetchWeekly() {
   try {
     const res = await fetch(`/api/reports/weekly/list`, { cache: 'no-store' });
@@ -15,7 +17,7 @@ async function fetchWeekly() {
 
 export default async function ReportsPage() {
   const data = await fetchWeekly();
-  const items = Array.isArray((data as any)?.items) ? (data as any).items : [];
+  const items: ReportItem[] = Array.isArray((data as any)?.items) ? ((data as any).items as ReportItem[]) : [];
   return (
     <PageShell>
       <div className="mb-6">
@@ -26,7 +28,7 @@ export default async function ReportsPage() {
         {items.length === 0 ? (
           <div className="text-sm text-muted-foreground">No reports yet.</div>
         ) : (
-          items.map((it) => (
+          items.map((it: ReportItem) => (
             <div key={it.id} className="rounded-xl border bg-card p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-medium">{new Date(it.createdAt).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
@@ -35,7 +37,7 @@ export default async function ReportsPage() {
               <p className="mt-2 text-sm">{it.summary}</p>
               {Array.isArray(it.highlights) && it.highlights.length > 0 && (
                 <ul className="mt-3 list-disc pl-5 text-sm text-muted-foreground space-y-1">
-                  {it.highlights.slice(0, 5).map((h, i) => <li key={i}>{h}</li>)}
+                  {it.highlights.slice(0, 5).map((h: string, i: number) => <li key={i}>{h}</li>)}
                 </ul>
               )}
             </div>

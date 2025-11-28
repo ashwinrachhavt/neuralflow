@@ -51,7 +51,7 @@ export async function POST(_req: Request, ctx: Ctx) {
       data: {
         descriptionMarkdown: fallback.descriptionMarkdown,
         aiSubtasks: fallback.subtasks,
-        aiSuggestedEstimateMin: fallback.subtasks.reduce((a, s) => a + (s.estimateMin || 0), 0),
+        aiSuggestedEstimateMin: fallback.subtasks.reduce((a: number, s: any) => a + (s.estimateMin || 0), 0),
         aiState: "ENRICHED",
         aiConfidence: fallback.confidence,
         enrichedAt: new Date(),
@@ -61,7 +61,7 @@ export async function POST(_req: Request, ctx: Ctx) {
     return NextResponse.json(fallback);
   }
 
-  const estimateMin = (result.subtasks ?? []).reduce((a, s) => a + (s.estimateMin || 0), 0) || null;
+  const estimateMin = (result.subtasks ?? []).reduce((a: number, s: any) => a + (s.estimateMin || 0), 0) || null;
   const newDescription = result.descriptionMarkdown?.trim()?.length
     ? result.descriptionMarkdown.trim()
     : task.descriptionMarkdown || "";

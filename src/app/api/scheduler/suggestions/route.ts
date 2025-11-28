@@ -36,7 +36,12 @@ export async function GET() {
     })(),
   ]);
 
-  const free = computeFreeWindows(events.map(e => ({ startAt: e.startAt, endAt: e.endAt })), startOfDay, endOfDay, 20);
+  const free = computeFreeWindows(
+    events.map((e: { startAt: Date; endAt: Date }) => ({ startAt: e.startAt, endAt: e.endAt })),
+    startOfDay,
+    endOfDay,
+    20,
+  );
 
   // Topic counts for backlog
   const topicCounts: Record<string, number> = {};
@@ -55,7 +60,10 @@ export async function GET() {
       learnTagCounts[t] = (learnTagCounts[t] || 0) + 1;
     });
   }
-  const boostedTopics = Object.entries(learnTagCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k);
+  const boostedTopics = Object.entries(learnTagCounts)
+    .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([k]) => k);
   const suggestions = runRules(defaultRules(), {
     now,
     userId,

@@ -26,6 +26,5 @@ export async function GET(req: Request) {
       results.push({ userId: u.id, ok: false });
     }
   }
-  return NextResponse.json({ ranFor: results.length, okCount: results.filter(r=>r.ok).length });
+  return NextResponse.json({ ranFor: results.length, okCount: results.filter((r: { ok: boolean }) => r.ok).length });
 }
-

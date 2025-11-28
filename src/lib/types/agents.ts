@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { TaskPriority } from "@/lib/ai/types";
 
 export const TASK_TYPES = [
   "DEEP_WORK",
@@ -28,7 +28,7 @@ export interface PlannedTaskSummary {
   descriptionMarkdown: string;
   type: TaskType;
   storyPoints: number;
-  priority: Prisma.TaskPriority;
+  priority: TaskPriority;
   dueDate?: string;
   tags?: string[];
 }
@@ -62,7 +62,7 @@ export interface FlashcardAgentResult {
 }
 
 export interface QuizAgentQuestion {
-  type: Prisma.QuestionType;
+  type: string; // Question type enum not exported by Prisma in this schema
   promptMarkdown: string;
   options?: string[];
   correctAnswer?: string | string[];

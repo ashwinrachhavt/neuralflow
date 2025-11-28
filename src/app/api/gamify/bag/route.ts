@@ -12,7 +12,7 @@ export async function GET() {
     prisma.userStone.findMany({ where: { userId: (user as any).id } }),
     prisma.userStoneProgress.findMany({ where: { userId: (user as any).id } }),
   ]);
-  const items = stones.map((s) => {
+  const items = stones.map((s: any) => {
     const p = progress.find((x: any) => x.stoneId === s.id);
     const count = owned.filter((o: any) => o.stoneId === s.id).length;
     return {

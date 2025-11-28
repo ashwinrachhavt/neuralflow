@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink, FileText, ListChecks } from "lucide-react";
-import type { Prisma } from "@prisma/client";
+import type { TaskStatus } from "@/lib/ai/types";
 
 import { prisma } from "@/lib/prisma";
 import { PageShell } from "@/components/layout/page-shell";
@@ -16,37 +16,30 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-type ProjectWithTasks = Prisma.ProjectGetPayload<{
-  include: {
-    tasks: {
-      orderBy: { updatedAt: "desc" };
-      select: {
-        id: true;
-        title: true;
-        status: true;
-        storyPoints: true;
-        type: true;
-        updatedAt: true;
-      };
-    };
-  };
-}>;
+type ProjectWithTasks = {
+  id: string;
+  title: string;
+  tasks: Array<{
+    id: string;
+    title: string;
+    status: TaskStatus;
+    storyPoints?: number | null;
+    type?: string | null;
+    updatedAt: Date;
+  }>;
+};
 
-type NoteForProject = Prisma.NoteGetPayload<{
-  select: {
-    id: true;
-    title: true;
-    contentMarkdown: true;
-    updatedAt: true;
-    task: {
-      select: {
-        projectId: true;
-        type: true;
-        title: true;
-      };
-    };
-  };
-}>;
+type NoteForProject = {
+  id: string;
+  title: string;
+  contentMarkdown: string | null;
+  updatedAt: Date;
+  task: {
+    projectId: string | null;
+    type: string | null;
+    title: string | null;
+  } | null;
+};
 
 type ProjectDoc = {
   id: string;
@@ -286,7 +279,7 @@ function deriveProjectStatus(tasks: ProjectWithTasks["tasks"]) {
   return "Planned";
 }
 
-function formatStatus(status: Prisma.TaskStatus) {
+function formatStatus(status: TaskStatus) {
   switch (status) {
     case "IN_PROGRESS":
       return "In progress";

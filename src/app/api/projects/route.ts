@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
   // Avoid creating duplicates for same user/title
   const existing = await prisma.project.findMany({ where: { userId, title: { in: titles } }, select: { id: true, title: true } });
-  const existingTitles = new Set(existing.map(p => p.title));
+  const existingTitles = new Set(existing.map((p: { title: string }) => p.title));
   const toCreate = titles.filter(t => !existingTitles.has(t));
 
   const created = toCreate.length
@@ -55,7 +55,6 @@ export async function POST(req: Request) {
       )
     : [];
 
-  const result = [...existing, ...created].sort((a, b) => a.title.localeCompare(b.title));
-  return NextResponse.json({ created: created.map(p => ({ id: p.id, title: p.title })), projects: result });
+  const result = [...existing, ...created].sort((a: { title: string }, b: { title: string }) => a.title.localeCompare(b.title));
+  return NextResponse.json({ created: created.map((p: { id: string; title: string }) => ({ id: p.id, title: p.title })), projects: result });
 }
-

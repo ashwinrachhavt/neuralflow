@@ -56,11 +56,11 @@ export async function POST(req: Request) {
     aiPlanned: true,
     fromBrainDump: true,
     source: "orchestrator",
-    type: (t.kind === 'DEEP'
-      ? 'DEEP_WORK'
+    ...(t.kind === 'DEEP'
+      ? { type: 'DEEP_WORK' as any }
       : t.kind === 'SHALLOW'
-      ? 'SHALLOW_WORK'
-      : undefined) as Prisma.TaskType | undefined,
+      ? { type: 'SHALLOW_WORK' as any }
+      : {}),
   }));
 
   const result = await prisma.task.createMany({ data });

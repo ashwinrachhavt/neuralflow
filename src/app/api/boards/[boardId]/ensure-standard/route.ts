@@ -56,7 +56,7 @@ export async function POST(_req: Request, ctx: Ctx) {
 
   // Reorder standard columns to positions 0..3
   await prisma.$transaction(
-    STANDARD.map((std, index) =>
+    STANDARD.map((std: { key: string }, index: number) =>
       prisma.column.update({ where: { id: byKey[std.key]!.id }, data: { position: index } }),
     ),
   );
@@ -76,6 +76,6 @@ export async function POST(_req: Request, ctx: Ctx) {
 
   return NextResponse.json({
     ok: true,
-    columns: STANDARD.map(s => ({ key: s.key, id: byKey[s.key]!.id })),
+    columns: STANDARD.map((s: { key: string }) => ({ key: s.key, id: byKey[s.key]!.id })),
   });
 }
