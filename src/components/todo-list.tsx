@@ -26,37 +26,7 @@ export function TodoList() {
   const markDone = useMarkDone();
   const deleteTask = useDeleteCard();
 
-  const enrichTask = useMutation({
-    mutationFn: async (taskId: string) => {
-      const res = await fetch(`/api/ai/cards/${taskId}/enrich`, { method: "POST" });
-      if (!res.ok) throw new Error("Unable to enrich task");
-      return (await res.json()) as { descriptionMarkdown: string };
-    },
-    onSuccess: async () => {
-      toast.success("Description enriched");
-      await qc.invalidateQueries({ queryKey: ["my-todos", 'TODO'] });
-    },
-  });
-
-  async function ensureNote(taskId: string): Promise<string> {
-    const res = await fetch(`/api/cards/${taskId}/note`, { method: "POST" });
-    if (!res.ok) throw new Error("Unable to initialize note");
-    const data = (await res.json()) as { noteId: string };
-    return data.noteId;
-  }
-
-  const summarizeNote = useMutation({
-    mutationFn: async (taskId: string) => {
-      const noteId = await ensureNote(taskId);
-      const res = await fetch(`/api/ai/notes/${noteId}/summary`, { method: "POST" });
-      if (!res.ok) throw new Error("Unable to summarize note");
-      return (await res.json()) as { summary: string; bullets: string[] };
-    },
-    onSuccess: (data) => {
-      toast.info(`Summary: ${data.summary}`, { description: `${data.bullets.length} bullets generated` });
-    },
-    onError: () => toast.error("Failed to summarize note"),
-  });
+  // AI quick actions removed for initial rollout
 
   // Quiz generation removed for initial rollout
 
@@ -137,36 +107,7 @@ export function TodoList() {
                         />
                         Done
                       </label>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => enrichTask.mutate(todo.id)}
-                        disabled={enrichTask.isPending}
-                        className="gap-2"
-                        title="AI: Expand description"
-                      >
-                        {enrichTask.isPending ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <span className="size-4">✨</span>
-                        )}
-                        Enrich
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => summarizeNote.mutate(todo.id)}
-                        disabled={summarizeNote.isPending}
-                        className="gap-2"
-                        title="AI: Summarize note"
-                      >
-                        {summarizeNote.isPending ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <span className="size-4">📝</span>
-                        )}
-                        Summary
-                      </Button>
+                      {/* AI: Enrich/Summary removed */}
                       
                       <Button
                         size="icon"

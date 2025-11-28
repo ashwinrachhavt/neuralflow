@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Clock, MapPin, Plus } from "lucide-react";
+import { Clock, MapPin, Plus, ExternalLink } from "lucide-react";
+import { DueDateControl } from "@/components/ui/due-date-control";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,6 +145,7 @@ export function TodosMinimal() {
                       priority={t.priority ?? "MEDIUM"}
                       minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined}
                       location={t.location ?? undefined}
+                      dueDate={(t as any).dueDate ?? undefined}
                       onDone={async () => {
                         await markDone.mutateAsync(t.id);
                         await qc.invalidateQueries({ queryKey: ["my-todos", "TODO"] });
@@ -167,6 +169,7 @@ export function TodosMinimal() {
                     priority={t.priority ?? "MEDIUM"}
                     minutes={t.estimatedPomodoros ? t.estimatedPomodoros * 25 : undefined}
                     location={t.location ?? undefined}
+                    dueDate={(t as any).dueDate ?? undefined}
                     onDone={async () => {
                       await markDone.mutateAsync(t.id);
                       await qc.invalidateQueries({ queryKey: ["my-todos", "TODO"] });
@@ -189,6 +192,7 @@ function TodoRow({
   priority,
   minutes,
   location,
+  dueDate,
   onDone,
 }: {
   id: string;
@@ -197,6 +201,7 @@ function TodoRow({
   priority: "LOW" | "MEDIUM" | "HIGH";
   minutes?: number;
   location?: string | null;
+  dueDate?: string | null;
   onDone: () => void;
 }) {
   const type = detectType(tags);
@@ -225,6 +230,10 @@ function TodoRow({
             <span className="max-w-[90px] truncate">{location}</span>
           </span>
         ) : null}
+        <DueDateControl taskId={_id} dueDate={dueDate ?? null} className="ml-1" />
+        <a href={`/tasks/${_id}`} className="inline-flex items-center gap-1 hover:underline">
+          <ExternalLink className="size-3" /> Open
+        </a>
       </div>
     </div>
   );

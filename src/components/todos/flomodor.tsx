@@ -35,17 +35,7 @@ export function FlomodorTodos() {
     }
   });
 
-  const enrich = useMutation({
-    mutationFn: async (taskId: string) => {
-      const res = await fetch(`/api/ai/cards/${taskId}/enrich`, { method: 'POST' });
-      if (!res.ok) throw new Error('enrich failed');
-      return res.json();
-    },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['my-todos','TODO'] });
-      trackEvent("todo_enrich_success", { source: "flomodor" });
-    }
-  });
+  // AI quick actions removed
 
   const markDone = useMarkDone();
   const del = useDeleteCard();
@@ -122,20 +112,7 @@ export function FlomodorTodos() {
                       ) : null}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          trackEvent("todo_enrich_request", { source: "flomodor" });
-                          enrich.mutate(todo.id);
-                        }}
-                        disabled={enrich.isPending}
-                        className="gap-2"
-                        title="AI: Enrich"
-                      >
-                        {enrich.isPending ? <Loader2 className="size-4 animate-spin" /> : '✨'} Enrich
-                      </Button>
+                      {/* AI: Enrich removed */}
                       <Button
                         size="icon"
                         variant="destructive"

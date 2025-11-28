@@ -23,6 +23,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     descriptionMarkdown: t.descriptionMarkdown,
     columnId: t.columnId,
     // extra metadata for richer UI
+    dueDate: t.dueDate,
     priority: t.priority,
     type: t.type,
     estimatedPomodoros: t.estimatedPomodoros,

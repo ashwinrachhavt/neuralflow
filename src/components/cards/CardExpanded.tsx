@@ -1,16 +1,19 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import { Dialog, Transition } from "@headlessui/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCard } from "@/hooks/api";
 import { X } from "lucide-react";
 
-import { CardAIDock } from "./CardAIDock";
-import { CardMetadata } from "./CardMetadata";
 import { CardTitleEditor } from "./CardTitleEditor";
-import { CardTiptapEditor } from "./CardTiptapEditor";
+import dynamic from "next/dynamic";
+
+const SmartTipTapEditor = dynamic(
+  () => import("@/components/editor/SmartTipTapEditor").then((m) => m.SmartTipTapEditor),
+  { ssr: false, loading: () => <div className="h-[280px] animate-pulse rounded-xl bg-muted/50" /> },
+);
 
 export type CardExpandedProps = {
   taskId: string;
@@ -20,6 +23,22 @@ export type CardExpandedProps = {
 
 export function CardExpanded({ taskId, open, onClose }: CardExpandedProps) {
   const { data, isLoading } = useCard(taskId);
+  const [noteId, setNoteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    if (data?.note?.id) { setNoteId(data.note.id); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/cards/${taskId}/note`, { method: 'POST' });
+        if (!res.ok) return;
+        const j = await res.json().catch(() => null);
+        if (!cancelled && j?.noteId) setNoteId(j.noteId);
+      } catch { /* noop */ }
+    })();
+    return () => { cancelled = true; };
+  }, [open, data?.note?.id, taskId]);
 
   return (
     <Transition show={open} as={Fragment}>
@@ -63,18 +82,22 @@ export function CardExpanded({ taskId, open, onClose }: CardExpandedProps) {
                   </div>
 
                   <ScrollArea className="flex-1">
-                    <div className="flex flex-col gap-6 px-6 py-5">
+                    <div className="h-full px-6 py-5">
                       {isLoading || !data ? (
                         <div className="space-y-4">
                           <div className="h-4 w-[60%] animate-pulse rounded bg-muted" />
-                          <div className="h-[280px] animate-pulse rounded-xl bg-muted/50" />
+                          <div className="h-[60vh] animate-pulse rounded-xl bg-muted/50" />
                         </div>
+                      ) : (data.note?.id || noteId) ? (
+                        <SmartTipTapEditor
+                          initialContent={data.note?.contentJson}
+                          entity={{ type: 'note', noteId: (data.note?.id ?? noteId)! }}
+                          frame="bare"
+                          expanded
+                          className="h-full"
+                        />
                       ) : (
-                        <>
-                          <CardMetadata task={data.task} />
-                          <CardTiptapEditor initialContent={data.note?.contentJson} noteId={data.note?.id} />
-                          <CardAIDock taskId={taskId} />
-                        </>
+                        <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">Preparing editor…</div>
                       )}
                     </div>
                   </ScrollArea>

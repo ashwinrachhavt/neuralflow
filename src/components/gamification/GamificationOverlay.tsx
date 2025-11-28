@@ -1,7 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { GemRewardPopup } from "./GemRewardPopup";
+import dynamic from "next/dynamic";
+const GemRewardPopup = dynamic(
+    () => import("./GemRewardPopup").then((m) => m.GemRewardPopup),
+    { ssr: false },
+);
 import { GemSlug } from "@/lib/gamification/catalog";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";

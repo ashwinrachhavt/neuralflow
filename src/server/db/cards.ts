@@ -30,7 +30,7 @@ export async function updateDescription(taskId: string, descriptionMarkdown: str
 
 export async function updatePartial(
   taskId: string,
-  data: { title?: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'; tags?: string[]; estimatedPomodoros?: number | null },
+  data: { title?: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'; tags?: string[]; estimatedPomodoros?: number | null; dueDate?: Date | null },
   userId: string,
 ) {
   const existing = await prisma.task.findFirst({ where: { id: taskId, board: { userId } }, select: { id: true } });
@@ -42,6 +42,7 @@ export async function updatePartial(
   if (data.type !== undefined) updateData.type = data.type as any;
   if (data.estimatedPomodoros !== undefined) updateData.estimatedPomodoros = data.estimatedPomodoros;
   if (data.tags !== undefined) updateData.tags = { set: data.tags } as any;
+  if (data.dueDate !== undefined) updateData.dueDate = data.dueDate as any;
   return prisma.task.update({ where: { id: taskId }, data: updateData });
 }
 

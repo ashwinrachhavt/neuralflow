@@ -1,13 +1,17 @@
 import { PageShell } from "@/components/layout/page-shell";
-import { SectionHeader } from "@/components/section-header";
 import TaskPageClient from "@/components/cards/TaskPageClient";
+import { TaskPageHeader } from "@/components/cards/TaskPageHeader";
+
+export const metadata = {
+  title: "Task",
+  description: "Full task editor",
+};
 
 export default async function TaskPage({ params }: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await params;
   return (
     <PageShell>
-      <SectionHeader title="Task" description="Full view" />
-      {/* Client renderer uses hooks for data + editing */}
+      <TaskPageHeader taskId={taskId} />
       <TaskPageClient taskId={taskId} />
     </PageShell>
   );

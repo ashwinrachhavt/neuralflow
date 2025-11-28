@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Dialog, DialogPanel, DialogBackdrop, Transition } from "@headlessui/react";
 import { motion } from "framer-motion";
 import { X, Sparkles } from "lucide-react";
@@ -9,9 +9,21 @@ import { CardTitleEditor } from "./CardTitleEditor";
 import { CardAIDock } from "./CardAIDock";
 import { Button } from "@/components/ui/button";
 // import { CardDescriptionEditor } from "@/components/cards/CardDescriptionEditor";
-import { CardTiptapEditor } from "./CardTiptapEditor";
+import dynamic from "next/dynamic";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CardChat } from "./CardChat";
+const SmartTipTapEditor = dynamic(
+  () => import("@/components/editor/SmartTipTapEditor").then((m) => m.SmartTipTapEditor),
+  { ssr: false, loading: () => <div className="h-[280px] animate-pulse rounded-xl bg-muted/50" /> },
+);
+
+const CardChat = dynamic(() => import("./CardChat").then((m) => m.CardChat), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+      Loading assistant…
+    </div>
+  ),
+});
 import { ProjectSwitcher } from "@/components/projects/ProjectSwitcher";
 
 type Props = {
@@ -25,6 +37,7 @@ type Props = {
 export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = "" }: Props) {
   const { data, isLoading } = useCard(taskId);
   const qc = useQueryClient();
+  const [noteId, setNoteId] = useState<string | null>(null);
   // const [descExpanded, setDescExpanded] = useState(false);
   const applyMove = useMutation({
     mutationFn: async (columnId: string) => {
@@ -44,6 +57,20 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
 
   useEffect(() => {
     if (!open) return;
+    // ensure a note exists so editor is always available
+    if (data?.note?.id) { setNoteId(data.note.id); }
+    else {
+      let cancelled = false;
+      (async () => {
+        try {
+          const res = await fetch(`/api/cards/${taskId}/note`, { method: 'POST' });
+          if (!res.ok) return;
+          const j = await res.json().catch(() => null);
+          if (!cancelled && j?.noteId) setNoteId(j.noteId);
+        } catch { /* noop */ }
+      })();
+      return () => { cancelled = true; };
+    }
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest('input, textarea, [contenteditable="true"], select')) return;
@@ -204,7 +231,11 @@ export function CardSheet({ taskId, open, onClose, onOpenFull, layoutIdBase = ""
 
                             {/* Editor */}
                             <div className="min-h-[300px] pb-12">
-                              <CardTiptapEditor taskId={taskId} initialContent={data.task.descriptionMarkdown ?? ''} noteId={data.note?.id ?? null} className="prose-lg dark:prose-invert max-w-none border-none bg-transparent p-0 shadow-none focus-visible:ring-0" />
+                              {(data.note?.id || noteId) ? (
+                                <SmartTipTapEditor initialContent={data.note?.contentJson ?? data.task.descriptionMarkdown ?? ''} entity={{ type: 'note', noteId: (data.note?.id ?? noteId)! }} className="prose-lg dark:prose-invert max-w-none border-none bg-transparent p-0 shadow-none focus-visible:ring-0" />
+                              ) : (
+                                <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">Preparing editor…</div>
+                              )}
                             </div>
 
                             <div className="h-px w-full bg-border/40 mb-8" />

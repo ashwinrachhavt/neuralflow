@@ -4,13 +4,14 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
-import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
 import { GamificationOverlay } from "@/components/gamification/GamificationOverlay";
-import { ProductAnalytics } from "@/components/product-analytics";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { GlobalShortcuts } from "@/components/shortcuts/GlobalShortcuts";
+import { Toaster } from "@/components/ui/sonner";
+import { ProductAnalytics } from "@/components/product-analytics";
+import { MotionProvider } from "@/components/motion-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,14 +55,16 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <QueryProvider>
-              <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
-                <Navbar />
-                <GamificationOverlay> {/* Added GamificationOverlay */}
-                  {children}
-                </GamificationOverlay> {/* Added GamificationOverlay */}
-              </div>
-              <Toaster richColors position="top-right" />
-              <GlobalShortcuts />
+              <MotionProvider>
+                <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
+                  <Navbar />
+                  <GamificationOverlay> {/* Added GamificationOverlay */}
+                    {children}
+                  </GamificationOverlay> {/* Added GamificationOverlay */}
+                </div>
+                <Toaster richColors position="top-right" />
+                <GlobalShortcuts />
+              </MotionProvider>
             </QueryProvider>
             <Suspense fallback={null}>
               <ProductAnalytics />

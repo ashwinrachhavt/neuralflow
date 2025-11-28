@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { motion } from "framer-motion";
 
 import {
@@ -74,6 +74,7 @@ type Task = {
   tags?: string[] | null;
   topics?: string[] | null;
   primaryTopic?: string | null;
+  dueDate?: string | null;
   // AI suggestion fields (optional)
   aiSuggestedColumnId?: string | null;
   aiSuggestedPriority?: 'LOW' | 'MEDIUM' | 'HIGH' | null;
@@ -133,6 +134,7 @@ export function KanbanBoard({ boardId }: { boardId: string }) {
         id: t.id,
         title: t.title,
         description: t.descriptionMarkdown ?? undefined,
+        dueDate: (t as any).dueDate ?? null,
         priority: (t as any).priority ?? null,
         type: (t as any).type ?? null,
         tags: (t as any).tags ?? null,
@@ -475,7 +477,7 @@ type KanbanColumnProps = {
   onApplyMove?: (taskId: string, targetColumnId: string) => void;
 };
 
-function KanbanColumn({ column, tasks, onEnrich, onSummary, onCreateCard, onClassify, onOpen, openTaskId, onApplyMove }: KanbanColumnProps) {
+const KanbanColumn = memo(function KanbanColumn({ column, tasks, onEnrich, onSummary, onCreateCard, onClassify, onOpen, openTaskId, onApplyMove }: KanbanColumnProps) {
   const [newOpen, setNewOpen] = useState(false);
   const isInProgress = (column.title ?? '').trim().toLowerCase() === 'in progress';
   const wipCount = column.taskIds.length;
@@ -517,7 +519,13 @@ function KanbanColumn({ column, tasks, onEnrich, onSummary, onCreateCard, onClas
       <NewCardModal open={newOpen} onClose={() => setNewOpen(false)} onSubmit={(t, d) => onCreateCard(column.id, t, d)} />
     </Card>
   );
-}
+},
+// Re-render when column identity or content actually changes
+(prev, next) => (
+  prev.column === next.column &&
+  prev.tasks === next.tasks &&
+  prev.openTaskId === next.openTaskId
+));
 
 type ColumnSortableAreaProps = {
   columnId: string;
@@ -525,7 +533,7 @@ type ColumnSortableAreaProps = {
   children: React.ReactNode;
 };
 
-function ColumnSortableArea({ columnId, taskIds, children }: ColumnSortableAreaProps) {
+const ColumnSortableArea = memo(function ColumnSortableArea({ columnId, taskIds, children }: ColumnSortableAreaProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: columnId,
     data: { type: "column", columnId },
@@ -545,7 +553,7 @@ function ColumnSortableArea({ columnId, taskIds, children }: ColumnSortableAreaP
       </div>
     </SortableContext>
   );
-}
+});
 
 type SortableTaskProps = {
   task: Task;
@@ -558,7 +566,7 @@ type SortableTaskProps = {
   onApplyMove?: (taskId: string, targetColumnId: string) => void;
 };
 
-function SortableTask({ task, columnId, onEnrich, onSummary, onClassify, onOpen, openTaskId, onApplyMove: _onApplyMove }: SortableTaskProps) {
+const SortableTask = memo(function SortableTask({ task, columnId, onEnrich, onSummary, onClassify, onOpen, openTaskId, onApplyMove: _onApplyMove }: SortableTaskProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: task.id,
@@ -627,7 +635,13 @@ function SortableTask({ task, columnId, onEnrich, onSummary, onClassify, onOpen,
       {/* AI chips removed for initial rollout */}
     </motion.div>
   );
-}
+},
+// Re-render only when identity or open state changes
+(prev, next) => (
+  prev.task === next.task &&
+  prev.openTaskId === next.openTaskId &&
+  prev.columnId === next.columnId
+));
 
 function EmptyColumnHint({ columnTitle }: { columnTitle?: string }) {
   const isBacklog = (columnTitle ?? '').trim().toLowerCase() === 'backlog';

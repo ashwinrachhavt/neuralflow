@@ -10,14 +10,21 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   const user = await getUserOr401();
   if (!(user as any).id) return user as unknown as NextResponse;
 
-  const body = await readJson<{ title?: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'|null; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|null; tags?: string[] | null; estimatedPomodoros?: number | null }>(req);
+  const body = await readJson<{ title?: string; descriptionMarkdown?: string; priority?: 'LOW'|'MEDIUM'|'HIGH'|null; type?: 'DEEP_WORK'|'SHALLOW_WORK'|'LEARNING'|'SHIP'|'MAINTENANCE'|null; tags?: string[] | null; estimatedPomodoros?: number | null; dueDate?: string | null }>(req);
   const title = (body?.title as string | undefined)?.trim();
   const descriptionMarkdown = typeof body?.descriptionMarkdown === 'string' ? body?.descriptionMarkdown : undefined;
   const priority = body?.priority as any;
   const type = body?.type as any;
   const tags = Array.isArray(body?.tags) ? (body!.tags as string[]).map(String) : undefined;
   const estimatedPomodoros = typeof body?.estimatedPomodoros === 'number' ? Math.max(0, Math.floor(body.estimatedPomodoros!)) : (body?.estimatedPomodoros === null ? null : undefined);
-  if (!title && typeof descriptionMarkdown !== 'string' && priority === undefined && type === undefined && tags === undefined && estimatedPomodoros === undefined) {
+  let dueDate: Date | null | undefined = undefined;
+  if (body?.dueDate === null) {
+    dueDate = null;
+  } else if (typeof body?.dueDate === 'string') {
+    const d = new Date(body!.dueDate);
+    if (!Number.isNaN(d.getTime())) dueDate = d;
+  }
+  if (!title && typeof descriptionMarkdown !== 'string' && priority === undefined && type === undefined && tags === undefined && estimatedPomodoros === undefined && dueDate === undefined) {
     return NextResponse.json({ message: "No fields to update" }, { status: 400 });
   }
 
@@ -35,6 +42,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       ...(type !== undefined ? { type } : {}),
       ...(tags !== undefined ? { tags } : {}),
       ...(estimatedPomodoros !== undefined ? { estimatedPomodoros } : {}),
+      ...(dueDate !== undefined ? { dueDate } : {}),
     },
     (user as any).id,
   );

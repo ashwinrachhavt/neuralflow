@@ -1,27 +1,38 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useCard } from "@/hooks/api";
 import { CardTitleEditor } from "./CardTitleEditor";
 import { CardMetadata } from "./CardMetadata";
-import { CardTiptapEditor } from "./CardTiptapEditor";
-import { CardAIDock } from "./CardAIDock";
-import { CardContextSidebar } from "./CardContextSidebar";
+import dynamic from "next/dynamic";
+const SmartTipTapEditor = dynamic(
+  () => import("@/components/editor/SmartTipTapEditor").then((m) => m.SmartTipTapEditor),
+  { ssr: false, loading: () => <div className="h-[280px] animate-pulse rounded-xl bg-muted/50" /> },
+);
 
 export default function TaskPageClient({ taskId }: { taskId: string }) {
   const { data, isLoading } = useCard(taskId);
+  const [noteId, setNoteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!data) return;
+    if (data.note?.id) { setNoteId(data.note.id); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/cards/${taskId}/note`, { method: 'POST' });
+        if (!res.ok) return;
+        const j = await res.json().catch(() => null);
+        if (!cancelled && j?.noteId) setNoteId(j.noteId);
+      } catch { /* noop */ }
+    })();
+    return () => { cancelled = true; };
+  }, [data?.note?.id, taskId]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid gap-6">
       <section className="rounded-2xl border border-border/60 bg-card/80 p-5 shadow-sm">
-        <div className="border-b border-border/60 pb-4">
-          {isLoading || !data ? (
-            <div className="h-9 w-60 animate-pulse rounded bg-muted" />
-          ) : (
-            <CardTitleEditor taskId={taskId} initialTitle={data.task.title} />
-          )}
-        </div>
-
-        <div className="mt-4 space-y-5">
+        <div className="space-y-5">
           {isLoading || !data ? (
             <div className="space-y-3">
               <div className="h-4 w-56 animate-pulse rounded bg-muted" />
@@ -30,14 +41,18 @@ export default function TaskPageClient({ taskId }: { taskId: string }) {
           ) : (
             <>
               <CardMetadata task={data.task} />
-              <CardTiptapEditor initialContent={data.note?.contentJson} noteId={data.note?.id} />
-              <CardAIDock taskId={taskId} />
+              {(data.note?.id || noteId) ? (
+                <SmartTipTapEditor initialContent={data.note?.contentJson} entity={{ type: 'note', noteId: (data.note?.id ?? noteId)! }} />
+              ) : (
+                <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">Preparing editor…</div>
+              )}
+              {/* AI quick actions removed */}
             </>
           )}
         </div>
       </section>
 
-      <CardContextSidebar taskId={taskId} />
+      {/* Context sidebar removed (Smart Cues & Related Notes) */}
     </div>
   );
 }
